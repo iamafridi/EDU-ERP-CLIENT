@@ -1,5 +1,5 @@
 /**
- * Quick verification of the EDU Nexus UI token layer.  * Checks: light bg token applied, no dark mode residue, shell renders.
+ * Quick verification of the   UI token layer.  * Checks: light bg token applied, no dark mode residue, shell renders.
  */
 import { chromium } from "playwright-core";
 

@@ -1,6 +1,55 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==============================================================================
+# 1. SENSITIVE FILES & SECRETS (NEVER COMMIT)
+# ==============================================================================
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*secret*
+*credential*
+*credentials.json
+*serviceAccount*.json
+*firebase-adminsdk*.json
 
-# dependencies
+# ==============================================================================
+# 2. NO AI TOUCH / AGENT ARTIFACTS
+# ==============================================================================
+.agents/
+.claude/
+.mimocode/
+.freebuff/
+.gemini/
+.cursor/
+.chat/
+.qa/
+.system_generated/
+brain/
+skills-lock.json
+AGENTS.md
+CLAUDE.md
+SKILL.md
+*_distill_query*.py
+*scratch*
+*.prompt
+*.prompt.md
+
+# ==============================================================================
+# 3. PLANNING, ARCHITECTURE & DOCUMENTATION (.MD FILES)
+# ==============================================================================
+*.md
+*.markdown
+docs/
+doc/
+plans/
+DEPLOYMENT.md
+
+# ==============================================================================
+# 4. DEPENDENCIES & BUILD ARTIFACTS
+# ==============================================================================
 /node_modules
 /.pnp
 .pnp.*
@@ -9,41 +58,23 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
-# testing
 /coverage
-
-# next.js
 /.next/
 /out/
-
-# production
 /build
+.vercel
+*.tsbuildinfo
+next-env.d.ts
 
-# misc
+# ==============================================================================
+# 5. OS & LOGS
+# ==============================================================================
 .DS_Store
-*.pem
+Thumbs.db
+Desktop.ini
 nul
-
-# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# AI-generated files
-AGENTS.md
-CLAUDE.md
-
-# local QA artifacts
-/.qa/
+*.log
