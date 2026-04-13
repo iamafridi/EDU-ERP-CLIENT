@@ -1,72 +1,95 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
- * EDU Nexus UI - semantic tokens
- * "Institutional Grid + Clinical Signal"
- * Light theme only. Components must use the Tailwind utilities generated from
- * these (bg-surface, text-text-muted, ...), never raw hexes.
+ *   UI — "Clinical Luxury"
+ * Warm ivory surfaces, navy structure, gold accents, sage/teal/rose status.
+ * Light theme only. Components must use Tailwind utilities generated from
+ * these tokens — never raw hexes.
  * ------------------------------------------------------------------------- */
 :root {
-  /* Surfaces */
-  --background: #f6f7f9;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-muted: #eef1f5;
+  /* ── Surfaces ── */
+  --background: #F5F3EE;
+  --surface: #FFFEFA;
+  --surface-raised: #FFFEFA;
+  --surface-muted: #EDE9E0;
+  --surface-navy: #0D1E2C;
+  --surface-navy-secondary: #132A3A;
 
-  /* Hairlines */
-  --border: #e2e6ec;
-  --border-strong: #c9d0da;
+  /* ── Hairlines ── */
+  --border: #E8E3D9;
+  --border-strong: #D4CFC4;
+  --border-gold: #B98B4B;
 
-  /* Text */
-  --text: #141a26;
-  --text-muted: #5b6472;
-  --text-subtle: #8a93a3;
+  /* ── Text ── */
+  --text: #17252D;
+  --text-muted: #4A5568;
+  --text-subtle: #8A93A3;
+  --text-on-navy: #F5F3EE;
+  --text-on-navy-muted: #9BA8B4;
 
-  /* Primary operational accent - clinical blue */
-  --primary: #1a5fd0;
-  --primary-hover: #154db0;
-  --primary-soft: #e8f0fd;
-  --on-primary: #ffffff;
+  /* ── Primary — Deep Navy ── */
+  --primary: #0D1E2C;
+  --primary-hover: #132A3A;
+  --primary-soft: #E8E5DE;
+  --on-primary: #FFFEFA;
 
-  /* Semantic status colors */
-  --success: #0e8a5f;
-  --success-soft: #e4f5ee;
-  --warning: #b45309;
-  --warning-soft: #fdf1e3;
-  --danger: #c62828;
-  --danger-soft: #fdeaea;
-  --info: #0e7490;
-  --info-soft: #e0f4f9;
+  /* ── Accent — Brushed Gold ── */
+  --gold: #B98B4B;
+  --gold-hover: #A67A3A;
+  --gold-soft: #F5EFE3;
+  --on-gold: #FFFFFF;
 
-  --focus-ring: #1a5fd0;
+  /* ── Semantic status ── */
+  --success: #6C8F72;
+  --success-soft: #E8F0E9;
+  --warning: #B96F69;
+  --warning-soft: #F5E8E7;
+  --danger: #B94F4F;
+  --danger-soft: #F5E0E0;
+  --info: #3D7B88;
+  --info-soft: #E2F0F3;
 
-  /* Elevation - borders first, shadows only for real depth */
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.08);
-  --shadow-lg: 0 12px 32px -8px rgb(15 23 42 / 0.16);
+  /* ── Focus ring ── */
+  --focus-ring: #B98B4B;
+
+  /* ── Elevation — warm shadows ── */
+  --shadow-sm: 0 1px 3px rgba(23, 37, 45, 0.04);
+  --shadow-md: 0 4px 16px -2px rgba(23, 37, 45, 0.07);
+  --shadow-lg: 0 12px 40px -8px rgba(23, 37, 45, 0.12);
+  --shadow-gold: 0 4px 20px -4px rgba(185, 139, 75, 0.15);
 }
 
 /*
- * @theme inline: utilities emit a live var() reference, so restyling is a
- * token edit, not a class recompile.
+ * @theme inline: Tailwind utilities emit live var() references,
+ * so restyling is a token edit, not a class recompile.
  */
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-navy: var(--surface-navy);
+  --color-surface-navy-secondary: var(--surface-navy-secondary);
 
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-gold: var(--border-gold);
 
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-text-subtle: var(--text-subtle);
+  --color-text-on-navy: var(--text-on-navy);
+  --color-text-on-navy-muted: var(--text-on-navy-muted);
 
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-on-primary: var(--on-primary);
+
+  --color-gold: var(--gold);
+  --color-gold-hover: var(--gold-hover);
+  --color-gold-soft: var(--gold-soft);
+  --color-on-gold: var(--on-gold);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -79,22 +102,31 @@
 
   --color-focus-ring: var(--focus-ring);
 
-  /* Legacy aliases kept for existing code until migrated */
+  /* Legacy & utility aliases */
   --color-on-background: var(--text);
   --color-on-surface: var(--text);
+  --color-primary-foreground: var(--on-primary);
+  --color-foreground: var(--text);
+  --color-muted-foreground: var(--text-muted);
+  --color-card: var(--surface);
+  --color-muted: var(--surface-muted);
 
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-gold: var(--shadow-gold);
 
-  /* Disciplined radius scale (sm 6 / md 10 / lg 14 / xl 18) */
+  /* Disciplined radius scale */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 18px;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+  --font-display: var(--font-playfair-display), "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-ui: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-body);
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", monospace;
 }
 
 html {
@@ -104,34 +136,81 @@ html {
 body {
   background-color: var(--background);
   color: var(--text);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* One visible focus treatment, everywhere. Never remove outlines globally. */
+/* ── Typography utilities ── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+/* ── Focus treatment ── */
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
+/* ── Selection ── */
 ::selection {
-  background-color: var(--primary-soft);
+  background-color: var(--gold-soft);
   color: var(--text);
 }
 
-/* Subtle scrollbars for data-heavy surfaces */
+/* ── Scrollbars — warm tones ── */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 
-/* Tabular numerals for money, counts and statistics */
+/* ── Tabular numerals for money, counts, statistics ── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Gold shimmer for premium accents ── */
+@keyframes gold-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--gold) 0%,
+    #D4A855 25%,
+    var(--gold) 50%,
+    #D4A855 75%,
+    var(--gold) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Subtle paper texture overlay ── */
+.paper-surface {
+  position: relative;
+}
+
+.paper-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2317252D' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -141,4 +220,261 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ *   Institutional Theme Harmonization & Uniform Button Architecture
+ *   Ensures 100% color consistency across all legacy views and modules.
+ * ------------------------------------------------------------------------- */
+[class*="bg-[#2563EB]"],
+button[class*="bg-[#2563EB]"],
+a[class*="bg-[#2563EB]"] {
+  background-color: var(--primary) !important;
+  color: var(--on-primary) !important;
+}
+
+[class*="bg-[#2563EB]"]:hover,
+button[class*="bg-[#2563EB]"]:hover,
+a[class*="bg-[#2563EB]"]:hover,
+[class*="hover:bg-[#1d4ed8]"]:hover,
+button[class*="hover:bg-[#1d4ed8]"]:hover,
+a[class*="hover:bg-[#1d4ed8]"]:hover {
+  background-color: var(--primary-hover) !important;
+  color: var(--on-primary) !important;
+}
+
+/* Harmonize text accent colors to institutional gold */
+span[class*="text-[#2563EB]"],
+p[class*="text-[#2563EB]"],
+a[class*="text-[#2563EB]"],
+svg[class*="text-[#2563EB]"] {
+  color: var(--gold) !important;
+}
+
+/* Harmonize subtle icon badge backgrounds */
+[class*="bg-[#2563EB]/10"],
+[class*="bg-[#2563EB]/5"] {
+  background-color: rgba(185, 139, 75, 0.12) !important;
+}
+
+/* Harmonize input borders & focus states */
+[class*="border-[#c3c6d7]"],
+[class*="border-[#e1e2ed]"] {
+  border-color: var(--border) !important;
+}
+
+[class*="focus:border-[#2563EB]"]:focus {
+  border-color: var(--gold) !important;
+}
+
+[class*="focus:ring-[#2563EB]"]:focus {
+  --tw-ring-color: rgba(185, 139, 75, 0.2) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ *   Physical Document Printing & Paper Gazette Architecture
+ * ------------------------------------------------------------------------- */
+@media print {
+  aside,
+  nav,
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  
+  body,
+  main,
+  #main-content {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/* ── Tactile Button Micro-Physics ── */
+button:active:not(:disabled),
+a:active:not(:disabled) {
+  transform: scale(0.985);
+  transition: transform 75ms ease-out;
+}
+
+/* ---------------------------------------------------------------------------
+ *   Cinematic Optical Physics & Luxury Dark Aesthetics
+ * ------------------------------------------------------------------------- */
+.blueprint-grid-bg {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+.blueprint-grid-gold {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(185, 139, 75, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(185, 139, 75, 0.07) 1px, transparent 1px);
+}
+
+.blueprint-dots-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.radial-fade-mask {
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+.radial-fade-mask-bottom {
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 100%);
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(0.5deg); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.08); }
+}
+
+@keyframes beam-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-pulse-aurora {
+  animation: pulse-subtle 9s ease-in-out infinite;
+}
+
+.luxury-glass-card {
+  background: rgba(13, 20, 32, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 20px rgba(185, 139, 75, 0.02);
+}
+
+.luxury-glass-card:hover {
+  border-color: rgba(185, 139, 75, 0.3);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    0 0 25px -5px rgba(185, 139, 75, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.gold-beam-conic {
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    transparent 0deg,
+    transparent 140deg,
+    rgba(185, 139, 75, 0.18) 180deg,
+    transparent 220deg,
+    transparent 360deg
+  );
+}
+
+.teal-beam-conic {
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    transparent 0deg,
+    transparent 150deg,
+    rgba(15, 118, 110, 0.16) 180deg,
+    transparent 210deg,
+    transparent 360deg
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ *   PRINT STYLES: Official University Slips, Rosters & Admit Cards
+ * ------------------------------------------------------------------------- */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide UI navigation, sidebar, toasts, and buttons */
+  aside,
+  nav,
+  header,
+  footer,
+  .no-print,
+  button,
+  [role="dialog"] > div > div > button,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Ensure printable documents take full width and page break properly */
+  .printable-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12mm 15mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #FFFFFF !important;
+    color: #111827 !important;
+    page-break-after: auto;
+    page-break-inside: avoid;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  @page landscape {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  .print-landscape {
+    page: landscape;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s infinite ease-in-out;
 }
