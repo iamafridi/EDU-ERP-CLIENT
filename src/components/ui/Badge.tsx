@@ -12,27 +12,45 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "primary";
+export type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "primary" | "gold" | "outline" | "default" | "purple";
 
 const toneClasses: Record<Tone, string> = {
   neutral: "bg-surface-muted text-text-muted border-transparent",
+  default: "bg-surface-muted text-text-muted border-transparent",
   success: "bg-success-soft text-success border-transparent",
   warning: "bg-warning-soft text-warning border-transparent",
   danger: "bg-danger-soft text-danger border-transparent",
   info: "bg-info-soft text-info border-transparent",
   primary: "bg-primary-soft text-primary border-transparent",
+  purple: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 border",
+  gold: "bg-gold/15 text-gold border-gold/30 border",
+  outline: "bg-surface-muted/60 text-text-muted border-border border",
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: Tone;
+  /** Alias for tone */
+  variant?: Tone;
+  size?: "sm" | "md";
   icon?: React.ReactNode;
   dot?: boolean;
 }
 
-export function Badge({ tone = "neutral", icon, dot = false, className = "", children, ...rest }: BadgeProps) {
+export function Badge({
+  tone,
+  variant = "neutral",
+  size = "md",
+  icon,
+  dot = false,
+  className = "",
+  children,
+  ...rest
+}: BadgeProps) {
+  const activeTone = tone || variant;
+  const sizeCls = size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-[11px]";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-5 ${toneClasses[tone]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full font-medium leading-5 font-ui ${toneClasses[activeTone] || toneClasses.neutral} ${sizeCls} ${className}`}
       {...rest}
     >
       {dot && <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />}
@@ -86,23 +104,26 @@ export interface StatusBadgeProps {
   status: string;
   /** Optional explicit label; defaults to a title-cased status. */
   label?: string;
+  size?: "sm" | "md";
   className?: string;
 }
 
-export function StatusBadge({ status, label, className = "" }: StatusBadgeProps) {
+export function StatusBadge({ status, label, size = "md", className = "" }: StatusBadgeProps) {
   const normalized = status.toLowerCase().trim().replace(/\s+/g, "-");
   const entry = STATUS_MAP[normalized];
   if (!entry) {
     return (
-      <Badge tone="neutral" className={className}>
+      <Badge tone="neutral" size={size} className={className}>
         {label || status}
       </Badge>
     );
   }
   const Icon = entry.icon;
   return (
-    <Badge tone={entry.tone} icon={<Icon size={12} aria-hidden="true" />} className={className}>
+    <Badge tone={entry.tone} size={size} icon={<Icon size={12} aria-hidden="true" />} className={className}>
       {label || entry.label || status}
     </Badge>
   );
 }
+
+export default Badge;
