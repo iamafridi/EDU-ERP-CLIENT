@@ -47,6 +47,9 @@ interface DataTableProps<T> {
   tableId?: string;
   /** Show skeleton rows instead of the table body. */
   loading?: boolean;
+  isLoading?: boolean;
+  searchable?: boolean;
+  pagination?: boolean;
   /** Show a page-level error state with retry. */
   error?: boolean;
   onRetry?: () => void;
@@ -108,7 +111,10 @@ export default function DataTable<T>({
   searchField,
   filterComponent,
   tableId,
-  loading = false,
+  loading: propLoading = false,
+  isLoading = false,
+  searchable = true,
+  pagination = true,
   error = false,
   onRetry,
   selectable = false,
@@ -121,6 +127,7 @@ export default function DataTable<T>({
   emptyDescription,
   emptyAction,
 }: DataTableProps<T>) {
+  const loading = propLoading || isLoading;
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sort, setSort] = useState<SortState>(null);
