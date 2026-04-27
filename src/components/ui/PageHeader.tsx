@@ -37,21 +37,38 @@ export function Breadcrumb({ items, className = "" }: { items: Crumb[]; classNam
 export interface PageHeaderProps {
   title: string;
   description?: string;
+  subtitle?: string;
+  badge?: React.ReactNode;
   breadcrumb?: Crumb[];
+  breadcrumbs?: Crumb[];
   /** Context label above the title (e.g. "Finance", "MBBS 2024") - use sparingly. */
   eyebrow?: string;
   actions?: React.ReactNode;
   className?: string;
 }
 
-export function PageHeader({ title, description, breadcrumb, eyebrow, actions, className = "" }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  subtitle,
+  badge,
+  breadcrumb,
+  breadcrumbs,
+  eyebrow,
+  actions,
+  className = "",
+}: PageHeaderProps) {
+  const desc = description || subtitle;
+
   return (
     <div className={`flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between ${className}`}>
       <div className="min-w-0">
-        {breadcrumb && breadcrumb.length > 0 && <Breadcrumb items={breadcrumb} className="mb-2" />}
-        {eyebrow && <p className="text-[11px] font-medium uppercase tracking-wider text-primary mb-0.5">{eyebrow}</p>}
-        <h1 className="text-xl font-semibold tracking-tight text-text">{title}</h1>
-        {description && <p className="text-xs text-text-muted mt-1 max-w-2xl">{description}</p>}
+        {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gold mb-1 font-ui">{eyebrow}</p>}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-xl font-bold tracking-tight text-text font-display">{title}</h1>
+          {badge && <div className="inline-flex items-center">{badge}</div>}
+        </div>
+        {desc && <p className="text-xs text-text-muted mt-1 max-w-2xl">{desc}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </div>
@@ -72,10 +89,12 @@ export function SectionHeader({
   return (
     <div className={`flex items-center justify-between gap-3 ${className}`}>
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-text">{title}</h2>
+        <h2 className="text-sm font-bold text-text font-ui">{title}</h2>
         {description && <p className="text-xs text-text-muted mt-0.5">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </div>
   );
 }
+
+export default PageHeader;

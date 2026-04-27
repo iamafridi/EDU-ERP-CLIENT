@@ -11,22 +11,27 @@ export interface TabItem {
 }
 
 export interface TabsProps {
-  items: TabItem[];
+  items?: TabItem[];
+  tabs?: TabItem[];
   /** Active tab id. */
-  value: string;
+  value?: string;
+  activeTab?: string;
   onChange: (id: string) => void;
   className?: string;
 }
 
-export function Tabs({ items, value, onChange, className = "" }: TabsProps) {
+export function Tabs({ items, tabs, value, activeTab, onChange, className = "" }: TabsProps) {
+  const activeItems = items || tabs || [];
+  const activeVal = value || activeTab || "";
+
   return (
     <div
       role="tablist"
       aria-label="Section tabs"
       className={`flex items-center gap-1 border-b border-border overflow-x-auto ${className}`}
     >
-      {items.map((tab) => {
-        const selected = tab.id === value;
+      {activeItems.map((tab) => {
+        const selected = tab.id === activeVal;
         return (
           <button
             key={tab.id}
@@ -38,14 +43,14 @@ export function Tabs({ items, value, onChange, className = "" }: TabsProps) {
             onClick={() => onChange(tab.id)}
             onKeyDown={(e) => {
               // Arrow-key navigation between tabs
-              const idx = items.findIndex((t) => t.id === value);
+              const idx = activeItems.findIndex((t) => t.id === activeVal);
               let next: number | null = null;
-              if (e.key === "ArrowRight") next = (idx + 1) % items.length;
-              if (e.key === "ArrowLeft") next = (idx - 1 + items.length) % items.length;
+              if (e.key === "ArrowRight") next = (idx + 1) % activeItems.length;
+              if (e.key === "ArrowLeft") next = (idx - 1 + activeItems.length) % activeItems.length;
               if (next !== null) {
                 e.preventDefault();
-                onChange(items[next].id);
-                document.getElementById(`tab-${items[next].id}`)?.focus();
+                onChange(activeItems[next].id);
+                document.getElementById(`tab-${activeItems[next].id}`)?.focus();
               }
             }}
             className={`inline-flex items-center gap-1.5 px-3 h-10 text-xs font-medium whitespace-nowrap border-b-2 -mb-px transition-colors cursor-pointer ${
