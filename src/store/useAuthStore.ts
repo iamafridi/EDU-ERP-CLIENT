@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "hostelpro-auth-store",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );
