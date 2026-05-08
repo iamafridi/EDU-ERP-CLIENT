@@ -1,45 +1,11 @@
-import axios from "axios";
+import { apiClient, request, USE_MOCKS, delay } from "./api/client";
+import { financeApi } from "./api/finance.api";
+import { academicApi, doubleBlindApi, facultyWorkloadApi } from "./api/academic.api";
+import { clinicalApi } from "./api/clinical.api";
+import { campusApi } from "./api/campus.api";
+import { complianceApi } from "./api/compliance.api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("hostelpro-auth-store");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        const token = parsed?.state?.token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch {
-      }
-    }
-  }
-  return config;
-});
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 403 &&
-        error.response?.data?.message?.toLowerCase().includes('demo')) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('demo-toast', {
-          detail: { message: error.response.data.message },
-        }));
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+export { apiClient, request, USE_MOCKS, delay, financeApi, academicApi, doubleBlindApi, facultyWorkloadApi, clinicalApi, campusApi, complianceApi };
 
 // Mock Fallbacks
 export const MOCK_STUDENTS = [
@@ -466,8 +432,9 @@ export const MOCK_PATIENT_ENCOUNTERS = [
 ];
 
 export const MOCK_RESEARCH_PROJECTS = [
-  { id: "RP-001", title: "AI in Medical Diagnostics", leadResearcher: "Dr. James Sterling", department: "Computer Science", startDate: "2026-01-01", endDate: "2026-12-31", fundingAmount: 500000, status: "active" },
-  { id: "RP-002", title: "Antibiotic Resistance Patterns", leadResearcher: "Prof. Clara Oswald", department: "Microbiology", startDate: "2026-03-01", endDate: "2027-02-28", fundingAmount: 300000, status: "active" },
+  { id: "RES-101", title: "Genomic Sequencing of Regional Antimicrobial Resistance", leadResearcher: "Dr. Clara Oswald", department: "Microbiology", startDate: "2026-01-15", endDate: "2026-12-31", fundingAmount: 850000, status: "active" },
+  { id: "RES-102", title: "AI-Assisted Ischemic Stroke Detection from Emergency MRI", leadResearcher: "Dr. James Sterling", department: "Radiology & Neurology", startDate: "2026-03-01", endDate: "2027-02-28", fundingAmount: 1400000, status: "active" },
+  { id: "RES-103", title: "Cardiometabolic Risk Biomarkers in South Asian Cohorts", leadResearcher: "Prof. Sarah Connor", department: "Cardiology", startDate: "2025-06-01", endDate: "2026-05-31", fundingAmount: 620000, status: "completed" },
 ];
 
 export const MOCK_HEALTH_VISITS = [
@@ -663,10 +630,9 @@ function unwrapResponse(res: any, fallback?: any) {
 }
 
 function getStore() { return store; }
-function delay(ms = 300) { return new Promise((r) => setTimeout(r, ms)); }
 
 // Axios fetch utilities with transparent fallbacks
-export const api = {
+const baseApi = {
   getStudents: async () => {
     try {
       const res = await apiClient.get("/students");
@@ -3884,6 +3850,16 @@ export const api = {
       return { success: true };
     }
   },
+  updateOPDAppointment: async (id: string, payload: any) => {
+    try {
+      const res = await apiClient.patch(`/opd/appointments/${id}`, payload);
+      return res.data;
+    } catch {
+      const idx = store.opdAppointments.findIndex((a: any) => a.id === id);
+      if (idx !== -1) store.opdAppointments[idx] = { ...store.opdAppointments[idx], ...payload };
+      return { success: true };
+    }
+  },
   deleteOPDAppointment: async (id: string) => {
     try {
       const res = await apiClient.delete(`/opd/appointments/${id}`);
@@ -4194,6 +4170,156 @@ export const api = {
     store.dispensings[idx] = { ...store.dispensings[idx], ...payload };
     return unwrapResponse(store.dispensings[idx]);
   },
+  getControlledSubstanceVault: async () => {
+    try {
+      const res = await apiClient.get("/pharmacy/vault");
+      return unwrapResponse(res, {
+        vaultStatus: "SECURE_LOCKED",
+        lastAuditDate: new Date().toISOString().split("T")[0],
+        totalAuditedVials: 1840,
+        discrepancyCount: 0,
+        narcotics: [
+          { id: "NAR-01", name: "Morphine Sulfate 10mg/mL Ampoule", schedule: "Schedule II", balance: 142, bin: "VAULT-A-01", dualSignRequired: true },
+          { id: "NAR-02", name: "Fentanyl Citrate 50mcg/mL (2mL)", schedule: "Schedule II", balance: 88, bin: "VAULT-A-02", dualSignRequired: true },
+          { id: "NAR-03", name: "Midazolam 5mg/mL Injection", schedule: "Schedule IV", balance: 215, bin: "VAULT-B-04", dualSignRequired: true },
+          { id: "NAR-04", name: "Ketamine Hydrochloride 50mg/mL", schedule: "Schedule III", balance: 64, bin: "VAULT-B-07", dualSignRequired: true },
+        ],
+      });
+    } catch {
+      return {
+        vaultStatus: "SECURE_LOCKED",
+        lastAuditDate: new Date().toISOString().split("T")[0],
+        totalAuditedVials: 1840,
+        discrepancyCount: 0,
+        narcotics: [
+          { id: "NAR-01", name: "Morphine Sulfate 10mg/mL Ampoule", schedule: "Schedule II", balance: 142, bin: "VAULT-A-01", dualSignRequired: true },
+          { id: "NAR-02", name: "Fentanyl Citrate 50mcg/mL (2mL)", schedule: "Schedule II", balance: 88, bin: "VAULT-A-02", dualSignRequired: true },
+          { id: "NAR-03", name: "Midazolam 5mg/mL Injection", schedule: "Schedule IV", balance: 215, bin: "VAULT-B-04", dualSignRequired: true },
+          { id: "NAR-04", name: "Ketamine Hydrochloride 50mg/mL", schedule: "Schedule III", balance: 64, bin: "VAULT-B-07", dualSignRequired: true },
+        ],
+      };
+    }
+  },
+  dispenseControlledSubstance: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/pharmacy/vault/dispense", payload);
+      return res.data;
+    } catch {
+      return { success: true, message: "Controlled substance dispensed with dual-key cryptographic validation.", timestamp: new Date().toISOString() };
+    }
+  },
+
+  // SKILL LAB & OSCE MODULE
+  getSkills: async () => {
+    try {
+      const res = await apiClient.get("/skill-lab/skills");
+      return unwrapResponse(res, [
+        { id: "SKL-101", studentId: "STU-2024-089", studentName: "Ayesha Siddiqua", topic: "Endotracheal Intubation (Adult)", category: "AIRWAY", station: "Station 3 (Resuscitation Bay)", score: 95, verifiedBy: "Dr. Farhan Tanvir, FCPS", status: "VERIFIED", date: "2026-10-02" },
+        { id: "SKL-102", studentId: "STU-2024-041", studentName: "Rohan Mukherjee", topic: "Central Venous Catheterization (Ultrasound Guided)", category: "VASCULAR", station: "Station 5 (ICU Simulation)", score: 88, verifiedBy: "Dr. Nilufa Yasmin, MD", status: "VERIFIED", date: "2026-10-01" },
+        { id: "SKL-103", studentId: "STU-2024-112", studentName: "Tahmina Akhter", topic: "Lumbar Puncture & CSF Pressure Manometry", category: "NEUROLOGY", station: "Station 2 (Procedural Bed)", score: 92, verifiedBy: "Prof. S. K. Roy", status: "VERIFIED", date: "2026-09-30" },
+      ]);
+    } catch {
+      return [
+        { id: "SKL-101", studentId: "STU-2024-089", studentName: "Ayesha Siddiqua", topic: "Endotracheal Intubation (Adult)", category: "AIRWAY", station: "Station 3 (Resuscitation Bay)", score: 95, verifiedBy: "Dr. Farhan Tanvir, FCPS", status: "VERIFIED", date: "2026-10-02" },
+        { id: "SKL-102", studentId: "STU-2024-041", studentName: "Rohan Mukherjee", topic: "Central Venous Catheterization (Ultrasound Guided)", category: "VASCULAR", station: "Station 5 (ICU Simulation)", score: 88, verifiedBy: "Dr. Nilufa Yasmin, MD", status: "VERIFIED", date: "2026-10-01" },
+        { id: "SKL-103", studentId: "STU-2024-112", studentName: "Tahmina Akhter", topic: "Lumbar Puncture & CSF Pressure Manometry", category: "NEUROLOGY", station: "Station 2 (Procedural Bed)", score: 92, verifiedBy: "Prof. S. K. Roy", status: "VERIFIED", date: "2026-09-30" },
+      ];
+    }
+  },
+  getLiveOsceCircuit: async () => {
+    try {
+      const res = await apiClient.get("/skill-lab/osce/live");
+      return unwrapResponse(res, {
+        circuitId: "OSCE-OCT-2026-CIRCUIT-A",
+        activeStation: 3,
+        totalStations: 8,
+        timeRemainingSeconds: 240,
+        candidates: [
+          { candidateId: "CAN-001", name: "Ayesha Siddiqua", currentStation: 3, stationTitle: "Airway & Intubation", examiner: "Dr. Farhan Tanvir", status: "IN_PROGRESS" },
+          { candidateId: "CAN-002", name: "Rohan Mukherjee", currentStation: 4, stationTitle: "Cardiovascular Exam", examiner: "Dr. N. Rahman", status: "IN_PROGRESS" },
+        ]
+      });
+    } catch {
+      return {
+        circuitId: "OSCE-OCT-2026-CIRCUIT-A",
+        activeStation: 3,
+        totalStations: 8,
+        timeRemainingSeconds: 240,
+        candidates: [
+          { candidateId: "CAN-001", name: "Ayesha Siddiqua", currentStation: 3, stationTitle: "Airway & Intubation", examiner: "Dr. Farhan Tanvir", status: "IN_PROGRESS" },
+          { candidateId: "CAN-002", name: "Rohan Mukherjee", currentStation: 4, stationTitle: "Cardiovascular Exam", examiner: "Dr. N. Rahman", status: "IN_PROGRESS" },
+        ]
+      };
+    }
+  },
+  getDopsProcedures: async () => {
+    try {
+      const res = await apiClient.get("/skill-lab/dops");
+      return unwrapResponse(res, [
+        { id: "DOPS-1", studentName: "Ayesha Siddiqua", procedureName: "Pleural Tap", patientId: "IPD-891", score: 4.8, assessor: "Dr. Farhan Tanvir", status: "APPROVED", date: "2026-10-03" },
+        { id: "DOPS-2", studentName: "Rohan Mukherjee", procedureName: "Arterial Blood Gas (ABG) Sampling", patientId: "ICU-04", score: 4.5, assessor: "Dr. Nilufa Yasmin", status: "APPROVED", date: "2026-10-02" },
+      ]);
+    } catch {
+      return [
+        { id: "DOPS-1", studentName: "Ayesha Siddiqua", procedureName: "Pleural Tap", patientId: "IPD-891", score: 4.8, assessor: "Dr. Farhan Tanvir", status: "APPROVED", date: "2026-10-03" },
+        { id: "DOPS-2", studentName: "Rohan Mukherjee", procedureName: "Arterial Blood Gas (ABG) Sampling", patientId: "ICU-04", score: 4.5, assessor: "Dr. Nilufa Yasmin", status: "APPROVED", date: "2026-10-02" },
+      ];
+    }
+  },
+  getManikinTelemetry: async () => {
+    try {
+      const res = await apiClient.get("/skill-lab/telemetry");
+      return unwrapResponse(res, [
+        { manikinId: "SIM-MAN-3G-01", model: "Laerdal SimMan 3G", battery: 94, cprCompressionDepth: "52 mm (Target 50-60mm)", cprRate: "108 bpm", status: "ONLINE", currentScenario: "Anaphylactic Shock with Stridor" },
+        { manikinId: "SIM-BABY-02", model: "Gaumard Super TORY", battery: 88, cprCompressionDepth: "38 mm", cprRate: "115 bpm", status: "ONLINE", currentScenario: "Neonatal Resuscitation (APGAR 3)" },
+      ]);
+    } catch {
+      return [
+        { manikinId: "SIM-MAN-3G-01", model: "Laerdal SimMan 3G", battery: 94, cprCompressionDepth: "52 mm (Target 50-60mm)", cprRate: "108 bpm", status: "ONLINE", currentScenario: "Anaphylactic Shock with Stridor" },
+        { manikinId: "SIM-BABY-02", model: "Gaumard Super TORY", battery: 88, cprCompressionDepth: "38 mm", cprRate: "115 bpm", status: "ONLINE", currentScenario: "Neonatal Resuscitation (APGAR 3)" },
+      ];
+    }
+  },
+  submitOsceStationScore: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/skill-lab/osce/score", payload);
+      return res.data;
+    } catch {
+      return { success: true, message: "OSCE station rubric scored." };
+    }
+  },
+  submitDopsBedsideSignoff: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/skill-lab/dops/signoff", payload);
+      return res.data;
+    } catch {
+      return { success: true, message: "DOPS signoff recorded." };
+    }
+  },
+  createSkill: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/skill-lab/skills/create", payload);
+      return res.data;
+    } catch {
+      return { success: true, data: { id: `SKL-${Date.now()}`, ...payload } };
+    }
+  },
+  updateSkill: async (id: string, payload: any) => {
+    try {
+      const res = await apiClient.patch(`/skill-lab/skills/${id}`, payload);
+      return res.data;
+    } catch {
+      return { success: true, data: { id, ...payload } };
+    }
+  },
+  deleteSkill: async (id: string) => {
+    try {
+      const res = await apiClient.delete(`/skill-lab/skills/${id}`);
+      return res.data;
+    } catch {
+      return { success: true };
+    }
+  },
 
   // AUDIT LOGS MODULE
   getAuditLogs: async (params?: Record<string, any>) => {
@@ -4252,12 +4378,806 @@ export const api = {
     }
   },
 
+  // ACCOUNTING MODULE
+  getAccounts: async () => {
+    try {
+      const res = await apiClient.get("/accounts");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "ACC-01", accountCode: "1000", accountName: "Assets", accountType: "ASSET", normalBalance: "DEBIT" },
+        { _id: "ACC-02", accountCode: "1120", accountName: "Bank Account", accountType: "ASSET", normalBalance: "DEBIT" },
+        { _id: "ACC-03", accountCode: "1130", accountName: "Accounts Receivable", accountType: "ASSET", normalBalance: "DEBIT" },
+        { _id: "ACC-04", accountCode: "2110", accountName: "Accounts Payable", accountType: "LIABILITY", normalBalance: "CREDIT" },
+        { _id: "ACC-05", accountCode: "4100", accountName: "Fee Revenue", accountType: "INCOME", normalBalance: "CREDIT" },
+        { _id: "ACC-06", accountCode: "5100", accountName: "General Expense", accountType: "EXPENSE", normalBalance: "DEBIT" },
+      ];
+    }
+  },
+  createAccount: async (payload: any) => {
+    const res = await apiClient.post("/accounts", payload);
+    return res.data;
+  },
+  getJournals: async () => {
+    try {
+      const res = await apiClient.get("/journals");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "JRN-001", journalNumber: "JRN-2026-0001", voucherDate: new Date().toISOString(), journalType: "STANDARD", status: "POSTED", description: "Tuition fee invoice generation" },
+        { _id: "JRN-002", journalNumber: "JRN-2026-0002", voucherDate: new Date().toISOString(), journalType: "STANDARD", status: "POSTED", description: "Lab consumable supply purchase" },
+      ];
+    }
+  },
+  createJournal: async (payload: any) => {
+    const res = await apiClient.post("/journals", payload);
+    return res.data;
+  },
+  getTrialBalance: async () => {
+    try {
+      const res = await apiClient.get("/accounting-reports/trial-balance");
+      return res.data?.data || res.data || [];
+    } catch {
+      return [
+        { accountId: "ACC-02", accountCode: "1120", accountName: "Bank Account", totalDebit: 1250000, totalCredit: 340000 },
+        { accountId: "ACC-03", accountCode: "1130", accountName: "Accounts Receivable", totalDebit: 480000, totalCredit: 120000 },
+        { accountId: "ACC-04", accountCode: "2110", accountName: "Accounts Payable", totalDebit: 90000, totalCredit: 250000 },
+        { accountId: "ACC-05", accountCode: "4100", accountName: "Fee Revenue", totalDebit: 0, totalCredit: 1250000 },
+        { accountId: "ACC-06", accountCode: "5100", accountName: "General Expense", totalDebit: 140000, totalCredit: 0 },
+      ];
+    }
+  },
+  getSubledgers: async (type: string = "AR") => {
+    try {
+      const res = await apiClient.get(`/subledgers/balances?type=${encodeURIComponent(type)}`);
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "STU-001", partyType: "Student", balance: 14500 },
+        { _id: "STU-002", partyType: "Student", balance: 8200 },
+      ];
+    }
+  },
+
+  // BLOOD BANK MODULE
+  getBloodStock: async () => {
+    try {
+      const res = await apiClient.get("/blood-bank/stock");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "BB-01", bloodGroup: "O+", unitsAvailable: 12, component: "Whole Blood" },
+        { _id: "BB-02", bloodGroup: "A+", unitsAvailable: 8, component: "Packed RBC" },
+        { _id: "BB-03", bloodGroup: "B+", unitsAvailable: 6, component: "Platelets" },
+        { _id: "BB-04", bloodGroup: "AB+", unitsAvailable: 3, component: "Fresh Frozen Plasma" },
+        { _id: "BB-05", bloodGroup: "O-", unitsAvailable: 4, component: "Whole Blood" },
+      ];
+    }
+  },
+  requestTransfusion: async (payload: any) => {
+    const res = await apiClient.post("/blood-bank/transfusions", payload);
+    return res.data;
+  },
+
+  // TELEMEDICINE MODULE
+  getTelemedicineConsultations: async () => {
+    try {
+      const res = await apiClient.get("/telemedicine/consultations");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          _id: "TEL-001",
+          doctorId: "DR-001",
+          patientId: "PAT-001",
+          doctorName: "Dr. James Sterling",
+          patientName: "Marcus Chen",
+          scheduledAt: new Date(Date.now() + 3600000).toISOString(),
+          status: "SCHEDULED",
+          meetingLink: "room-tele-001",
+        },
+      ];
+    }
+  },
+  createTelemedicineConsultation: async (payload: any) => {
+    const res = await apiClient.post("/telemedicine/consultations", payload);
+    return res.data;
+  },
+
   globalSearch: async (query: string) => {
     const q = query.trim();
     if (!q) return { results: [] };
     const res = await apiClient.get(`/search?q=${encodeURIComponent(q)}`);
     return res.data.data;
   },
+
+  // --- LMS & CLASSROOM++ MODULE ---
+  getLMSAssignments: async (courseId?: string) => {
+    try {
+      const url = courseId ? `/lms/courses/${courseId}/assignments` : `/lms/courses/CRS-CARD-301/assignments`;
+      const res = await apiClient.get(url);
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          _id: "ASG-001",
+          title: "Pressure-Volume Loops & Inotrope Titration in Cardiogenic Shock",
+          description: "Analyze catheterization hemodynamics of a 62-year-old post-infarct patient. Construct the PV-loop in python and simulate dobutamine vs milrinone curves.",
+          courseId: "CRS-CARD-301",
+          dueDate: new Date(Date.now() + 86400000 * 3).toISOString(),
+          maxPoints: 100,
+          status: "PUBLISHED",
+          allowedModes: ["CODE_NOTEBOOK", "DOCUMENT", "DIGITAL_INK", "GIT_REPO"],
+          requiresOralDefense: true,
+          rubricCriteria: [
+            { criterion: "Hemodynamic Derivation", maxPoints: 30, description: "Correct end-systolic and end-diastolic elastance curves" },
+            { criterion: "Pharmacodynamic Comparison", maxPoints: 40, description: "PDE3 vs beta-1 adrenoceptor pathway comparison" },
+            { criterion: "Oral Defense Clarity", maxPoints: 30, description: "60-second video defense demonstrating concept mastery" }
+          ]
+        },
+        {
+          _id: "ASG-002",
+          title: "Surgical Anatomy of the Pterygopalatine Fossa: 3D Vector Inking",
+          description: "Submit a high-resolution vector schematic tracing the branches of the maxillary artery (3rd part) and pterygopalatine ganglion.",
+          courseId: "CRS-ANAT-102",
+          dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
+          maxPoints: 50,
+          status: "PUBLISHED",
+          allowedModes: ["DIGITAL_INK", "DOCUMENT"],
+          requiresOralDefense: false,
+          rubricCriteria: [
+            { criterion: "Foramen Connections", maxPoints: 25, description: "Correct labeling of 7 conduits leading into the fossa" },
+            { criterion: "Neurovascular Bundles", maxPoints: 25, description: "Accurate path of V2 and greater petrosal nerve" }
+          ]
+        }
+      ];
+    }
+  },
+
+  submitLMSAssignment: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/lms/submissions", payload);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return { _id: `SUB-${Date.now()}`, ...payload, status: "SUBMITTED", submissionDate: new Date().toISOString() };
+    }
+  },
+
+  getLMSDiscussions: async (courseId?: string) => {
+    try {
+      const url = courseId ? `/lms/courses/${courseId}/discussions` : `/lms/courses/CRS-CARD-301/discussions`;
+      const res = await apiClient.get(url);
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          _id: "disc-1",
+          courseId: "CRS-CARD-301",
+          authorName: "Dr. Aris Thorne",
+          authorRole: "FACULTY",
+          title: "Hemodynamic consequences of Milrinone vs Dobutamine in Cardiogenic Shock",
+          content: "When titrating inodilators in stage D heart failure with borderline MAP (62 mmHg), why does milrinone produce greater afterload reduction without tachycardia compared to beta-1 adrenergic agonists? Let us analyze the PDE3 inhibition kinetics: $$\\Delta SVR \\propto -k [cAMP]_{vasc}$$",
+          isAnonymousToPeers: false,
+          isPinned: true,
+          isInstructorEndorsed: true,
+          upvotes: 42,
+          tags: ["Cardiology", "Pharmacology", "Hemodynamics"],
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          replies: [
+            {
+              _id: "rep-1",
+              authorName: "Priya Sharma (MS-3)",
+              authorRole: "STUDENT",
+              content: "Because Milrinone avoids direct beta-receptor down-regulation! It prevents the degradation of cAMP rather than over-stimulating the desensitized beta-1 receptors.",
+              isInstructorEndorsed: true,
+              upvotes: 18,
+              createdAt: new Date(Date.now() - 3600000).toISOString()
+            }
+          ]
+        },
+        {
+          _id: "disc-2",
+          courseId: "CRS-CARD-301",
+          authorName: "Scholar #409",
+          authorRole: "STUDENT",
+          title: "High Anion Gap Metabolic Acidosis: MUDPILES vs GOLDMARK rubric",
+          content: "Given the prevalence of pyroglutamic acidosis from chronic acetaminophen use with glutathione depletion, should our clinical clerkship syllabus officially transition to the GOLDMARK rubric?",
+          isAnonymousToPeers: true,
+          isPinned: false,
+          isInstructorEndorsed: false,
+          upvotes: 15,
+          tags: ["Internal Medicine", "AcidBase", "Toxicology"],
+          createdAt: new Date(Date.now() - 172800000).toISOString(),
+          replies: []
+        }
+      ];
+    }
+  },
+
+  createLMSDiscussion: async (payload: any) => {
+    try {
+      const res = await apiClient.post("/lms/discussions", payload);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return {
+        _id: `disc-${Date.now()}`,
+        ...payload,
+        upvotes: 0,
+        replies: [],
+        createdAt: new Date().toISOString()
+      };
+    }
+  },
+
+  upvoteLMSDiscussion: async (postId: string) => {
+    try {
+      const res = await apiClient.post(`/lms/discussions/${postId}/upvote`);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return { success: true, postId };
+    }
+  },
+
+  replyLMSDiscussion: async (postId: string, payload: any) => {
+    try {
+      const res = await apiClient.post(`/lms/discussions/${postId}/reply`, payload);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return {
+        _id: `rep-${Date.now()}`,
+        ...payload,
+        upvotes: 0,
+        createdAt: new Date().toISOString()
+      };
+    }
+  },
+
+  getLMSLiveSession: async (courseId?: string) => {
+    try {
+      const url = courseId ? `/lms/courses/${courseId}/live` : `/lms/courses/CRS-CARD-301/live`;
+      const res = await apiClient.get(url);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return {
+        courseId: "CRS-CARD-301",
+        facultyId: "FAC-003",
+        currentSlideIndex: 14,
+        totalSlides: 32,
+        slideDeckUrl: "https://storage.googleapis.com/lms/decks/cardio-pathology-lec-09.pdf",
+        isLive: true,
+        confusionCount: 6,
+        activePoll: {
+          id: "poll-mazur-01",
+          question: "A 64-year-old male with Acute Anterior STEMI develops sudden mitral regurgitation and pulmonary edema on post-MI day 4. What is the anatomical culprit?",
+          options: [
+            "Posteromedial papillary muscle rupture (RCA/LCx single supply)",
+            "Anterolateral papillary muscle rupture (Dual LAD/LCx supply)",
+            "Ventricular septal rupture of the muscular septum",
+            "Aortic root dissection extending into non-coronary cusp"
+          ],
+          round: 1,
+          votes: { "0": 34, "1": 8, "2": 5, "3": 2 },
+          status: "ACTIVE"
+        }
+      };
+    }
+  },
+
+  signalLMSConfusion: async (courseId?: string) => {
+    try {
+      const url = courseId ? `/lms/courses/${courseId}/live/confusion` : `/lms/courses/CRS-CARD-301/live/confusion`;
+      const res = await apiClient.post(url);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return { success: true, count: 7 };
+    }
+  },
+
+  voteLMSLivePoll: async (courseId: string, optionIndex: number) => {
+    try {
+      const res = await apiClient.post(`/lms/courses/${courseId}/live/vote`, { optionIndex });
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return { success: true, optionIndex };
+    }
+  },
+
+  getLMSVirtualPatientCases: async () => {
+    try {
+      const res = await apiClient.get("/lms/virtual-patient/cases");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          caseId: "CASE-CARDIO-101",
+          title: "Crushing Retrosternal Chest Pain in a 58-Year-Old Smoker",
+          specialty: "Emergency Medicine / Cardiology",
+          difficulty: "INTERMEDIATE",
+          patientProfile: {
+            name: "Arthur Pendelton",
+            age: 58,
+            gender: "Male",
+            chiefComplaint: "Severe retrosternal pressure radiating to the left jaw and diaphoresis for 90 minutes",
+            vitals: {
+              bp: "168/96 mmHg",
+              hr: 104,
+              temp: 36.8,
+              spo2: 94,
+              rr: 22
+            }
+          },
+          dialogues: [
+            { triggerKeywords: ["onset", "start", "when"], response: "It began while I was shoveling snow about an hour and a half ago. It felt like an elephant sitting on my chest." },
+            { triggerKeywords: ["radiate", "spread", "radiation", "arm", "jaw"], response: "Yes, it shoots right up into my left jaw and numbness goes down my left arm." },
+            { triggerKeywords: ["history", "smoke", "cigarette", "meds", "medicine"], response: "I smoke a pack a day for 30 years. I take atorvastatin sometimes, but I ran out last month." }
+          ],
+          availableInvestigations: [
+            { testName: "12-Lead ECG", category: "Electrophysiology", resultText: "ST elevations > 2mm in leads V1-V4 with reciprocal ST depressions in II, III, aVF", normalRange: "Normal sinus rhythm, no ischemic ST changes" },
+            { testName: "High-Sensitivity Troponin I", category: "Biochemistry", resultText: "1,420 ng/L (Markedly elevated)", normalRange: "< 14 ng/L" },
+            { testName: "Bedside Transthoracic Echo", category: "Imaging", resultText: "Severe hypokinesia of the anterior wall and apex. LVEF estimated at 38%. No pericardial effusion.", normalRange: "Normal regional wall motion, LVEF 55-70%" },
+            { testName: "Chest X-Ray (AP portable)", category: "Imaging", resultText: "Normal cardiac silhouette, mild bilateral pulmonary cephalization, no mediastinal widening", normalRange: "Clear lung fields, normal cardiothoracic ratio" }
+          ],
+          differentialDiagnoses: [
+            "Acute Anterior ST-Elevation Myocardial Infarction (STEMI)",
+            "Acute Aortic Dissection Type A",
+            "Acute Pulmonary Embolism",
+            "Acute Pericarditis",
+            "Gastroesophageal Reflux Disease (GERD)"
+          ],
+          correctPrimaryDiagnosis: "Acute Anterior ST-Elevation Myocardial Infarction (STEMI)",
+          guidelineStandardCare: "Immediate dual antiplatelet therapy (Aspirin 325mg + Ticagrelor 180mg), anticoagulation (Unfractionated Heparin), and emergency transfer to the Cardiac Catheterization Lab for primary PCI within 90 minutes door-to-balloon time."
+        },
+        {
+          caseId: "CASE-NEURO-204",
+          title: "Acute High Fever, Photophobia, and Neck Stiffness in a University Freshman",
+          specialty: "Neurology / Infectious Disease",
+          difficulty: "ADVANCED",
+          patientProfile: {
+            name: "Elena Rostova",
+            age: 19,
+            gender: "Female",
+            chiefComplaint: "Pounding global headache, fever of 39.4°C, and intolerance to bright light",
+            vitals: {
+              bp: "102/68 mmHg",
+              hr: 118,
+              temp: 39.4,
+              spo2: 98,
+              rr: 20
+            }
+          },
+          dialogues: [
+            { triggerKeywords: ["neck", "stiff", "chin"], response: "I can’t bring my chin down to my chest, my neck feels frozen and burns whenever I try." },
+            { triggerKeywords: ["light", "eyes", "headache"], response: "Please turn down the room lights! My eyes feel like needles when light hits them." }
+          ],
+          availableInvestigations: [
+            { testName: "Lumbar Puncture CSF Analysis", category: "Neurodiagnostics", resultText: "Opening pressure 280 mmH2O; Turbid; WBC 2,800/mcL (92% neutrophils); Protein 240 mg/dL; CSF/Serum Glucose ratio 0.18", normalRange: "Clear, WBC < 5/mcL, Protein 15-45 mg/dL, Glucose > 60% serum" },
+            { testName: "CSF Gram Stain", category: "Microbiology", resultText: "Abundant Gram-negative diplococci noted intracellularly within polymorphonuclear leukocytes", normalRange: "No organisms seen" },
+            { testName: "Non-Contrast Brain CT", category: "Imaging", resultText: "No mass effect, no midline shift, no acute intracranial hemorrhage. Basal cisterns patent.", normalRange: "Normal brain parenchyma and ventricular size" }
+          ],
+          differentialDiagnoses: [
+            "Acute Bacterial Meningitis (Neisseria meningitidis)",
+            "Viral Encephalitis (HSV-1)",
+            "Subarachnoid Hemorrhage",
+            "Brain Abscess",
+            "Migraine with Aura"
+          ],
+          correctPrimaryDiagnosis: "Acute Bacterial Meningitis (Neisseria meningitidis)",
+          guidelineStandardCare: "Empiric IV Ceftriaxone 2g q12h + IV Vancomycin 15-20mg/kg q12h, initiated alongside IV Dexamethasone 10mg immediately prior to or with the first antibiotic dose to prevent neurological sequelae. Droplet isolation precautions."
+        }
+      ];
+    }
+  },
+
+  evaluateLMSCaseDiagnosis: async (caseId: string, studentDiagnosis: string, selectedTests: string[]) => {
+    try {
+      const res = await apiClient.post(`/lms/virtual-patient/cases/${caseId}/evaluate`, { studentDiagnosis, selectedTests });
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      const isCorrect = studentDiagnosis.toLowerCase().includes("stemi") || studentDiagnosis.toLowerCase().includes("meningitis");
+      return {
+        isCorrect,
+        score: isCorrect ? 92 : 38,
+        targetDiagnosis: studentDiagnosis,
+        guidelineStandardCare: isCorrect
+          ? "Immediate dual antiplatelet therapy & urgent Cath Lab transfer for primary PCI within 90 minutes door-to-balloon."
+          : "Standard of care requires urgent empiric broad-spectrum antimicrobial therapy and neuro-monitoring.",
+        clinicalFeedback: isCorrect
+          ? "Accurate diagnosis based on targeted investigation and clinical presentation."
+          : "Incorrect primary diagnosis. Consider the acute ST-segment changes or CSF neutrophilic pleocytosis."
+      };
+    }
+  },
+
+  getLMSMasteryTree: async (courseId?: string) => {
+    try {
+      const url = courseId ? `/lms/courses/${courseId}/mastery` : `/lms/courses/CRS-CARD-301/mastery`;
+      const res = await apiClient.get(url);
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          conceptId: "NODE-CARD-01",
+          conceptName: "Coronary Anatomy & Perfusion Territories",
+          level: 1,
+          masteryScore: 94,
+          unlocked: true,
+          badges: ["Territory Master", "Anatomy Elite"]
+        },
+        {
+          conceptId: "NODE-CARD-02",
+          conceptName: "12-Lead Electrocardiography Vector Analysis",
+          level: 2,
+          masteryScore: 88,
+          unlocked: true,
+          badges: ["Vector Pioneer"]
+        },
+        {
+          conceptId: "NODE-CARD-03",
+          conceptName: "Hemodynamics: Pressure-Volume Loop Modulation",
+          level: 2,
+          masteryScore: 78,
+          unlocked: true,
+          badges: ["Loop Specialist"]
+        },
+        {
+          conceptId: "NODE-CARD-04",
+          conceptName: "Cardiogenic Shock & Inotrope Pharmacodynamics",
+          level: 3,
+          masteryScore: 65,
+          unlocked: true,
+          badges: ["ICU Resuscitation"]
+        },
+        {
+          conceptId: "NODE-CARD-05",
+          conceptName: "Mechanical Circulatory Support (IABP / Impella / ECMO)",
+          level: 3,
+          masteryScore: 40,
+          unlocked: false,
+          badges: []
+        }
+      ];
+    }
+  },
+
+  // --- MULTI-COMPANY CONGLOMERATE MODULE ---
+  getCompanies: async () => {
+    try {
+      const res = await apiClient.get("/companies");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        {
+          id: "COMP-MED-01",
+          name: "Apex Medical College & Hospital",
+          legalName: "Apex Health Sciences & Hospital Ltd.",
+          code: "MED-01",
+          currency: "USD",
+          companyType: "medical_college",
+          enabledModules: ["academics", "clinical", "hospital", "accounting", "hr", "lms", "opd", "ipd"],
+        },
+        {
+          id: "COMP-ENG-02",
+          name: "Institute of Engineering & Tech",
+          legalName: "Apex Institute of Engineering & Technology",
+          code: "ENG-02",
+          currency: "USD",
+          companyType: "university",
+          enabledModules: ["academics", "research", "accounting", "hr", "lms"],
+        },
+        {
+          id: "COMP-SCM-03",
+          name: "Central Campus Supply Chain Ltd.",
+          legalName: "Apex Supply Chain & Logistics Services Ltd.",
+          code: "SCM-03",
+          currency: "USD",
+          companyType: "supply_chain",
+          enabledModules: ["procurement", "inventory", "transport", "accounting"],
+        },
+        {
+          id: "COMP-FAC-04",
+          name: "Hostel & Facility Services Ltd.",
+          legalName: "Apex Campus Residential Life Services Ltd.",
+          code: "FAC-04",
+          currency: "USD",
+          companyType: "facilities",
+          enabledModules: ["rooms", "mess", "security", "maintenance", "laundry", "accounting"],
+        },
+        {
+          id: "COMP-FND-05",
+          name: "University Endowment Foundation",
+          legalName: "Apex Higher Education Endowment Foundation Inc.",
+          code: "FND-05",
+          currency: "USD",
+          companyType: "foundation",
+          isHoldingCompany: true,
+          enabledModules: ["accounting", "scholarships", "audit", "reports"],
+        },
+      ];
+    }
+  },
+
+  getCompanyById: async (id: string) => {
+    try {
+      const res = await apiClient.get(`/companies/${id}`);
+      return res.data?.data || res.data;
+    } catch {
+      await delay();
+      return { id, code: id, name: "Apex Entity", currency: "USD" };
+    }
+  },
+
+  createCompany: async (payload: any) => {
+    const res = await apiClient.post("/companies", payload);
+    return res.data;
+  },
+
+  // Digital Locker
+  getDigitalLockerDocuments: async (studentId?: string) => {
+    try {
+      const url = studentId ? `/digital-locker/student/${studentId}` : "/digital-locker";
+      const res = await apiClient.get(url);
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "doc-1", title: "HSC Certificate", documentType: "TRANSCRIPT", status: "VERIFIED", createdAt: new Date().toISOString() },
+        { _id: "doc-2", title: "National Identification Card", documentType: "ID_CARD", status: "VERIFIED", createdAt: new Date().toISOString() }
+      ];
+    }
+  },
+
+  uploadDigitalLockerDocument: async (payload: any) => {
+    const res = await apiClient.post("/digital-locker/upload", payload);
+    return res.data?.data || res.data;
+  },
+
+  verifyDigitalLockerDocument: async (id: string, payload: any) => {
+    const res = await apiClient.patch(`/digital-locker/${id}/verify`, payload);
+    return res.data?.data || res.data;
+  },
+
+  // Procurement
+  getPurchaseOrders: async () => {
+    try {
+      const res = await apiClient.get("/procurement/purchase-orders");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "PO-101", poNumber: "PO-2026-001", vendorName: "Universal Pharma Logistics", totalAmount: 450000, status: "APPROVED", date: "2026-09-15" },
+        { _id: "PO-102", poNumber: "PO-2026-002", vendorName: "Delta Lab Supplies", totalAmount: 125000, status: "PENDING", date: "2026-09-20" }
+      ];
+    }
+  },
+
+  createPurchaseOrder: async (payload: any) => {
+    const res = await apiClient.post("/procurement/purchase-orders", payload);
+    return res.data?.data || res.data;
+  },
+
+  getGoodsReceipts: async () => {
+    try {
+      const res = await apiClient.get("/procurement/goods-receipts");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "GRN-201", grnNumber: "GRN-2026-001", poId: "PO-2026-001", vendorName: "Universal Pharma Logistics", invoiceAmount: 450000, status: "POSTED", receiptDate: "2026-09-22" }
+      ];
+    }
+  },
+
+  createGoodsReceipt: async (payload: any) => {
+    const res = await apiClient.post("/procurement/goods-receipts", payload);
+    return res.data?.data || res.data;
+  },
+
+  // Disciplinary & Integrity
+  getDisciplinaryInfractions: async () => {
+    try {
+      const res = await apiClient.get("/disciplinary/infractions");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "INF-001", studentId: "STU-001", title: "Curfew Violation", severity: "LOW", status: "RESOLVED", reportedDate: "2026-09-10" }
+      ];
+    }
+  },
+
+  reportDisciplinaryInfraction: async (payload: any) => {
+    const res = await apiClient.post("/disciplinary/infractions", payload);
+    return res.data?.data || res.data;
+  },
+
+  getDisciplinaryHearings: async () => {
+    try {
+      const res = await apiClient.get("/disciplinary/hearings");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "HRG-001", caseNumber: "CASE-2026-04", date: "2026-09-28", outcome: "PENDING", notes: "Reviewing committee inquiry" }
+      ];
+    }
+  },
+
+  scheduleDisciplinaryHearing: async (payload: any) => {
+    const res = await apiClient.post("/disciplinary/hearings", payload);
+    return res.data?.data || res.data;
+  },
+
+  updateHearingOutcome: async (id: string, payload: any) => {
+    const res = await apiClient.patch(`/disciplinary/hearings/${id}/outcome`, payload);
+    return res.data?.data || res.data;
+  },
+
+  // IoT Gates & Telemetry
+  getIoTDevices: async () => {
+    try {
+      const res = await apiClient.get("/iot/devices");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { deviceId: "GATE-RFID-01", deviceName: "Main Campus Entrance Barrier", status: "ONLINE", location: "Main Gate", lastPing: new Date().toISOString() },
+        { deviceId: "GATE-RFID-02", deviceName: "East Hostel Turnstile", status: "ONLINE", location: "Hostel Block A", lastPing: new Date().toISOString() },
+        { deviceId: "IOT-TEMP-01", deviceName: "Pharmacy Cold Storage Monitor", status: "ONLINE", location: "Central Pharmacy", lastPing: new Date().toISOString() }
+      ];
+    }
+  },
+
+  getIoTLogs: async () => {
+    try {
+      const res = await apiClient.get("/iot/logs");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "log-1", deviceId: "GATE-RFID-01", action: "ENTRY_ALLOWED", studentId: "STU-001", timestamp: new Date().toISOString() },
+        { _id: "log-2", deviceId: "GATE-RFID-02", action: "EXIT_RECORDED", studentId: "STU-002", timestamp: new Date(Date.now() - 3600000).toISOString() }
+      ];
+    }
+  },
+
+  syncIoT: async (payload: any) => {
+    const res = await apiClient.post("/iot/sync", payload);
+    return res.data?.data || res.data;
+  },
+
+  // Placement & Career
+  getJobPostings: async () => {
+    try {
+      const res = await apiClient.get("/placement/jobs");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "JOB-101", title: "Junior Clinical Resident", department: "Cardiology", location: "Chittagong Medical Center", salary: "45,000 - 60,000 BDT", deadline: "2026-10-15" },
+        { _id: "JOB-102", title: "Biomedical Research Fellow", department: "Microbiology", location: "Apollo Genomics Lab", salary: "50,000 - 75,000 BDT", deadline: "2026-10-30" }
+      ];
+    }
+  },
+
+  createJobPosting: async (payload: any) => {
+    const res = await apiClient.post("/placement/jobs", payload);
+    return res.data?.data || res.data;
+  },
+
+  applyJobPosting: async (payload: any) => {
+    const res = await apiClient.post("/placement/apply", payload);
+    return res.data?.data || res.data;
+  },
+
+  getJobApplications: async () => {
+    try {
+      const res = await apiClient.get("/placement/applications");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [];
+    }
+  },
+
+  // Feedback & Surveys
+  getFeedbackSurveys: async () => {
+    try {
+      const res = await apiClient.get("/feedback/surveys");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "SRV-01", title: "Semester Teaching Quality Evaluation", category: "Academic", questions: 5, active: true },
+        { _id: "SRV-02", title: "Hostel Dining & Hygiene Feedback", category: "Campus Services", questions: 4, active: true }
+      ];
+    }
+  },
+
+  createFeedbackSurvey: async (payload: any) => {
+    const res = await apiClient.post("/feedback/surveys", payload);
+    return res.data?.data || res.data;
+  },
+
+  submitFeedbackResponse: async (payload: any) => {
+    const res = await apiClient.post("/feedback/responses", payload);
+    return res.data?.data || res.data;
+  },
+
+  requestBloodTransfusion: async (payload: any) => {
+    const res = await apiClient.post("/blood-bank/transfusions", payload);
+    return res.data;
+  },
+
+  scheduleTelemedicineConsultation: async (payload: any) => {
+    const res = await apiClient.post("/telemedicine/consultations", payload);
+    return res.data;
+  },
+
+  // Accreditation Reports
+  getAccreditationReports: async () => {
+    try {
+      const res = await apiClient.get("/accreditation-report");
+      return res.data?.data || res.data || [];
+    } catch {
+      await delay();
+      return [
+        { _id: "ACC-01", title: "BMDC Institutional Quality Audit", regulatoryBody: "BMDC", createdAt: "2026-09-18", metrics: { totalFaculty: 150, totalStudents: 1200, bedOccupancyRate: "85%", researchPublications: 45 } }
+      ];
+    }
+  },
+
+  generateAccreditationReport: async (payload: any) => {
+    const res = await apiClient.post("/accreditation-report/generate", payload);
+    return res.data?.data || res.data;
+  },
+
+
 };
+
+// Aggregated API object merging legacy endpoints with modern domain slices
+export const api = {
+  ...baseApi,
+  ...financeApi,
+  ...academicApi,
+  ...clinicalApi,
+  ...campusApi,
+  ...complianceApi,
+};
+
+export const lmsApi = {
+  getAssignments: api.getLMSAssignments,
+  submitAssignment: api.submitLMSAssignment,
+  getDiscussions: api.getLMSDiscussions,
+  createDiscussion: api.createLMSDiscussion,
+  upvoteDiscussion: api.upvoteLMSDiscussion,
+  replyDiscussion: api.replyLMSDiscussion,
+  getLiveSession: api.getLMSLiveSession,
+  signalConfusion: api.signalLMSConfusion,
+  voteLivePoll: api.voteLMSLivePoll,
+  getVirtualPatientCases: api.getLMSVirtualPatientCases,
+  evaluateCaseDiagnosis: api.evaluateLMSCaseDiagnosis,
+  getMasteryTree: api.getLMSMasteryTree,
+};
+
+export default api;
+
 
 
