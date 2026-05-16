@@ -55,11 +55,11 @@ export default function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative w-full max-w-lg bg-white border border-[#e1e2ed] rounded-xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-lg bg-white border border-border rounded-xl shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between px-5 h-14 border-b border-[#e1e2ed]">
+            <div className="flex items-center justify-between px-5 h-14 border-b border-border">
               <div className="flex items-center gap-2">
-                <Keyboard size={18} className="text-[#2563EB]" />
+                <Keyboard size={18} className="text-gold" />
                 <span className="text-sm font-bold text-slate-800">Keyboard Shortcuts</span>
               </div>
               <button
@@ -80,7 +80,7 @@ export default function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
                     {group.shortcuts.map((sc) => (
                       <div key={sc.keys} className="flex items-center justify-between">
                         <span className="text-xs text-slate-600">{sc.label}</span>
-                        <kbd className="px-2 py-1 bg-slate-100 border border-[#e1e2ed] rounded text-[10px] font-mono text-slate-500">
+                        <kbd className="px-2 py-1 bg-slate-100 border border-border rounded text-[10px] font-mono text-slate-500">
                           {sc.keys}
                         </kbd>
                       </div>

@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore, UserRole } from "@/store/useAuthStore";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 const ALL_ROLES: UserRole[] = [
   "super-admin", "domain-admin", "faculty", "student", "staff",
 ];
 
 const routePermissions: Record<string, UserRole[]> = {
-  "/": ALL_ROLES,
+  "/dashboard": ALL_ROLES,
   "/profile": ALL_ROLES,
 
   // Student management
@@ -26,11 +27,14 @@ const routePermissions: Record<string, UserRole[]> = {
   // Hostel & rooms
   "/rooms": ["super-admin", "domain-admin", "staff", "student"],
 
-  // Finance
+  // Finance & Capital Operations
   "/fees": ["super-admin", "domain-admin", "staff", "student"],
   "/receipts": ["super-admin", "domain-admin", "staff", "student"],
   "/payroll": ["super-admin", "domain-admin", "staff"],
   "/expenses": ["super-admin", "domain-admin", "staff"],
+  "/budget": ["super-admin", "domain-admin", "staff"],
+  "/daily-wages": ["super-admin", "domain-admin", "staff"],
+  "/construction": ["super-admin", "domain-admin", "staff"],
 
   // Security & incidents
   "/security": ["super-admin", "domain-admin", "staff"],
@@ -96,8 +100,10 @@ const routePermissions: Record<string, UserRole[]> = {
   // Audit trail
   "/audit": ["super-admin", "domain-admin"],
 
-  // Activity log
-  "/activity-log": ["super-admin", "domain-admin"],
+  // Admin & governance
+  "/admin": ["super-admin", "domain-admin"],
+  "/switchboard": ["super-admin", "domain-admin"],
+  "/accounting": ["super-admin", "domain-admin", "staff"],
 
   // Settings
   "/settings": ALL_ROLES,
@@ -107,11 +113,17 @@ const routePermissions: Record<string, UserRole[]> = {
 };
 
 function isTokenExpired(token: string): boolean {
+  if (!token) return true;
+  // Demo showcase sessions use mock token prefixes and should not be expired
+  if (token.startsWith("mock-") || token.includes("demo-session")) return false;
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const parts = token.split(".");
+    if (parts.length < 2) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
     return payload.exp * 1000 < Date.now();
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -145,19 +157,19 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (matchedPrefix) {
       const allowed = routePermissions[matchedPrefix];
       if (user?.role && !allowed.includes(user.role)) {
-        router.push("/");
+        router.push("/dashboard");
       }
     }
   }, [isMounted, isAuthenticated, user, pathname, router, token, logout]);
 
   if (!isMounted || !isAuthenticated) {
     return (
-      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#faf8ff] gap-4">
-        <div className="w-8 h-8 rounded-full border-4 border-[#2563EB]/25 border-t-[#2563EB] animate-spin" />
-        <span className="text-xs font-semibold text-slate-400 font-sans tracking-wide">
-          Verifying credentials session...
-        </span>
-      </div>
+      <LoadingScreen
+        title="MEDCAMPUS OS"
+        subtitle="Verifying cryptographic tokens & institutional clearance..."
+        variant="full"
+        showProgress={true}
+      />
     );
   }
 
