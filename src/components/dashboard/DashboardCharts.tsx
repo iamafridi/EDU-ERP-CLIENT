@@ -6,9 +6,9 @@ import {
 } from "recharts";
 
 const feeData = [
-  { name: "Collected", value: 2800000, color: "#2563EB" },
-  { name: "Pending", value: 450000, color: "#F59E0B" },
-  { name: "Overdue", value: 120000, color: "#EF4444" },
+  { name: "Collected", value: 2800000, color: "#B98B4B" },
+  { name: "Pending", value: 450000, color: "#D4973B" },
+  { name: "Overdue", value: 120000, color: "#B94F4F" },
 ];
 
 const attendanceData = [
@@ -21,8 +21,8 @@ const attendanceData = [
 ];
 
 const occupancyData = [
-  { type: "Occupied", count: 175, color: "#2563EB" },
-  { type: "Vacant", count: 25, color: "#E2E8F0" },
+  { type: "Occupied", count: 175, color: "#0D1E2C" },
+  { type: "Vacant", count: 25, color: "#E8E3D9" },
 ];
 
 const revenueData = [
@@ -47,7 +47,7 @@ export default function DashboardCharts() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Fee Collection Pie Chart */}
-      <div className="bg-white border border-[#e1e2ed] p-4 sm:p-6 rounded-xl shadow-sm">
+      <div className="bg-white border border-border p-4 sm:p-6 rounded-xl shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
           Fee Collection Overview
         </h3>
@@ -73,7 +73,7 @@ export default function DashboardCharts() {
       </div>
 
       {/* Attendance Bar Chart */}
-      <div className="bg-white border border-[#e1e2ed] p-4 sm:p-6 rounded-xl shadow-sm">
+      <div className="bg-white border border-border p-4 sm:p-6 rounded-xl shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
           Monthly Attendance %
         </h3>
@@ -84,14 +84,14 @@ export default function DashboardCharts() {
             <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="present" name="Present %" fill="#2563EB" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="absent" name="Absent %" fill="#EF4444" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="present" name="Present %" fill="#B98B4B" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="absent" name="Absent %" fill="#B94F4F" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Hostel Occupancy */}
-      <div className="bg-white border border-[#e1e2ed] p-4 sm:p-6 rounded-xl shadow-sm">
+      <div className="bg-white border border-border p-4 sm:p-6 rounded-xl shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
           Hostel Occupancy
         </h3>
@@ -117,7 +117,7 @@ export default function DashboardCharts() {
       </div>
 
       {/* Revenue Line Chart */}
-      <div className="bg-white border border-[#e1e2ed] p-4 sm:p-6 rounded-xl shadow-sm">
+      <div className="bg-white border border-border p-4 sm:p-6 rounded-xl shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
           Monthly Revenue Trend
         </h3>
@@ -125,15 +125,15 @@ export default function DashboardCharts() {
           <LineChart data={revenueData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}K`} />
-            <Tooltip formatter={(value: number) => `₹${value.toLocaleString()}`} />
-            <Line type="monotone" dataKey="revenue" stroke="#2563EB" strokeWidth={2} dot={{ r: 4 }} />
+            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `৳${(v / 1000).toFixed(0)}K`} />
+            <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+            <Line type="monotone" dataKey="revenue" stroke="#B98B4B" strokeWidth={2} dot={{ r: 4 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Department Enrollment Bar */}
-      <div className="bg-white border border-[#e1e2ed] p-6 rounded-xl shadow-sm lg:col-span-2">
+      <div className="bg-white border border-border p-6 rounded-xl shadow-sm lg:col-span-2">
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
           Enrollment by Department
         </h3>
@@ -143,7 +143,7 @@ export default function DashboardCharts() {
             <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={120} />
             <Tooltip />
-            <Bar dataKey="students" name="Students" fill="#2563EB" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="students" name="Students" fill="#0D1E2C" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

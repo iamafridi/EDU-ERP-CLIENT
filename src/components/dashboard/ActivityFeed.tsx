@@ -89,11 +89,11 @@ export default function ActivityFeed({ open, onClose }: ActivityFeedProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-white border-l border-[#e1e2ed] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-white border-l border-border shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 h-16 border-b border-[#e1e2ed] shrink-0">
+            <div className="flex items-center justify-between px-5 h-16 border-b border-border shrink-0">
               <div className="flex items-center gap-2">
-                <Bell size={18} className="text-[#2563EB]" />
+                <Bell size={18} className="text-gold" />
                 <span className="text-sm font-bold text-slate-800">Activity Feed</span>
               </div>
               <button
