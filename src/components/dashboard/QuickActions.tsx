@@ -48,7 +48,7 @@ const allActions: QuickAction[] = [
 ];
 
 const fabColors = [
-  "bg-[#2563EB] hover:bg-[#1d4ed8]",
+  "bg-primary hover:bg-primary-hover",
   "bg-emerald-500 hover:bg-emerald-600",
   "bg-amber-500 hover:bg-amber-600",
   "bg-purple-500 hover:bg-purple-600",
@@ -95,7 +95,7 @@ export default function QuickActions() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-[#2563EB] hover:bg-[#1d4ed8] text-white rounded-full shadow-lg shadow-blue-500/20 flex items-center justify-center transition-colors cursor-pointer"
+        className="w-14 h-14 bg-primary hover:bg-primary-hover text-on-primary rounded-full shadow-lg shadow-sm flex items-center justify-center transition-colors cursor-pointer"
       >
         {isOpen ? <X size={24} /> : <Plus size={24} />}
       </motion.button>
