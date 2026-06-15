@@ -5,14 +5,39 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, BellRing, Send, CheckCheck, CheckCircle2, X, Megaphone, Info, AlertTriangle, CreditCard, Shield } from "lucide-react";
+import { motion } from "framer-motion";
+import { 
+  Bell, 
+  BellRing, 
+  Send, 
+  CheckCheck, 
+  CheckCircle2, 
+  Megaphone, 
+  Info, 
+  AlertTriangle, 
+  CreditCard, 
+  Shield 
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { 
+  PageHeader, 
+  Card, 
+  Modal, 
+  FormField, 
+  Input, 
+  Select, 
+  Textarea, 
+  Button, 
+  Badge 
+} from "@/components/ui";
+
+import { SmsBroadcastPanel } from "@/components/notifications/SmsBroadcastPanel";
 
 export default function NotificationsPage() {
   const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"in-app" | "sms-broadcast">("in-app");
   const [showSendModal, setShowSendModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -48,9 +73,12 @@ export default function NotificationsPage() {
     mutationFn: api.sendNotification,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      setSuccessMsg("Notification sent successfully.");
+      setSuccessMsg("Notification broadcast sent successfully.");
       setShowSendModal(false);
-      setSendTitle(""); setSendMessage(""); setSendType("general"); setSendRole("all");
+      setSendTitle(""); 
+      setSendMessage(""); 
+      setSendType("general"); 
+      setSendRole("all");
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
@@ -72,7 +100,7 @@ export default function NotificationsPage() {
       case "maintenance": return <AlertTriangle size={16} className="text-orange-500" />;
       case "academic": return <Info size={16} className="text-blue-500" />;
       case "security": return <Shield size={16} className="text-red-500" />;
-      default: return <Bell size={16} className="text-slate-400" />;
+      default: return <Bell size={16} className="text-gold" />;
     }
   };
 
@@ -80,52 +108,82 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6 font-sans max-w-4xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BellRing className="text-[#2563EB]" />
-            Notifications
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">View and manage system notifications and broadcasts.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {unreadCount > 0 && (
-            <button
-              onClick={() => markAllReadMutation.mutate()}
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-2"
-            >
-              <CheckCheck size={16} />
-              Mark All Read
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => setShowSendModal(true)}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-blue-500/10"
-            >
-              <Send size={16} />
-              Send Notification
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Institutional Notifications"
+        subtitle="Campus circulars, automated system advisories, and targeted cohort broadcasts"
+        badge={unreadCount > 0 ? `${unreadCount} Unread` : undefined}
+        actions={
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAllReadMutation.mutate()}
+                icon={<CheckCheck size={16} />}
+              >
+                Mark All Read
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="gold"
+                size="sm"
+                onClick={() => setShowSendModal(true)}
+                icon={<Send size={16} />}
+              >
+                Send Broadcast
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white border border-[#e1e2ed] rounded-xl p-4 flex items-start gap-4">
-              <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+      {/* Tabs */}
+      <div className="flex border-b border-border gap-2 overflow-x-auto pb-px text-xs font-bold uppercase tracking-wider">
+        <button
+          onClick={() => setActiveTab('in-app')}
+          className={`px-4 py-2.5 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'in-app'
+              ? 'border-gold text-gold'
+              : 'border-transparent text-text-muted hover:text-text'
+          }`}
+        >
+          <Bell size={15} />
+          In-App Circulars &amp; Advisories ({notifications.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('sms-broadcast')}
+          className={`px-4 py-2.5 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'sms-broadcast'
+              ? 'border-gold text-gold'
+              : 'border-transparent text-text-muted hover:text-text'
+          }`}
+        >
+          <Megaphone size={15} />
+          Automated Guardian SMS &amp; Telecom Gateway
+        </button>
+      </div>
+
+      {activeTab === 'sms-broadcast' && <SmsBroadcastPanel />}
+
+      {activeTab === 'in-app' && (
+        <>
+          {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} orientation="vertical" padding="md" variant="default" className="flex items-start gap-4">
+              <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <Skeleton className="h-4 w-48" />
@@ -134,115 +192,146 @@ export default function NotificationsPage() {
                 <Skeleton className="h-3 w-full" />
                 <Skeleton className="h-3 w-3/4" />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl p-12 text-center">
-          <Bell size={32} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-xs text-slate-400 font-semibold">No notifications yet.</p>
-        </div>
+        <Card orientation="vertical" padding="lg" variant="default" className="text-center py-12">
+          <Bell size={36} className="text-text-tertiary/40 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-text">No Notifications</h3>
+          <p className="text-xs text-text-tertiary mt-1">You are completely up to date with all campus announcements.</p>
+        </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {notifications.map((notif: any) => (
-            <motion.div
+            <Card
               key={notif.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`bg-white border rounded-xl p-4 flex items-start gap-4 transition-all ${
-                notif.isRead ? "border-[#e1e2ed]" : "border-[#2563EB]/30 bg-[#2563EB]/[0.02]"
+              orientation="vertical"
+              padding="md"
+              variant="default"
+              className={`transition-all ${
+                notif.isRead 
+                  ? "bg-surface" 
+                  : "border-gold/30 bg-gold/[0.02] shadow-xs"
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-slate-50 border border-[#e1e2ed] flex items-center justify-center shrink-0">
-                {getTypeIcon(notif.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className={`text-sm ${notif.isRead ? "font-semibold text-slate-600" : "font-bold text-slate-800"}`}>
-                    {notif.title}
-                    {!notif.isRead && <span className="ml-2 w-2 h-2 bg-[#2563EB] rounded-full inline-block" />}
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono font-semibold shrink-0">
-                    {new Date(notif.createdAt).toLocaleDateString()}
-                  </span>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-surface-elevated border border-border flex items-center justify-center shrink-0">
+                  {getTypeIcon(notif.type)}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">{notif.message}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                    {notif.type}
-                  </span>
-                  {!notif.isRead && (
-                    <button
-                      onClick={() => markReadMutation.mutate(notif.id)}
-                      className="text-[10px] font-semibold text-[#2563EB] hover:underline cursor-pointer"
-                    >
-                      Mark read
-                    </button>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className={`text-sm flex items-center gap-2 ${notif.isRead ? "font-semibold text-text-secondary" : "font-bold text-text"}`}>
+                      {notif.title}
+                      {!notif.isRead && (
+                        <span className="w-2 h-2 bg-gold rounded-full inline-block" />
+                      )}
+                    </h3>
+                    <span className="text-[11px] text-text-tertiary font-mono shrink-0">
+                      {new Date(notif.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">{notif.message}</p>
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                    <Badge variant="neutral" size="sm" className="uppercase text-[10px]">
+                      {notif.type}
+                    </Badge>
+                    {!notif.isRead && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => markReadMutation.mutate(notif.id)}
+                        className="text-xs text-gold h-7 px-2"
+                      >
+                        Mark as read
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </Card>
           ))}
         </div>
       )}
+      </>
+      )}
 
-      <AnimatePresence>
-        {showSendModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
-            >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">Send Notification</span>
-                <button onClick={() => setShowSendModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-              <form onSubmit={handleSend} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Title</label>
-                  <input type="text" value={sendTitle} onChange={(e) => setSendTitle(e.target.value)} placeholder="e.g. Fee Payment Reminder" className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" required />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Message</label>
-                  <textarea value={sendMessage} onChange={(e) => setSendMessage(e.target.value)} placeholder="Type your notification message..." rows={3} className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Type</label>
-                    <select value={sendType} onChange={(e) => setSendType(e.target.value)} className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                      <option value="general">General</option>
-                      <option value="fee">Fee</option>
-                      <option value="academic">Academic</option>
-                      <option value="maintenance">Maintenance</option>
-                      <option value="security">Security</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Recipient Role</label>
-                    <select value={sendRole} onChange={(e) => setSendRole(e.target.value)} className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                      <option value="all">All</option>
-                      <option value="student">Students</option>
-                      <option value="faculty">Faculty</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                  <button type="button" onClick={() => setShowSendModal(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                  <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5">
-                    <Megaphone size={14} />
-                    Send
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      {/* Broadcast Modal */}
+      <Modal
+        isOpen={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        title="Dispatch Campus Broadcast"
+        description="Deliver real-time notifications to targeted student, faculty, or institutional roles"
+        size="md"
+      >
+        <form onSubmit={handleSend} className="space-y-4">
+          <FormField label="Notification Title" required>
+            <Input
+              type="text"
+              value={sendTitle}
+              onChange={(e) => setSendTitle(e.target.value)}
+              placeholder="e.g. Campus Spring Festival / Fee Due Date"
+              required
+            />
+          </FormField>
+
+          <FormField label="Message Content" required>
+            <Textarea
+              value={sendMessage}
+              onChange={(e) => setSendMessage(e.target.value)}
+              placeholder="Write the full broadcast advisory..."
+              rows={4}
+              required
+            />
+          </FormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Broadcast Type">
+              <Select
+                value={sendType}
+                onChange={(e) => setSendType(e.target.value)}
+              >
+                <option value="general">General Advisory</option>
+                <option value="fee">Fee & Bursar Notice</option>
+                <option value="academic">Academic & Exams</option>
+                <option value="maintenance">Facility Maintenance</option>
+                <option value="security">Campus Security</option>
+              </Select>
+            </FormField>
+
+            <FormField label="Target Cohort">
+              <Select
+                value={sendRole}
+                onChange={(e) => setSendRole(e.target.value)}
+              >
+                <option value="all">Entire Campus (All)</option>
+                <option value="student">Students Only</option>
+                <option value="faculty">Faculty Members Only</option>
+                <option value="admin">Administrators Only</option>
+              </Select>
+            </FormField>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSendModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="gold"
+              disabled={sendMutation.isPending}
+              icon={<Megaphone size={14} />}
+            >
+              {sendMutation.isPending ? "Sending..." : "Dispatch Broadcast"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
+
