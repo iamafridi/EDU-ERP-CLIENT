@@ -158,20 +158,20 @@ export default function ChatPage() {
     <div className="h-[calc(100vh-8rem)] font-sans flex flex-col">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          <MessageSquare className="text-[#2563EB]" />
+          <MessageSquare className="text-gold" />
           Messages
         </h1>
         <p className="text-xs text-slate-400 mt-1">Direct messaging and conversations with campus community.</p>
       </div>
 
-      <div className="flex-1 flex border border-[#e1e2ed] rounded-xl overflow-hidden bg-white shadow-sm min-h-0">
+      <div className="flex-1 flex border border-border rounded-xl overflow-hidden bg-white shadow-sm min-h-0">
         {/* Conversations Sidebar */}
-        <div className="w-72 border-r border-[#e1e2ed] flex flex-col shrink-0">
-          <div className="p-3 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+        <div className="w-72 border-r border-border flex flex-col shrink-0">
+          <div className="p-3 border-b border-border bg-slate-50 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Conversations</span>
             <button
               onClick={() => setShowNewConvModal(true)}
-              className="h-6 w-6 bg-[#2563EB] hover:bg-[#1d4ed8] text-white rounded-md transition-colors flex items-center justify-center cursor-pointer"
+              className="h-6 w-6 bg-primary hover:bg-primary-hover text-on-primary rounded-md transition-colors flex items-center justify-center cursor-pointer"
               title="New Conversation"
             >
               <Plus size={14} />
@@ -203,17 +203,17 @@ export default function ChatPage() {
                   <button
                     key={conv.id}
                     onClick={() => setActiveConvId(conv.id)}
-                    className={`w-full text-left p-3 border-b border-[#e1e2ed] hover:bg-slate-50 transition-colors cursor-pointer ${
-                      isActive ? "bg-[#2563EB]/5 border-l-2 border-l-[#2563EB]" : ""
+                    className={`w-full text-left p-3 border-b border-border hover:bg-slate-50 transition-colors cursor-pointer ${
+                      isActive ? "bg-primary/5 border-l-2 border-l-[#2563EB]" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className={`text-xs flex items-center gap-1.5 ${isActive ? "font-bold text-slate-800" : "font-semibold text-slate-600"}`}>
-                        {isGroup && <Users size={12} className="text-[#2563EB] shrink-0" />}
+                        {isGroup && <Users size={12} className="text-gold shrink-0" />}
                         {displayName}
                       </span>
                       {conv.unreadCount > 0 && (
-                        <span className="bg-[#2563EB] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        <span className="bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                           {conv.unreadCount}
                         </span>
                       )}
@@ -241,8 +241,8 @@ export default function ChatPage() {
           ) : (
             <>
               {/* Chat Header */}
-              <div className="p-3 border-b border-[#e1e2ed] bg-slate-50 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center font-bold text-xs">
+              <div className="p-3 border-b border-border bg-slate-50 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-gold flex items-center justify-center font-bold text-xs">
                   {activeConv?.participants.length > 2 ? (
                     <Users size={14} />
                   ) : (
@@ -290,8 +290,8 @@ export default function ChatPage() {
                         <div className="max-w-[75%]">
                           <div className={`px-3 py-2 rounded-xl text-xs leading-relaxed ${
                             isMe
-                              ? "bg-[#2563EB] text-white rounded-br-sm"
-                              : "bg-white border border-[#e1e2ed] text-slate-700 rounded-bl-sm"
+                              ? "bg-primary text-white rounded-br-sm"
+                              : "bg-white border border-border text-slate-700 rounded-bl-sm"
                           }`}>
                             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content || "") }} />
                           </div>
@@ -324,7 +324,7 @@ export default function ChatPage() {
 
               {/* Attachment Preview */}
               {attachmentFile && (
-                <div className="px-3 py-2 border-t border-[#e1e2ed] bg-slate-50 flex items-center gap-2">
+                <div className="px-3 py-2 border-t border-border bg-slate-50 flex items-center gap-2">
                   <Paperclip size={12} className="text-slate-400" />
                   <span className="text-[10px] text-slate-500 font-medium truncate max-w-[200px]">{attachmentFile.name}</span>
                   <button
@@ -337,7 +337,7 @@ export default function ChatPage() {
               )}
 
               {/* Send Message Input */}
-              <form onSubmit={handleSend} className="p-3 border-t border-[#e1e2ed] bg-white flex items-center gap-3">
+              <form onSubmit={handleSend} className="p-3 border-t border-border bg-white flex items-center gap-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -357,12 +357,12 @@ export default function ChatPage() {
                   value={newMessage}
                   onChange={(e) => handleTyping(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 h-10 px-4 bg-slate-50 border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
+                  className="flex-1 h-10 px-4 bg-slate-50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all"
                 />
                 <button
                   type="submit"
                   disabled={(!newMessage.trim() && !attachmentFile) || sendMutation.isPending}
-                  className="h-10 w-10 bg-[#2563EB] hover:bg-[#1d4ed8] disabled:bg-slate-300 text-white rounded-lg transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                  className="h-10 w-10 bg-primary hover:bg-primary-hover disabled:bg-slate-300 text-white rounded-lg transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Send size={16} />
                 </button>
@@ -387,10 +387,10 @@ export default function ChatPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="bg-white rounded-xl shadow-xl border border-[#e1e2ed] w-full max-w-md mx-4 overflow-hidden"
+              className="bg-white rounded-xl shadow-xl border border-border w-full max-w-md mx-4 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+              <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-700">New Conversation</span>
                 <button
                   onClick={() => setShowNewConvModal(false)}
@@ -409,7 +409,7 @@ export default function ChatPage() {
                     onChange={(e) => setNewConvParticipants(e.target.value)}
                     placeholder="e.g. john@example.com, jane@example.com"
                     rows={3}
-                    className="w-full px-3 py-2 bg-slate-50 border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all resize-none"
                   />
                 </div>
                 <div>
@@ -419,7 +419,7 @@ export default function ChatPage() {
                     onChange={(e) => setNewConvMessage(e.target.value)}
                     placeholder="Type your first message..."
                     rows={3}
-                    className="w-full px-3 py-2 bg-slate-50 border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all resize-none"
                   />
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-1">
@@ -433,7 +433,7 @@ export default function ChatPage() {
                   <button
                     type="submit"
                     disabled={!newConvParticipants.trim() || createConvMutation.isPending}
-                    className="h-9 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] disabled:bg-slate-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
+                    className="h-9 px-4 bg-primary hover:bg-primary-hover disabled:bg-slate-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
                     <Plus size={13} />
                     {createConvMutation.isPending ? "Creating..." : "Create"}
