@@ -3,14 +3,27 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { motion } from "framer-motion";
-import { Shield, Search, Download, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
+import { Shield, Download, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import {
+  PageHeader,
+  Card,
+  SearchInput,
+  Select,
+  Input,
+  Button,
+  IconButton,
+  Badge,
+  EmptyState,
+} from "@/components/ui";
 
-const ACTION_BADGES: Record<string, string> = {
-  CREATE: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  UPDATE: "bg-blue-50 text-blue-700 border-blue-100",
-  DELETE: "bg-red-50 text-red-700 border-red-100",
+const ACTION_TONE: Record<
+  string,
+  "neutral" | "success" | "warning" | "danger" | "info" | "primary" | "gold"
+> = {
+  CREATE: "success",
+  UPDATE: "primary",
+  DELETE: "danger",
 };
 
 export default function AuditTrailPage() {
@@ -50,7 +63,16 @@ export default function AuditTrailPage() {
   };
 
   const exportCSV = () => {
-    const headers = ["Timestamp", "Action", "Resource", "Resource ID", "User ID", "User Role", "IP Address", "Details"];
+    const headers = [
+      "Timestamp",
+      "Action",
+      "Resource",
+      "Resource ID",
+      "User ID",
+      "User Role",
+      "IP Address",
+      "Details",
+    ];
     const rows = logs.map((log: any) => [
       log.timestamp || "",
       log.action || "",
@@ -61,7 +83,10 @@ export default function AuditTrailPage() {
       log.ip || "",
       log.diff ? JSON.stringify(log.diff).slice(0, 200) : "",
     ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -74,119 +99,193 @@ export default function AuditTrailPage() {
   const hasFilters = action || resource || userId || startDate || endDate || searchTerm;
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Shield className="text-[#2563EB]" />
-            Audit Trail
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Track all system changes and user activities.</p>
-        </div>
-        <button onClick={exportCSV} disabled={logs.length === 0}
-          className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50">
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Audit Trail"
+        subtitle="Immutable ledger tracking system changes, security authentication, and administrative actions."
+        actions={
+          <Button
+            variant="outline"
+            size="md"
+            onClick={exportCSV}
+            disabled={logs.length === 0}
+            icon={<Download size={14} />}
+          >
+            Export CSV
+          </Button>
+        }
+      />
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Filter size={14} /> Filters
-            </span>
-            {hasFilters && (
-              <button onClick={clearFilters} className="text-xs text-[#2563EB] hover:underline flex items-center gap-1">
-                <X size={12} /> Clear filters
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}
-              className="h-8 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]">
-              <option value="">All Actions</option>
-              <option value="CREATE">CREATE</option>
-              <option value="UPDATE">UPDATE</option>
-              <option value="DELETE">DELETE</option>
-            </select>
-            <input type="text" placeholder="Resource..." value={resource} onChange={(e) => { setResource(e.target.value); setPage(1); }}
-              className="h-8 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] font-mono" />
-            <input type="text" placeholder="User ID..." value={userId} onChange={(e) => { setUserId(e.target.value); setPage(1); }}
-              className="h-8 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] font-mono" />
-            <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="h-8 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-            <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="h-8 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-            <div className="relative">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                className="w-full h-8 pl-7 pr-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] font-mono" />
-            </div>
-          </div>
+      {/* Filter Toolbar */}
+      <Card noPadding className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+            <Filter size={14} /> Filter Audit Records
+          </span>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} icon={<X size={12} />}>
+              Clear Filters
+            </Button>
+          )}
         </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <Select
+            value={action}
+            onChange={(e) => {
+              setAction(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Actions</option>
+            <option value="CREATE">CREATE</option>
+            <option value="UPDATE">UPDATE</option>
+            <option value="DELETE">DELETE</option>
+          </Select>
 
+          <Input
+            placeholder="Resource..."
+            value={resource}
+            onChange={(e) => {
+              setResource(e.target.value);
+              setPage(1);
+            }}
+            className="font-mono text-xs"
+          />
+
+          <Input
+            placeholder="User ID..."
+            value={userId}
+            onChange={(e) => {
+              setUserId(e.target.value);
+              setPage(1);
+            }}
+            className="font-mono text-xs"
+          />
+
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs"
+          />
+
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs"
+          />
+
+          <SearchInput
+            placeholder="Search diffs..."
+            value={searchTerm}
+            onValueChange={(val) => {
+              setSearchTerm(val);
+              setPage(1);
+            }}
+          />
+        </div>
+      </Card>
+
+      {/* Audit Log Table */}
+      <Card noPadding>
         {isLoading ? (
-          <TableSkeleton rows={8} cols={7} />
-        ) : logs.length === 0 ? (
-          <div className="p-12 text-center">
-            <Shield size={32} className="text-slate-200 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-400">No audit logs found.</p>
-            <p className="text-[10px] text-slate-300 mt-1">{hasFilters ? "Try adjusting your filters." : "No activity has been recorded yet."}</p>
+          <div className="p-6">
+            <TableSkeleton rows={8} cols={7} />
           </div>
+        ) : logs.length === 0 ? (
+          <EmptyState
+            title="No Audit Records Found"
+            description={
+              hasFilters
+                ? "No audit records match your selected filter parameters."
+                : "No system changes have been recorded in this log partition."
+            }
+            icon={<Shield size={28} className="text-gold" />}
+            action={
+              hasFilters ? (
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Reset Filters
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">Timestamp</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">Action</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">Resource</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">Resource ID</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">User</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">Role</th>
-                    <th className="p-3 text-xs font-bold text-slate-400 uppercase">IP</th>
+                  <tr className="bg-surface-muted/50 border-b border-border">
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Timestamp</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Action</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Resource</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Entity ID</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Operator ID</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Role</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">IP Address</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#e1e2ed]">
+                <tbody className="divide-y divide-border">
                   {logs.map((log: any, i: number) => (
-                    <tr key={log._id || log.id || i} className="hover:bg-slate-50/50 text-xs">
-                      <td className="p-3 font-mono text-slate-500">{log.timestamp ? new Date(log.timestamp).toLocaleString() : "\u2014"}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase ${ACTION_BADGES[log.action] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
-                          {log.action}
-                        </span>
+                    <tr key={log._id || log.id || i} className="hover:bg-surface-hover text-xs">
+                      <td className="p-3 font-mono text-text-muted text-[11px]">
+                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : "—"}
                       </td>
-                      <td className="p-3 font-semibold text-slate-700">{log.resource}</td>
-                      <td className="p-3 font-mono text-slate-400">{log.resourceId || "\u2014"}</td>
-                      <td className="p-3 font-mono text-slate-600">{log.userId || "\u2014"}</td>
-                      <td className="p-3 text-slate-500">{log.userRole || "\u2014"}</td>
-                      <td className="p-3 font-mono text-slate-400">{log.ip || "\u2014"}</td>
+                      <td className="p-3">
+                        <Badge variant={ACTION_TONE[log.action] || "neutral"} size="sm">
+                          {log.action}
+                        </Badge>
+                      </td>
+                      <td className="p-3 font-semibold text-text">{log.resource}</td>
+                      <td className="p-3 font-mono text-text-subtle text-[11px]">{log.resourceId || "—"}</td>
+                      <td className="p-3 font-mono text-text font-medium text-[11px]">{log.userId || "—"}</td>
+                      <td className="p-3 text-text-muted capitalize">{log.userRole || "—"}</td>
+                      <td className="p-3 font-mono text-text-subtle text-[11px]">{log.ip || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="p-3 border-t border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Showing {(meta.page - 1) * meta.limit + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
+            {/* Pagination Controls */}
+            <div className="p-3 border-t border-border flex items-center justify-between">
+              <span className="text-xs text-text-muted">
+                Showing {(meta.page - 1) * meta.limit + 1}–{Math.min(meta.page * meta.limit, meta.total)} of{" "}
+                {meta.total} records
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                  className="h-7 px-2 bg-white border border-[#c3c6d7] rounded text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 flex items-center gap-1">
-                  <ChevronLeft size={12} /> Prev
-                </button>
-                <span className="text-xs font-semibold text-slate-500">Page {meta.page} of {meta.totalPages}</span>
-                <button onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))} disabled={page >= meta.totalPages}
-                  className="h-7 px-2 bg-white border border-[#c3c6d7] rounded text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 flex items-center gap-1">
-                  Next <ChevronRight size={12} />
-                </button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  icon={<ChevronLeft size={13} />}
+                >
+                  Prev
+                </Button>
+                <span className="text-xs font-semibold text-text px-1">
+                  Page {meta.page} of {meta.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
+                  disabled={page >= meta.totalPages}
+                  rightIcon={<ChevronRight size={13} />}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

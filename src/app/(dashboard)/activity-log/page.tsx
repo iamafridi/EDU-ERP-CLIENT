@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Bell, Search, Download, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { Download, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  SearchInput,
+  Select,
+  Input,
+  Button,
+  Badge,
+  EmptyState,
+} from "@/components/ui";
 
 interface Activity {
   id: string;
@@ -14,15 +22,18 @@ interface Activity {
   href?: string;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  fee: { label: "Payment", color: "text-emerald-600", bg: "bg-emerald-50" },
-  leave: { label: "Leave", color: "text-blue-600", bg: "bg-blue-50" },
-  complaint: { label: "Complaint", color: "text-amber-600", bg: "bg-amber-50" },
-  incident: { label: "Incident", color: "text-red-600", bg: "bg-red-50" },
-  attendance: { label: "Attendance", color: "text-purple-600", bg: "bg-purple-50" },
-  notice: { label: "Notice", color: "text-cyan-600", bg: "bg-cyan-50" },
-  message: { label: "Message", color: "text-sky-600", bg: "bg-sky-50" },
-  health: { label: "Health", color: "text-rose-600", bg: "bg-rose-50" },
+const TYPE_CONFIG: Record<
+  string,
+  { label: string; tone: "neutral" | "success" | "warning" | "danger" | "info" | "primary" | "gold" }
+> = {
+  fee: { label: "Finance / Fee", tone: "success" },
+  leave: { label: "Faculty Leave", tone: "primary" },
+  complaint: { label: "Grievance", tone: "warning" },
+  incident: { label: "Campus Incident", tone: "danger" },
+  attendance: { label: "Attendance", tone: "info" },
+  notice: { label: "Official Notice", tone: "gold" },
+  message: { label: "Communication", tone: "neutral" },
+  health: { label: "Student Wellness", tone: "danger" },
 };
 
 const ALL_TYPES = Object.keys(TYPE_CONFIG);
@@ -30,26 +41,134 @@ const ALL_TYPES = Object.keys(TYPE_CONFIG);
 const generateMockActivities = (): Activity[] => {
   const now = Date.now();
   const activities: Activity[] = [
-    { id: "a1", type: "fee", message: "Marcus Chen paid fee $500 (Tuition Fee)", timestamp: new Date(now - 2 * 60000).toISOString(), user: "Marcus Chen", href: "/fees" },
-    { id: "a2", type: "leave", message: "Dr. Drake approved leave for Sophia Martinez", timestamp: new Date(now - 15 * 60000).toISOString(), user: "Dr. Drake", href: "/leave" },
-    { id: "a3", type: "complaint", message: "Ethan Gallagher filed complaint about mess food", timestamp: new Date(now - 1 * 3600000).toISOString(), user: "Ethan Gallagher", href: "/grievances" },
-    { id: "a4", type: "incident", message: "Room B-203 reported water leak — assigned to maintenance", timestamp: new Date(now - 2 * 3600000).toISOString(), user: "Maintenance", href: "/incidents" },
-    { id: "a5", type: "attendance", message: "MBBS Y1 — 4 students marked absent today", timestamp: new Date(now - 3 * 3600000).toISOString(), user: "System", href: "/attendance" },
-    { id: "a6", type: "notice", message: "New notice: Hostel Winter Break Schedule published", timestamp: new Date(now - 5 * 3600000).toISOString(), user: "Admin", href: "/notices" },
-    { id: "a7", type: "message", message: "New message from Aria Takahashi to Dr. Harrison", timestamp: new Date(now - 8 * 3600000).toISOString(), user: "Aria Takahashi", href: "/chat" },
-    { id: "a8", type: "health", message: "Student visited Health Center: John Doe — mild fever", timestamp: new Date(now - 24 * 3600000).toISOString(), user: "John Doe", href: "/health-center" },
-    { id: "a9", type: "fee", message: "Sophia Martinez paid hostel fee $350", timestamp: new Date(now - 30 * 3600000).toISOString(), user: "Sophia Martinez", href: "/fees" },
-    { id: "a10", type: "leave", message: "Ethan Gallagher applied for 3-day leave", timestamp: new Date(now - 36 * 3600000).toISOString(), user: "Ethan Gallagher", href: "/leave" },
-    { id: "a11", type: "attendance", message: "MBBS Y2 — lab session attendance recorded", timestamp: new Date(now - 48 * 3600000).toISOString(), user: "System", href: "/attendance" },
-    { id: "a12", type: "notice", message: "Exam schedule for MBBS Y1 published", timestamp: new Date(now - 72 * 3600000).toISOString(), user: "Admin", href: "/notices" },
-    { id: "a13", type: "complaint", message: "Library AC not working — complaint filed", timestamp: new Date(now - 96 * 3600000).toISOString(), user: "Library Staff", href: "/grievances" },
-    { id: "a14", type: "incident", message: "Block A elevator maintenance completed", timestamp: new Date(now - 120 * 3600000).toISOString(), user: "Maintenance", href: "/incidents" },
-    { id: "a15", type: "health", message: "Health Center: Flu vaccination drive scheduled", timestamp: new Date(now - 168 * 3600000).toISOString(), user: "Health Center", href: "/health-center" },
-    { id: "a16", type: "message", message: "Dr. Harrison sent message to MBBS Y1 group", timestamp: new Date(now - 192 * 3600000).toISOString(), user: "Dr. Harrison", href: "/chat" },
-    { id: "a17", type: "fee", message: "Library fine paid by Liam O'Connor — $25", timestamp: new Date(now - 216 * 3600000).toISOString(), user: "Liam O'Connor", href: "/fees" },
-    { id: "a18", type: "attendance", message: "Clinical rotation attendance for MBBS Y3", timestamp: new Date(now - 240 * 3600000).toISOString(), user: "System", href: "/attendance" },
-    { id: "a19", type: "notice", message: "Hostel mess menu updated for December", timestamp: new Date(now - 264 * 3600000).toISOString(), user: "Admin", href: "/notices" },
-    { id: "a20", type: "leave", message: "Staff leave approved: David Miller (Security)", timestamp: new Date(now - 288 * 3600000).toISOString(), user: "David Miller", href: "/leave" },
+    {
+      id: "a1",
+      type: "fee",
+      message: "Marcus Chen paid tuition fee ৳50,000 (Semester V)",
+      timestamp: new Date(now - 2 * 60000).toISOString(),
+      user: "Marcus Chen",
+      href: "/fees",
+    },
+    {
+      id: "a2",
+      type: "leave",
+      message: "Dr. Drake approved academic leave for Sophia Martinez",
+      timestamp: new Date(now - 15 * 60000).toISOString(),
+      user: "Dr. Drake",
+      href: "/leave",
+    },
+    {
+      id: "a3",
+      type: "complaint",
+      message: "Ethan Gallagher filed hostel grievance regarding meal quality",
+      timestamp: new Date(now - 1 * 3600000).toISOString(),
+      user: "Ethan Gallagher",
+      href: "/grievances",
+    },
+    {
+      id: "a4",
+      type: "incident",
+      message: "Hostel Block B room reported electrical repair — assigned to estate works",
+      timestamp: new Date(now - 2 * 3600000).toISOString(),
+      user: "Estate Maintenance",
+      href: "/incidents",
+    },
+    {
+      id: "a5",
+      type: "attendance",
+      message: "MBBS Term 1 Lecture — 4 students marked absent today",
+      timestamp: new Date(now - 3 * 3600000).toISOString(),
+      user: "Attendance Engine",
+      href: "/attendance",
+    },
+    {
+      id: "a6",
+      type: "notice",
+      message: "Hostel Semester Recess Routine & Gate Timings published",
+      timestamp: new Date(now - 5 * 3600000).toISOString(),
+      user: "Provost Office",
+      href: "/notices",
+    },
+    {
+      id: "a7",
+      type: "message",
+      message: "Aria Takahashi submitted dissertation inquiry to Dr. Harrison",
+      timestamp: new Date(now - 8 * 3600000).toISOString(),
+      user: "Aria Takahashi",
+      href: "/chat",
+    },
+    {
+      id: "a8",
+      type: "fee",
+      message: "Sophia Martinez paid hostel accommodation fee ৳35,000",
+      timestamp: new Date(now - 30 * 3600000).toISOString(),
+      user: "Sophia Martinez",
+      href: "/fees",
+    },
+    {
+      id: "a9",
+      type: "leave",
+      message: "Ethan Gallagher submitted 3-day medical leave application",
+      timestamp: new Date(now - 36 * 3600000).toISOString(),
+      user: "Ethan Gallagher",
+      href: "/leave",
+    },
+    {
+      id: "a10",
+      type: "attendance",
+      message: "MBBS Term 2 Anatomy Dissection Lab attendance verified",
+      timestamp: new Date(now - 48 * 3600000).toISOString(),
+      user: "Faculty Registrar",
+      href: "/attendance",
+    },
+    {
+      id: "a11",
+      type: "notice",
+      message: "Midterm Examination timetable for MBBS Term 1 published",
+      timestamp: new Date(now - 72 * 3600000).toISOString(),
+      user: "Controller of Exams",
+      href: "/notices",
+    },
+    {
+      id: "a12",
+      type: "complaint",
+      message: "Central Library reading room air conditioning repair ticket created",
+      timestamp: new Date(now - 96 * 3600000).toISOString(),
+      user: "Library Custodian",
+      href: "/grievances",
+    },
+    {
+      id: "a13",
+      type: "incident",
+      message: "Hostel Block A passenger elevator annual safety inspection completed",
+      timestamp: new Date(now - 120 * 3600000).toISOString(),
+      user: "Facilities Manager",
+      href: "/incidents",
+    },
+    {
+      id: "a14",
+      type: "fee",
+      message: "Library fine cleared by Liam O'Connor — ৳250",
+      timestamp: new Date(now - 216 * 3600000).toISOString(),
+      user: "Liam O'Connor",
+      href: "/fees",
+    },
+    {
+      id: "a15",
+      type: "notice",
+      message: "Central Mess revised dietary rotation menu published for next month",
+      timestamp: new Date(now - 264 * 3600000).toISOString(),
+      user: "Mess Committee",
+      href: "/notices",
+    },
+    {
+      id: "a16",
+      type: "leave",
+      message: "Security warden duty shift leave endorsed: David Miller",
+      timestamp: new Date(now - 288 * 3600000).toISOString(),
+      user: "Chief Warden",
+      href: "/leave",
+    },
   ];
   return activities;
 };
@@ -67,8 +186,11 @@ function timeAgo(iso: string): string {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -80,7 +202,6 @@ export default function ActivityLogPage() {
   const [endDate, setEndDate] = useState("");
 
   const limit = 10;
-
   const allActivities = generateMockActivities();
 
   const filtered = allActivities.filter((act) => {
@@ -89,7 +210,9 @@ export default function ActivityLogPage() {
     if (endDate && new Date(act.timestamp) > new Date(endDate + "T23:59:59")) return false;
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      if (!act.message.toLowerCase().includes(q) && !(act.user || "").toLowerCase().includes(q)) return false;
+      if (!act.message.toLowerCase().includes(q) && !(act.user || "").toLowerCase().includes(q)) {
+        return false;
+      }
     }
     return true;
   });
@@ -115,7 +238,9 @@ export default function ActivityLogPage() {
       act.user || "",
       formatDate(act.timestamp),
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -125,115 +250,182 @@ export default function ActivityLogPage() {
     URL.revokeObjectURL(url);
   }, [filtered]);
 
-  const btnClass = "h-9 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5";
-  const inputClass = "h-9 px-3 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bell className="text-[#2563EB]" size={24} />
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Activity Log</h1>
-            <p className="text-xs text-slate-400 mt-1">Track all system activities and user actions.</p>
-          </div>
-        </div>
-        <button onClick={handleExportCSV} className={btnClass}>
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Activity Log & Audit Stream"
+        subtitle="Chronological audit stream of institutional transactions, fee payments, and administrative events."
+        actions={
+          <Button
+            variant="outline"
+            size="md"
+            onClick={handleExportCSV}
+            disabled={filtered.length === 0}
+            icon={<Download size={14} />}
+          >
+            Export CSV
+          </Button>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Search</label>
-            <div className="relative mt-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }} placeholder="Search messages or users..." className={`${inputClass} pl-9 w-full`} />
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Type</label>
-            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={`${inputClass} min-w-[140px]`}>
-              <option value="">All Types</option>
-              {ALL_TYPES.map((t) => (
-                <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">From</label>
-            <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className={inputClass} />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">To</label>
-            <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className={inputClass} />
-          </div>
+      {/* Filter Toolbar */}
+      <Card noPadding className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+            <Filter size={14} /> Filter Activity Stream
+          </span>
           {hasFilters && (
-            <button onClick={clearFilters} className="h-9 px-3 text-xs font-semibold text-slate-500 hover:text-red-500 flex items-center gap-1 cursor-pointer">
-              <X size={14} /> Clear
-            </button>
+            <Button variant="ghost" size="sm" onClick={clearFilters} icon={<X size={12} />}>
+              Clear Filters
+            </Button>
           )}
         </div>
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <SearchInput
+            placeholder="Search messages or users..."
+            value={searchTerm}
+            onValueChange={(val) => {
+              setSearchTerm(val);
+              setPage(1);
+            }}
+          />
 
-      {/* Table */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#e1e2ed] bg-slate-50">
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Type</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Message</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">User</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No activities found</td>
-                </tr>
-              ) : (
-                paginated.map((act) => {
-                  const cfg = TYPE_CONFIG[act.type];
-                  return (
-                    <tr key={act.id} className="border-b border-[#e1e2ed] last:border-0 hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${cfg?.bg} ${cfg?.color} border border-transparent`}>
-                          {cfg?.label || act.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-700 max-w-xs truncate">{act.message}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{act.user || "-"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{timeAgo(act.timestamp)}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(act.timestamp)}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+          <Select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Activity Types</option>
+            {ALL_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {TYPE_CONFIG[t].label}
+              </option>
+            ))}
+          </Select>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#e1e2ed] bg-slate-50">
-          <span className="text-[10px] text-slate-400 font-semibold">
-            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, filtered.length)} of {filtered.length}
-          </span>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="p-1.5 rounded-lg hover:bg-slate-200 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed">
-              <ChevronLeft size={16} className="text-slate-500" />
-            </button>
-            <span className="text-[10px] font-bold text-slate-500 min-w-[40px] text-center">{page} / {totalPages}</span>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="p-1.5 rounded-lg hover:bg-slate-200 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed">
-              <ChevronRight size={16} className="text-slate-500" />
-            </button>
-          </div>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs"
+          />
+
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs"
+          />
         </div>
-      </div>
+      </Card>
+
+      {/* Activity Table */}
+      <Card noPadding>
+        {paginated.length === 0 ? (
+          <EmptyState
+            title="No Activity Events Found"
+            description={
+              hasFilters
+                ? "No institutional activity matches your search criteria."
+                : "No recent events have been logged."
+            }
+            action={
+              hasFilters ? (
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-muted/50 border-b border-border">
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase w-36">
+                      Event Category
+                    </th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">
+                      Event Description
+                    </th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase w-36">
+                      Triggered By
+                    </th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase w-28">
+                      Relative Time
+                    </th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase text-right w-44">
+                      Timestamp
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {paginated.map((act) => {
+                    const cfg = TYPE_CONFIG[act.type] || { label: act.type, tone: "neutral" };
+                    return (
+                      <tr key={act.id} className="hover:bg-surface-hover text-xs">
+                        <td className="p-3">
+                          <Badge variant={cfg.tone} size="sm">
+                            {cfg.label}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-text font-medium">{act.message}</td>
+                        <td className="p-3 text-text-muted font-medium">{act.user || "System"}</td>
+                        <td className="p-3 text-text-subtle font-mono text-[11px]">
+                          {timeAgo(act.timestamp)}
+                        </td>
+                        <td className="p-3 text-right text-text-subtle font-mono text-[11px]">
+                          {formatDate(act.timestamp)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="p-3 border-t border-border flex items-center justify-between">
+              <span className="text-xs text-text-muted">
+                Showing {(page - 1) * limit + 1}–{Math.min(page * limit, filtered.length)} of{" "}
+                {filtered.length} entries
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  icon={<ChevronLeft size={13} />}
+                >
+                  Prev
+                </Button>
+                <span className="text-xs font-semibold text-text px-1">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  rightIcon={<ChevronRight size={13} />}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 }
