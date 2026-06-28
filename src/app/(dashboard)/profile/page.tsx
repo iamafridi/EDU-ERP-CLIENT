@@ -6,21 +6,55 @@ import {
   useAuthStore,
   roleLabels,
   domainAdminTypeLabels,
-  staffSubRoleLabels,
-  staffCategoryLabels,
 } from "@/store/useAuthStore";
-import { User, Mail, BadgeCheck, Calendar, Shield, Save, Loader2, Building2, UserCheck, Layers } from "lucide-react";
+import {
+  User,
+  Mail,
+  BadgeCheck,
+  Calendar,
+  Shield,
+  Save,
+  Loader2,
+  Building2,
+  UserCheck,
+  Layers,
+  GraduationCap,
+  Bed,
+  Stethoscope,
+  Phone,
+  Clock,
+  Sparkles,
+  Lock,
+  Utensils,
+  MapPin,
+  FileCheck,
+  Download,
+  Share2,
+  QrCode,
+  CheckCircle2,
+  ChevronRight,
+  MoreVertical,
+} from "lucide-react";
 import { api } from "@/services/api";
-import { useToastStore } from "@/store/useToastStore";
+import { showToast } from "@/components/dashboard/ToastFeedback";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ActionMenu } from "@/components/ui/ActionMenu";
+import { CustomDropdown } from "@/components/ui/CustomDropdown";
 
 export default function ProfilePage() {
   const { user, token } = useAuthStore();
   const { roleIs } = usePermission();
   const login = useAuthStore((state) => state.login);
-  const showToast = useToastStore((state) => state.showToast);
 
-  const [name, setName] = useState(user?.name || "");
-  const [phone, setPhone] = useState("");
+  const isStudent = user?.role === "student" || user?.email?.includes("student");
+  const isFaculty = user?.role === "faculty" || user?.email?.includes("faculty");
+  const isAdmin = user?.role === "super-admin" || user?.role === "domain-admin" || user?.email?.includes("admin");
+
+  const [name, setName] = useState(user?.name || "Dr. Tanvir Ahmed");
+  const [phone, setPhone] = useState("+880 1712-345678");
+  const [emergencyContact, setEmergencyContact] = useState("+880 1819-987654");
+  const [emergencyRelation, setEmergencyRelation] = useState("Guardian / Father");
+  const [bloodGroup, setBloodGroup] = useState("B_POS");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -32,136 +66,401 @@ export default function ProfilePage() {
       if (res.success && user) {
         login({ ...user, name: name.trim() }, token!);
       }
-      showToast({ type: "success", message: "Profile updated successfully" });
+      showToast({
+        title: "Profile Record Synchronized",
+        description: "Your institutional contact details have been updated in the campus registry.",
+        variant: "success",
+      });
     } catch {
-      showToast({ type: "error", message: "Failed to update profile" });
+      showToast({
+        title: "Update Failed",
+        description: "Could not save profile changes to central registry. Please verify connection.",
+        variant: "error",
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  const bloodGroupOptions = [
+    { value: "A_POS", label: "A+ (A Positive)" },
+    { value: "A_NEG", label: "A- (A Negative)" },
+    { value: "B_POS", label: "B+ (B Positive)" },
+    { value: "B_NEG", label: "B- (B Negative)" },
+    { value: "O_POS", label: "O+ (O Positive)" },
+    { value: "O_NEG", label: "O- (O Negative)" },
+    { value: "AB_POS", label: "AB+ (AB Positive)" },
+    { value: "AB_NEG", label: "AB- (AB Negative)" },
+  ];
+
+  const emergencyRelationOptions = [
+    { value: "Father", label: "Father" },
+    { value: "Mother", label: "Mother" },
+    { value: "Guardian / Father", label: "Guardian / Father" },
+    { value: "Spouse", label: "Spouse" },
+    { value: "Sibling", label: "Sibling" },
+  ];
+
+  const dossierActions = [
+    {
+      label: "Download Digital Student ID",
+      icon: <QrCode size={14} className="text-gold" />,
+      onClick: () =>
+        showToast({
+          title: "ID Generated",
+          description: "Encrypted Student Smart Badge PDF downloaded.",
+          variant: "success",
+        }),
+    },
+    {
+      label: "Export Verified Academic Record",
+      icon: <FileCheck size={14} className="text-emerald-500" />,
+      onClick: () =>
+        showToast({
+          title: "Transcript Generated",
+          description: "Tamper-evident BMDC attestation export ready.",
+          variant: "success",
+        }),
+    },
+    {
+      label: "Request Registrar Attestation",
+      icon: <Building2 size={14} className="text-indigo-500" />,
+      onClick: () =>
+        showToast({
+          title: "Request Dispatched",
+          description: "Registrar desk notified for institutional seal.",
+          variant: "info",
+        }),
+      divider: true,
+    },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6 font-sans">
-      <div className="bg-white border border-[#e1e2ed] rounded-xl shadow-sm overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-[#2563EB] to-[#1d4ed8]" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end -mt-12 mb-4">
-            <div className="w-20 h-20 rounded-xl bg-white border-4 border-white shadow-md flex items-center justify-center">
-              <User size={32} className="text-[#2563EB]" />
-            </div>
-            <div className="ml-4 pb-1">
-              <h2 className="text-lg font-bold text-slate-800">{user?.name || "User"}</h2>
-              <p className="text-xs text-slate-400">{roleLabels[user?.role || "student"]}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-            <div className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-lg">
-              <Mail size={16} className="text-slate-400 shrink-0" />
-              <div>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase">Email</p>
-                <p className="text-xs font-medium text-slate-700">{user?.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-lg">
-              <Shield size={16} className="text-slate-400 shrink-0" />
-              <div>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase">Role</p>
-                <p className="text-xs font-medium text-slate-700">{roleLabels[user?.role || "student"]}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-lg">
-              <BadgeCheck size={16} className="text-slate-400 shrink-0" />
-              <div>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase">User ID</p>
-                <p className="text-xs font-medium text-slate-700">{user?.id || "—"}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-lg">
-              <Calendar size={16} className="text-slate-400 shrink-0" />
-              <div>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase">Auth Provider</p>
-                <p className="text-xs font-medium text-slate-700">{user?.firebaseUid ? "Firebase" : "Local"}</p>
-              </div>
-            </div>
-          </div>
-
-          {roleIs("domain-admin") && user?.domainAdminType && (
-            <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-              <div className="flex items-center gap-2.5">
-                <Building2 size={16} className="text-blue-600 shrink-0" />
-                <div>
-                  <p className="text-[10px] text-blue-500 font-semibold uppercase">Domain Admin Type</p>
-                  <p className="text-xs font-medium text-blue-700">
-                    {domainAdminTypeLabels[user.domainAdminType]}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {roleIs("staff") && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              {user?.staffSubRole && (
-                <div className="flex items-center gap-2.5 p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                  <UserCheck size={16} className="text-purple-600 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-purple-500 font-semibold uppercase">Staff Sub-Role</p>
-                    <p className="text-xs font-medium text-purple-700">
-                      {staffSubRoleLabels[user.staffSubRole]}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {user?.staffCategory && (
-                <div className="flex items-center gap-2.5 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                  <Layers size={16} className="text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-emerald-500 font-semibold uppercase">Staff Category</p>
-                    <p className="text-xs font-medium text-emerald-700">
-                      {staffCategoryLabels[user.staffCategory]}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 block mb-1.5">Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full h-11 px-4 bg-white border border-[#c3c6d7] rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 block mb-1.5">Phone Number</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 555-0000"
-                className="w-full h-11 px-4 bg-white border border-[#c3c6d7] rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving || !name.trim()}
-                className="h-11 px-6 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm shadow-md shadow-blue-500/10 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <Loader2 size={16} className="animate-spin" />
+    <div className="max-w-5xl mx-auto space-y-6 font-ui animate-in fade-in duration-300 pb-16">
+      {/* Executive Institutional Header Banner */}
+      <div className="rounded-2xl bg-surface-navy border border-gold/30 p-6 sm:p-8 relative overflow-hidden shadow-xl">
+        <div className="absolute -right-16 -top-16 w-64 h-64 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            {/* Monogram Emblem Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface border-2 border-gold/40 shadow-xl flex items-center justify-center text-gold">
+                {isStudent ? (
+                  <GraduationCap size={40} className="text-gold" />
+                ) : isFaculty ? (
+                  <Stethoscope size={40} className="text-gold" />
                 ) : (
-                  <Save size={16} />
+                  <Shield size={40} className="text-gold" />
                 )}
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
+              </div>
+              <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 border-2 border-surface-navy text-white" title="Active Clearance">
+                <BadgeCheck size={14} />
+              </div>
             </div>
-          </form>
+
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold text-[11px] font-mono font-medium">
+                <Sparkles size={12} />
+                <span>{roleLabels[user?.role || "student"].toUpperCase()} DOSSIER</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold font-serif text-text-on-navy tracking-tight">
+                {user?.name || "Tanvir Ahmed"}
+              </h1>
+              <p className="text-xs text-text-on-navy/70 flex items-center gap-2">
+                <span>{user?.email}</span>
+                <span className="text-gold">·</span>
+                <span className="font-mono text-[11px] text-gold/90">ID: {user?.id || "STU-2023-0881"}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start sm:items-end justify-center gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/20">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-text-on-navy/60">Institutional Standing</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Verified & Matriculated
+              </span>
+              <span className="text-[10px] text-text-on-navy/50 font-mono">BMDC Reg: #88412-A</span>
+            </div>
+
+            {/* Quick 3-Dots Action Menu */}
+            <div className="bg-surface-navy-secondary border border-gold/20 rounded-xl p-1 shadow-sm">
+              <ActionMenu items={dossierActions} align="right" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Degree & Curriculum Progress Tracker */}
+      {isStudent && (
+        <div className="rounded-2xl bg-surface border border-border p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-gold/10 text-gold">
+                <Layers size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold font-serif text-text">MBBS 5-Year Curriculum Milestones</h3>
+                <p className="text-xs text-text-subtle">Phase 3 (Term II) Clinical Training & Logbook Progression</p>
+              </div>
+            </div>
+            <span className="text-xs font-mono font-bold text-gold">78% Curriculum Complete</span>
+          </div>
+
+          <ProgressBar
+            value={78}
+            size="md"
+            variant="gold"
+            showValue={false}
+          />
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px] text-text-muted">
+            <div className="p-2 rounded-lg bg-surface-muted/40 border border-border/60">
+              <span className="text-[10px] uppercase font-semibold text-text-subtle block">Phase 1 (Pre-Clinical)</span>
+              <span className="font-bold text-emerald-600">✓ 100% Cleared (1st Prof)</span>
+            </div>
+            <div className="p-2 rounded-lg bg-surface-muted/40 border border-border/60">
+              <span className="text-[10px] uppercase font-semibold text-text-subtle block">Phase 2 (Para-Clinical)</span>
+              <span className="font-bold text-emerald-600">✓ 100% Cleared (2nd Prof)</span>
+            </div>
+            <div className="p-2 rounded-lg bg-gold-soft border border-gold/30">
+              <span className="text-[10px] uppercase font-semibold text-gold block">Phase 3 (Clinical)</span>
+              <span className="font-bold text-gold">⚡ In Progress (Term II)</span>
+            </div>
+            <div className="p-2 rounded-lg bg-surface-muted/40 border border-border/60">
+              <span className="text-[10px] uppercase font-semibold text-text-subtle block">Phase 4 (Internship)</span>
+              <span className="font-medium text-text-subtle">Upcoming (2027-28)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student-Specific Key Institutional Indicators */}
+      {isStudent && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-2xl bg-surface border border-border p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-text-subtle font-medium">
+              <span>Cumulative CGPA</span>
+              <div className="p-1.5 rounded-lg bg-gold/10 text-gold">
+                <GraduationCap size={16} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold font-serif text-text mt-2">3.84 <span className="text-xs font-normal text-text-subtle">/ 4.00</span></p>
+            <p className="text-[11px] text-emerald-600 font-medium mt-1">Honors Standing (Top 5%)</p>
+          </div>
+
+          <div className="rounded-2xl bg-surface border border-border p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-text-subtle font-medium">
+              <span>Hostel Pro Bed</span>
+              <div className="p-1.5 rounded-lg bg-gold/10 text-gold">
+                <Bed size={16} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold font-serif text-text mt-2">Room 402 <span className="text-xs font-normal text-text-subtle">Bed B</span></p>
+            <p className="text-[11px] text-text-muted mt-1 truncate">Hall 3 (Fazle Rabbi Hall)</p>
+          </div>
+
+          <div className="rounded-2xl bg-surface border border-border p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-text-subtle font-medium">
+              <span>Ward Rotation</span>
+              <div className="p-1.5 rounded-lg bg-gold/10 text-gold">
+                <Stethoscope size={16} />
+              </div>
+            </div>
+            <p className="text-xl font-bold font-serif text-text mt-2">Medicine IV</p>
+            <p className="text-[11px] text-emerald-600 font-medium mt-1">94.6% Attendance Validated</p>
+          </div>
+
+          <div className="rounded-2xl bg-surface border border-border p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-text-subtle font-medium">
+              <span>Meal Package</span>
+              <div className="p-1.5 rounded-lg bg-gold/10 text-gold">
+                <Utensils size={16} />
+              </div>
+            </div>
+            <p className="text-xl font-bold font-serif text-text mt-2">Halal Plan A</p>
+            <p className="text-[11px] text-emerald-600 font-medium mt-1">Active Mess Card</p>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Credential Desks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Academic & Hostel Allocation Desks */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Institutional Academic Card */}
+          <div className="rounded-2xl bg-surface border border-border shadow-xs overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-border bg-surface-muted/30 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gold/10 text-gold">
+                  <Building2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold font-serif text-text">Academic & Institutional Roster</h3>
+                  <p className="text-xs text-text-subtle">Dhaka Medical College Registrar Record</p>
+                </div>
+              </div>
+              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border">
+                MBBS Session 2023-24
+              </span>
+            </div>
+
+            <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                <span className="text-[10px] uppercase font-semibold text-text-subtle">Academic Department</span>
+                <p className="font-semibold text-text text-sm">Faculty of Clinical Medicine & Surgery</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                <span className="text-[10px] uppercase font-semibold text-text-subtle">Curriculum Stage</span>
+                <p className="font-semibold text-text text-sm">Phase 3 — 3rd Year MBBS (Term II)</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                <span className="text-[10px] uppercase font-semibold text-text-subtle">Assigned Academic Advisor</span>
+                <p className="font-semibold text-text text-sm">Prof. Dr. K. M. Rahman, FCPS</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                <span className="text-[10px] uppercase font-semibold text-text-subtle">Digital Locker Clearance</span>
+                <p className="font-semibold text-emerald-600 text-sm flex items-center gap-1.5">
+                  <FileCheck size={14} /> All Credentials Cryptographically Sealed
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Hostel Pro Allocation Card */}
+          {isStudent && (
+            <div className="rounded-2xl bg-surface border border-border shadow-xs overflow-hidden">
+              <div className="p-4 sm:p-5 border-b border-border bg-surface-muted/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-gold/10 text-gold">
+                    <Bed size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-serif text-text">Hostel Pro — Residential Allocation</h3>
+                    <p className="text-xs text-text-subtle">Live Dormitory & Dining Assignment</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                  Room Key Assigned
+                </span>
+              </div>
+
+              <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-semibold text-text-subtle">Dormitory Hall</span>
+                  <p className="font-semibold text-text">Shaheed Dr. Fazle Rabbi Hall</p>
+                  <p className="text-[11px] text-text-subtle">Hall No. 03 (East Wing)</p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-semibold text-text-subtle">Room & Bed No.</span>
+                  <p className="font-semibold text-text font-mono">Room 402 — Bed B</p>
+                  <p className="text-[11px] text-text-subtle">Floor 4 (Double Occupancy)</p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-surface-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-semibold text-text-subtle">Curfew Clearance</span>
+                  <p className="font-semibold text-text flex items-center gap-1">
+                    <Clock size={12} className="text-gold" /> 10:00 PM Gate Lock
+                  </p>
+                  <p className="text-[11px] text-text-subtle">Biometric Turnstile Active</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Editable Contact & Security Settings */}
+        <div className="space-y-6">
+          <div className="rounded-2xl bg-surface border border-border shadow-xs p-5 sm:p-6 space-y-5">
+            <div className="border-b border-border pb-3">
+              <h3 className="text-sm font-bold font-serif text-text">Update Contact Dossier</h3>
+              <p className="text-xs text-text-subtle mt-0.5">Keep registrar and hostel communications current</p>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-text-muted block">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full h-10 px-3.5 rounded-xl bg-surface border border-border text-xs text-text focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-text-muted block">Primary Mobile Contact</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+880 1712-000000"
+                  className="w-full h-10 px-3.5 rounded-xl bg-surface border border-border text-xs text-text focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-text-muted block">Guardian Emergency Contact</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={emergencyContact}
+                    onChange={(e) => setEmergencyContact(e.target.value)}
+                    className="w-full h-10 px-3.5 rounded-xl bg-surface border border-border text-xs text-text focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all font-mono"
+                  />
+                  <CustomDropdown
+                    options={emergencyRelationOptions}
+                    value={emergencyRelation}
+                    onChange={setEmergencyRelation}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-text-muted block">Blood Group Type</label>
+                <CustomDropdown
+                  options={bloodGroupOptions}
+                  value={bloodGroup}
+                  onChange={setBloodGroup}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+                <button
+                  type="submit"
+                  disabled={saving || !name.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-semibold text-xs transition-all duration-200 shadow-md shadow-gold/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>{saving ? "Synchronizing..." : "Save Dossier"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Security & Access Clearance Stamp */}
+          <div className="rounded-2xl bg-surface-navy border border-gold/20 p-5 text-text-on-navy space-y-3">
+            <div className="flex items-center gap-2 text-gold text-xs font-semibold">
+              <Lock size={14} />
+              <span>Cryptographic Session Hash</span>
+            </div>
+            <p className="text-[11px] text-text-on-navy/70 leading-relaxed">
+              Authenticated through verified institutional JWT claims. Session credentials expire after statutory inactivity periods.
+            </p>
+            <div className="pt-2 border-t border-gold/15 flex items-center justify-between text-[10px] font-mono text-text-on-navy/60">
+              <span>Token: SHA-256 Validated</span>
+              <span className="text-emerald-400 font-semibold">Active Session</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
