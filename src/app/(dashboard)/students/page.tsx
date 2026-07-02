@@ -10,8 +10,10 @@ import { ConfirmDialog } from "@/components/ui/Dialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { StatCard } from "@/components/ui/Card";
-import { UserPlus, Trash2 } from "lucide-react";
+import { ActionMenu } from "@/components/ui/ActionMenu";
+import { UserPlus, Trash2, Eye, FileText, Stethoscope } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
+import { showToast } from "@/components/dashboard/ToastFeedback";
 
 interface StudentRow {
   id?: string;
@@ -43,6 +45,18 @@ export default function StudentDirectoryPage() {
     mutationFn: api.deleteStudent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      showToast({
+        title: "Student Record Removed",
+        description: "The student record was successfully archived from active rosters.",
+        variant: "success",
+      });
+    },
+    onError: (err: any) => {
+      showToast({
+        title: "Deletion Failed",
+        description: err?.response?.data?.message || "Failed to remove student record.",
+        variant: "error",
+      });
     },
   });
 
@@ -96,27 +110,67 @@ export default function StudentDirectoryPage() {
       id: "actions",
       sortable: false,
       hideable: false,
-      accessor: (row) =>
-        isAdmin ? (
-          <IconButton
-            label={`Delete ${displayName(row.name) || row.studentId}`}
-            size="sm"
-            variant="danger"
-            onClick={() =>
-              setDeleteTarget({
-                ids: [row.id || row.studentId],
-                label: displayName(row.name) || row.studentId,
-              })
-            }
-          >
-            <Trash2 size={14} aria-hidden="true" />
-          </IconButton>
-        ) : null,
+      accessor: (row) => {
+        const studentIdentifier = row.studentId || row.id;
+        const studentName = displayName(row.name) || studentIdentifier;
+
+        const menuItems = [
+          {
+            label: "View Full Profile",
+            icon: <Eye size={13} className="text-gold" />,
+            onClick: () => {
+              window.location.href = `/students/${studentIdentifier}`;
+            },
+          },
+          {
+            label: "Academic Transcripts",
+            icon: <FileText size={13} className="text-text-muted" />,
+            onClick: () => {
+              window.location.href = `/transcripts`;
+            },
+          },
+          {
+            label: "Clinical DOPS Logbook",
+            icon: <Stethoscope size={13} className="text-emerald-500" />,
+            onClick: () => {
+              window.location.href = `/skill-lab`;
+            },
+          },
+          ...(isAdmin
+            ? [
+                {
+                  label: "Delete Student",
+                  icon: <Trash2 size={13} className="text-red-500" />,
+                  variant: "danger" as const,
+                  divider: true,
+                  onClick: () =>
+                    setDeleteTarget({
+                      ids: [String(row.id || row.studentId || "")],
+                      label: String(studentName || "Student"),
+                    }),
+                },
+              ]
+            : []),
+        ];
+
+        return (
+          <div className="flex items-center gap-1.5 justify-end">
+            <a
+              href={`/students/${studentIdentifier}`}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-surface-muted/60 hover:bg-gold-soft hover:text-gold text-text transition-colors inline-flex items-center gap-1"
+            >
+              <Eye size={12} /> Dossier
+            </a>
+            <ActionMenu items={menuItems} align="right" />
+          </div>
+        );
+      },
     },
   ];
 
   const allocated = students.filter((s) => s.roomNumber).length;
   const departments = new Set(students.map((s) => s.academicDepartment).filter(Boolean)).size;
+  const allocationRate = students.length > 0 ? Math.round((allocated / students.length) * 100) : 0;
 
   return (
     <div className="space-y-5">

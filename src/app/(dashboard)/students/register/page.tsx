@@ -13,9 +13,10 @@ import {
   ChevronRight, 
   ChevronLeft, 
   Save, 
-  Sparkles,
-  UserCheck
+  UserCheck,
+  AlertCircle
 } from "lucide-react";
+import { PageHeader, Card, FormField, Input, Select, Button, Badge } from "@/components/ui";
 
 type StepType = 1 | 2 | 3 | 4;
 
@@ -23,7 +24,7 @@ export default function StudentOnboardingWizard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<StepType>(1);
-  const [direction, setDirection] = useState(0); // -1 for back, 1 for next
+  const [direction, setDirection] = useState(0);
 
   // Form Fields State
   const [name, setName] = useState("");
@@ -48,7 +49,7 @@ export default function StudentOnboardingWizard() {
   const createStudentMutation = useMutation({
     mutationFn: async () => {
       const payload = {
-        password,
+        password: password || "Student@123",
         student: {
           name,
           email,
@@ -62,9 +63,8 @@ export default function StudentOnboardingWizard() {
       
       const res = await api.createStudent(payload);
       
-      // If a room is selected, update room student allocation in backend
       if (selectedRoomId && res.success) {
-        await api.assignStudentToRoom(selectedRoomId, [res.data.id || "STU-NEW"]);
+        await api.assignStudentToRoom(selectedRoomId, [res.data?.id || "STU-NEW"]);
       }
       return res;
     },
@@ -96,10 +96,6 @@ export default function StudentOnboardingWizard() {
       }
     }
 
-    if (currentStep === 3) {
-      // Room allocation is optional, but if they proceeded we check
-    }
-
     setDirection(1);
     setCurrentStep((s) => (s + 1) as StepType);
   };
@@ -115,10 +111,9 @@ export default function StudentOnboardingWizard() {
     createStudentMutation.mutate();
   };
 
-  // Slide animation variants
   const slideVariants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
+      x: dir > 0 ? 250 : -250,
       opacity: 0
     }),
     center: {
@@ -126,67 +121,83 @@ export default function StudentOnboardingWizard() {
       opacity: 1
     },
     exit: (dir: number) => ({
-      x: dir < 0 ? 300 : -300,
+      x: dir < 0 ? 250 : -250,
       opacity: 0
     })
   };
 
+  const steps = [
+    { step: 1, label: "Personal Details", icon: User },
+    { step: 2, label: "Academics", icon: BookOpen },
+    { step: 3, label: "Hostel Room", icon: Home },
+    { step: 4, label: "Confirmation", icon: CheckCircle2 }
+  ];
+
   return (
-    <div className="space-y-6 font-sans max-w-2xl mx-auto">
-      {/* Back to directory */}
-      <div>
-        <span 
-          onClick={() => router.push("/students")}
-          className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-        >
-          <ChevronLeft size={16} /> Cancel and Exit
-        </span>
-      </div>
+    <div className="space-y-6 font-sans max-w-3xl mx-auto">
+      <PageHeader
+        title="Student Admission Wizard"
+        subtitle="Step-by-step onboarding pipeline for newly admitted collegiate candidates"
+        badge="Admissions Desk"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/students")}
+            icon={<ChevronLeft size={16} />}
+          >
+            Cancel & Exit
+          </Button>
+        }
+      />
 
       {/* Progress Wizard Bar */}
-      <div className="bg-white border border-[#e1e2ed] p-4 rounded-xl shadow-sm flex items-center justify-between">
-        {[
-          { step: 1, label: "Personal Details", icon: User },
-          { step: 2, label: "Academics", icon: BookOpen },
-          { step: 3, label: "Hostel Room", icon: Home },
-          { step: 4, label: "Finish Onboarding", icon: CheckCircle2 }
-        ].map((item) => {
-          const isCompleted = currentStep > item.step;
-          const isActive = currentStep === item.step;
-          const Icon = item.icon;
+      <Card orientation="vertical" padding="md" variant="default">
+        <div className="flex items-center justify-between">
+          {steps.map((item) => {
+            const isCompleted = currentStep > item.step;
+            const isActive = currentStep === item.step;
+            const Icon = item.icon;
 
-          return (
-            <div key={item.step} className="flex items-center gap-2">
-              <div 
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
-                  isCompleted 
-                    ? "bg-emerald-100 text-emerald-700" 
-                    : isActive 
-                      ? "bg-[#2563EB] text-white shadow-md shadow-blue-500/10" 
-                      : "bg-slate-100 text-slate-400"
-                }`}
-              >
-                {isCompleted ? <CheckCircle2 size={14} /> : item.step}
+            return (
+              <div key={item.step} className="flex items-center gap-2.5">
+                <div 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                    isCompleted 
+                      ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500/20" 
+                      : isActive 
+                        ? "bg-gold text-white shadow-md shadow-gold/20" 
+                        : "bg-surface-elevated text-text-tertiary"
+                  }`}
+                >
+                  {isCompleted ? <CheckCircle2 size={16} /> : item.step}
+                </div>
+                <div className="hidden sm:block">
+                  <span className={`text-xs font-semibold block ${
+                    isActive ? "text-text font-bold" : isCompleted ? "text-emerald-700" : "text-text-tertiary"
+                  }`}>
+                    {item.label}
+                  </span>
+                  <span className="text-[10px] text-text-tertiary block">
+                    {item.step === 4 ? "Review" : `Step 0${item.step}`}
+                  </span>
+                </div>
               </div>
-              <span className={`text-[10px] font-semibold hidden md:block ${
-                isActive ? "text-slate-800" : isCompleted ? "text-emerald-700" : "text-slate-400"
-              }`}>
-                {item.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </Card>
 
       {/* Form Error alert */}
       {formError && (
-        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
-          {formError}
+        <div className="p-3.5 bg-danger-bg border border-danger-border rounded-xl text-danger text-xs font-semibold flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{formError}</span>
         </div>
       )}
 
       {/* Dynamic Slide Container Wrapper */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl p-6 shadow-sm min-h-[360px] overflow-hidden relative">
+      <Card orientation="vertical" padding="lg" variant="default" className="min-h-[400px] overflow-hidden relative">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           {currentStep === 1 && (
             <motion.div
@@ -196,66 +207,65 @@ export default function StudentOnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
               className="space-y-4"
             >
-              <div>
-                <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <User size={18} className="text-[#2563EB]" /> Personal Identification
+              <div className="border-b border-border/80 pb-3">
+                <h2 className="text-base font-bold text-text flex items-center gap-2">
+                  <User size={18} className="text-gold" /> Personal Identification
                 </h2>
-                <p className="text-[10px] text-slate-400 mt-0.5">Enter core registration contact and identity details.</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Enter core registration contact and identity details.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Full Name</label>
-                  <input
-                    type="text"
-                    placeholder="Marcus Chen"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <FormField label="Full Name" required>
+                  <Input
+                    placeholder="e.g. Marcus Chen"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
                     required
                   />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Academic Email</label>
-                  <input
+                </FormField>
+                <FormField label="Academic Email" required>
+                  <Input
                     type="email"
-                    placeholder="marcus.c@college.edu"
+                    placeholder="marcus.chen@college.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
                     required
                   />
-                </div>
+                </FormField>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Contact Number</label>
-                  <input
-                    type="text"
-                    placeholder="+1 555-0192"
+                <FormField label="Contact Number" required>
+                  <Input
+                    placeholder="+880 1712-345678"
                     value={contactNo}
                     onChange={(e) => setContactNo(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
                     required
                   />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Gender Identity</label>
-                  <select
+                </FormField>
+                <FormField label="Gender Identity">
+                  <Select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all cursor-pointer"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
               </div>
+
+              <FormField label="Initial Password (Optional)" hint="Defaults to Student@123 if left blank">
+                <Input
+                  type="password"
+                  placeholder="Set initial password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </FormField>
             </motion.div>
           )}
 
@@ -267,46 +277,42 @@ export default function StudentOnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
               className="space-y-4"
             >
-              <div>
-                <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <BookOpen size={18} className="text-[#2563EB]" /> Academic Enrollment
+              <div className="border-b border-border/80 pb-3">
+                <h2 className="text-base font-bold text-text flex items-center gap-2">
+                  <BookOpen size={18} className="text-gold" /> Academic Enrollment
                 </h2>
-                <p className="text-[10px] text-slate-400 mt-0.5">Assign academic semester division and department matriculation.</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Assign academic semester division and department matriculation.</p>
               </div>
 
-              <div className="space-y-4 pt-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Admission Semester</label>
-                  <select
+              <div className="space-y-4 pt-1">
+                <FormField label="Admission Semester" required>
+                  <Select
                     value={semesterCode}
                     onChange={(e) => setSemesterCode(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all cursor-pointer"
                   >
                     {semesters.map((sem: any) => (
                       <option key={sem.id} value={sem.id}>
                         {sem.name}
                       </option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Assigned Department</label>
-                  <select
+                <FormField label="Assigned Department" required>
+                  <Select
                     value={deptName}
                     onChange={(e) => setDeptName(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all cursor-pointer"
                   >
                     {departments.map((dept: any) => (
                       <option key={dept.id} value={dept.name}>
                         {dept.name}
                       </option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
               </div>
             </motion.div>
           )}
@@ -319,19 +325,31 @@ export default function StudentOnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
               className="space-y-4"
             >
-              <div>
-                <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <Home size={18} className="text-[#2563EB]" /> Dorm Room Allocation
+              <div className="border-b border-border/80 pb-3">
+                <h2 className="text-base font-bold text-text flex items-center gap-2">
+                  <Home size={18} className="text-gold" /> Hostel Room Allocation
                 </h2>
-                <p className="text-[10px] text-slate-400 mt-0.5">Select an active room vacancy inside the hostel catalog.</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Select an active room vacancy in the campus hostel (optional).</p>
               </div>
 
-              <div className="space-y-3 pt-2">
-                <label className="text-xs font-semibold text-slate-500">Available vacancies</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1">
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-text-secondary">Available Vacancies</label>
+                  {selectedRoomNumber && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => { setSelectedRoomNumber(""); setSelectedRoomId(""); }}
+                      className="text-xs text-danger h-6 px-2"
+                    >
+                      Clear Selection
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[260px] overflow-y-auto pr-1">
                   {rooms.map((room: any) => {
                     const isSelected = selectedRoomNumber === room.roomNumber;
                     const isFull = room.occupantCount >= room.capacity;
@@ -345,27 +363,27 @@ export default function StudentOnboardingWizard() {
                           setSelectedRoomNumber(room.roomNumber);
                           setSelectedRoomId(room.id);
                         }}
-                        className={`p-3 border rounded-lg text-left transition-all flex justify-between items-center ${
+                        className={`p-3.5 border rounded-xl text-left transition-all flex justify-between items-center cursor-pointer ${
                           isFull 
-                            ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed" 
+                            ? "bg-surface-elevated/40 border-border opacity-50 cursor-not-allowed" 
                             : isSelected 
-                              ? "bg-[#2563EB]/5 border-[#2563EB] shadow-sm" 
-                              : "bg-white border-slate-200 hover:bg-slate-50"
+                              ? "bg-gold/5 border-gold ring-1 ring-gold shadow-xs" 
+                              : "bg-surface border-border hover:border-border-hover hover:bg-surface-elevated/40"
                         }`}
                       >
                         <div>
-                          <span className="text-xs font-bold text-slate-800 block font-mono">
+                          <span className="text-xs font-bold text-text block font-mono">
                             Room {room.roomNumber}
                           </span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
                             {room.building} &bull; Floor {room.floor}
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] font-semibold text-[#2563EB] block font-mono">
-                            Rs. {room.monthlyRent}/mo
+                          <span className="text-xs font-bold text-gold block font-mono">
+                            ৳{room.monthlyRent?.toLocaleString() || "0"}/mo
                           </span>
-                          <span className="text-[9px] text-slate-400 block mt-0.5">
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
                             {room.occupantCount}/{room.capacity} Vacancies
                           </span>
                         </div>
@@ -385,73 +403,76 @@ export default function StudentOnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.25 }}
-              className="space-y-4 text-center py-6"
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
             >
               {createStudentMutation.isSuccess ? (
-                <div className="space-y-4">
+                <div className="space-y-4 text-center py-6">
                   <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-inner">
                     <CheckCircle2 size={32} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-800">Registration Complete!</h2>
-                    <p className="text-xs text-slate-400 mt-1.5 max-w-sm mx-auto">
-                      Student record file for <strong className="text-slate-600">{name}</strong> has been successfully registered and room <strong className="font-mono text-slate-600">{selectedRoomNumber || "N/A"}</strong> allocated.
+                    <h2 className="text-lg font-bold text-text">Registration Complete!</h2>
+                    <p className="text-xs text-text-tertiary mt-1.5 max-w-sm mx-auto">
+                      Student record file for <strong className="text-text">{name}</strong> has been successfully registered and room <strong className="font-mono text-text">{selectedRoomNumber || "Unassigned"}</strong> allocated.
                     </p>
                   </div>
                   <div className="pt-4">
-                    <button
+                    <Button
+                      variant="gold"
                       onClick={() => router.push("/students")}
-                      className="h-10 px-6 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm shadow transition-colors cursor-pointer"
                     >
                       Return to Directory
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4 text-left">
-                  <div>
-                    <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                      <UserCheck size={18} className="text-[#2563EB]" /> Review Student Specifications
+                  <div className="border-b border-border/80 pb-3">
+                    <h2 className="text-base font-bold text-text flex items-center gap-2">
+                      <UserCheck size={18} className="text-gold" /> Review Student Specifications
                     </h2>
-                    <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Verify details before committing document entries.</p>
+                    <p className="text-xs text-text-tertiary mt-0.5">Verify details before committing document entries.</p>
                   </div>
 
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-2 text-xs">
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-slate-400">Full Name</span>
-                      <span className="font-semibold text-slate-700">{name}</span>
+                  <div className="bg-surface-elevated/60 rounded-xl p-4 border border-border space-y-2.5 text-xs">
+                    <div className="flex justify-between border-b border-border/60 pb-2">
+                      <span className="text-text-tertiary">Full Name</span>
+                      <span className="font-semibold text-text">{name}</span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-slate-400">Email Address</span>
-                      <span className="font-semibold text-slate-700">{email}</span>
+                    <div className="flex justify-between border-b border-border/60 pb-2">
+                      <span className="text-text-tertiary">Email Address</span>
+                      <span className="font-semibold text-text">{email}</span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-slate-400">Assigned Department</span>
-                      <span className="font-semibold text-slate-700">{deptName}</span>
+                    <div className="flex justify-between border-b border-border/60 pb-2">
+                      <span className="text-text-tertiary">Contact Number</span>
+                      <span className="font-semibold text-text font-mono">{contactNo}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-border/60 pb-2">
+                      <span className="text-text-tertiary">Assigned Department</span>
+                      <span className="font-semibold text-text">{deptName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Hostel Dorm Allocated</span>
-                      <span className="font-bold text-[#2563EB] font-mono">{selectedRoomNumber || "Unallocated"}</span>
+                      <span className="text-text-tertiary">Hostel Dorm Allocated</span>
+                      <span className="font-bold text-gold font-mono">{selectedRoomNumber || "None"}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-[#e1e2ed]">
-                    <button
-                      type="button"
+                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-border">
+                    <Button
+                      variant="outline"
                       onClick={handlePrevStep}
-                      className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer"
                     >
                       Back
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="gold"
                       onClick={handleFormFinishSubmit}
                       disabled={createStudentMutation.isPending}
-                      className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
+                      icon={<Save size={16} />}
                     >
-                      <Save size={16} />
                       {createStudentMutation.isPending ? "Submitting..." : "Confirm & Onboard"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -461,28 +482,27 @@ export default function StudentOnboardingWizard() {
 
         {/* Navigation Control buttons */}
         {currentStep < 4 && (
-          <div className="flex items-center justify-between pt-6 border-t border-[#e1e2ed] mt-6">
-            <button
-              type="button"
+          <div className="flex items-center justify-between pt-6 border-t border-border mt-6">
+            <Button
+              variant="outline"
               disabled={currentStep === 1}
               onClick={handlePrevStep}
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+              icon={<ChevronLeft size={16} />}
             >
-              <ChevronLeft size={16} />
               Back
-            </button>
+            </Button>
             
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={handleNextStep}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-1"
             >
-              Next
-              <ChevronRight size={16} />
-            </button>
+              Next Step
+              <ChevronRight size={16} className="ml-1" />
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
+
