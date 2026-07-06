@@ -92,14 +92,14 @@ export default function FacultyDetailPage() {
 
   if (!faculty) {
     return (
-      <div className="bg-white border border-[#e1e2ed] p-8 rounded-xl text-center space-y-4 max-w-md mx-auto font-sans mt-12">
+      <div className="bg-white border border-border p-8 rounded-xl text-center space-y-4 max-w-md mx-auto font-sans mt-12">
         <AlertCircle size={48} className="text-red-500 mx-auto" />
         <h2 className="text-lg font-bold text-slate-800">Faculty Record Not Found</h2>
         <p className="text-xs text-slate-400">
           The requested Faculty ID <strong className="font-mono text-slate-600">{facultyId}</strong> does not exist in the institutional ERP database.
         </p>
         <Link href="/faculties">
-          <span className="inline-flex items-center gap-2 text-xs font-bold text-[#2563EB] hover:underline cursor-pointer">
+          <span className="inline-flex items-center gap-2 text-xs font-bold text-gold hover:underline cursor-pointer">
             <ChevronLeft size={16} /> Return to Directory
           </span>
         </Link>
@@ -119,7 +119,7 @@ export default function FacultyDetailPage() {
         {!isEditing && roleIs("domain-admin", "super-admin") && (
           <button
             onClick={() => setIsEditing(true)}
-            className="h-9 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
+            className="h-9 px-3 bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             <Edit size={14} />
             Edit Profile
@@ -128,7 +128,7 @@ export default function FacultyDetailPage() {
       </div>
 
       {/* Header Info */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl p-6 shadow-sm flex items-center gap-4">
+      <div className="bg-white border border-border rounded-xl p-6 shadow-sm flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-2xl">
           {(typeof faculty.name === 'string' ? faculty.name : faculty.name?.firstName ?? '').charAt(0) || '?'}
         </div>
@@ -138,7 +138,7 @@ export default function FacultyDetailPage() {
           </span>
           <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             {(typeof faculty.name === 'string' ? faculty.name : `${faculty.name?.firstName ?? ''} ${faculty.name?.lastName ?? ''}`.trim()) || ''}
-            <Sparkles size={16} className="text-[#2563EB]" />
+            <Sparkles size={16} className="text-gold" />
           </h1>
           <p className="text-xs text-slate-400">
             {faculty.designation} &bull; {faculty.academicDepartment}
@@ -158,7 +158,7 @@ export default function FacultyDetailPage() {
       )}
 
       {/* Detail or Edit Form Container */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl p-6 shadow-sm">
+      <div className="bg-white border border-border rounded-xl p-6 shadow-sm">
         {isEditing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1">
@@ -166,8 +166,8 @@ export default function FacultyDetailPage() {
               <input
                 type="text"
                 {...register("name")}
-                className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all ${
-                  errors.name ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-[#c3c6d7]"
+                className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all ${
+                  errors.name ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-border"
                 }`}
               />
               {errors.name && (
@@ -181,8 +181,8 @@ export default function FacultyDetailPage() {
                 <input
                   type="text"
                   {...register("designation")}
-                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all ${
-                    errors.designation ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-[#c3c6d7]"
+                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all ${
+                    errors.designation ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-border"
                   }`}
                 />
                 {errors.designation && (
@@ -194,8 +194,8 @@ export default function FacultyDetailPage() {
                 <input
                   type="text"
                   {...register("academicDepartment")}
-                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all ${
-                    errors.academicDepartment ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-[#c3c6d7]"
+                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all ${
+                    errors.academicDepartment ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-border"
                   }`}
                 />
                 {errors.academicDepartment && (
@@ -210,8 +210,8 @@ export default function FacultyDetailPage() {
                 <input
                   type="email"
                   {...register("email")}
-                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all ${
-                    errors.email ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-[#c3c6d7]"
+                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all ${
+                    errors.email ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-border"
                   }`}
                 />
                 {errors.email && (
@@ -223,8 +223,8 @@ export default function FacultyDetailPage() {
                 <input
                   type="text"
                   {...register("contactNo")}
-                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all ${
-                    errors.contactNo ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-[#c3c6d7]"
+                  className={`w-full h-10 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all ${
+                    errors.contactNo ? "border-red-400 focus:ring-red-400/10 focus:border-red-400" : "border-border"
                   }`}
                 />
                 {errors.contactNo && (
@@ -233,18 +233,18 @@ export default function FacultyDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e1e2ed] mt-4">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-4">
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer"
+                className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={updateFacultyMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
+                className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
               >
                 <Save size={16} />
                 {updateFacultyMutation.isPending ? "Saving..." : "Save Modifications"}
