@@ -4,24 +4,122 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { usePermission } from "@/hooks/usePermission";
-import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Plus, Edit2, Trash2, CheckCircle2, X, Eye, Target, GitBranch } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  Plus,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  Eye,
+  Target,
+  GitBranch,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
+import {
+  PageHeader,
+  Card,
+  Tabs,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+  IconButton,
+  Badge,
+  EmptyState,
+} from "@/components/ui";
 
-const COGNITIVE_LEVELS = ["remember", "understand", "apply", "analyze", "evaluate", "create"];
+const COGNITIVE_LEVELS = [
+  { level: "C1 - Remember", domain: "Cognitive", desc: "Recall facts, basic medical terminology and anatomical structures" },
+  { level: "C2 - Understand", domain: "Cognitive", desc: "Explain physiological mechanisms and biochemical pathways" },
+  { level: "C3 - Apply", domain: "Cognitive", desc: "Execute diagnostic protocols and laboratory procedures" },
+  { level: "C4 - Analyze", domain: "Cognitive", desc: "Differentiate differential diagnoses and pharmacological interactions" },
+  { level: "C5 - Evaluate", domain: "Cognitive", desc: "Appraise treatment efficacy and clinical trial methodologies" },
+  { level: "C6 - Create", domain: "Cognitive", desc: "Formulate specialized patient management regimens" },
+  { level: "P1 - Precision & Clinical Skill", domain: "Psychomotor", desc: "Perform clinical palpation, auscultation, and aseptic procedures" },
+  { level: "A1 - Professional Ethics & Empathy", domain: "Affective", desc: "Demonstrate bedside manner, patient empathy, and medical code of conduct" },
+];
+
+const MOCK_BOS_REVISIONS = [
+  {
+    id: "BOS-2026-01",
+    resolutionNo: "BoS/MED/2026/04-A",
+    degreeProgram: "Bachelor of Medicine & Surgery (MBBS)",
+    academicSession: "2026-2027",
+    bosApprovalDate: "2026-02-14",
+    academicCouncilApprovalDate: "2026-03-01",
+    status: "Enacted & Active",
+    version: "v4.2 (OBE Aligned)",
+    totalCredits: 220,
+    directAttainmentBenchmark: "70% students score >= 60%",
+    leadSignatory: "Prof. Dr. Evelyn Parker (Dean of Faculty)",
+  },
+  {
+    id: "BOS-2025-03",
+    resolutionNo: "BoS/CSE/2025/11-C",
+    degreeProgram: "B.Sc. in Computer Science & Engineering",
+    academicSession: "2025-2026",
+    bosApprovalDate: "2025-08-20",
+    academicCouncilApprovalDate: "2025-09-12",
+    status: "Active (Archived Revision in 2028)",
+    version: "v3.1 (BAETE/Washington Accord)",
+    totalCredits: 148,
+    directAttainmentBenchmark: "65% students score >= 60%",
+    leadSignatory: "Prof. Dr. Marcus Vance (BoS Convener)",
+  },
+];
+
+const MOCK_WEIGHTED_MATRIX = [
+  {
+    coCode: "CO1: Cellular Pathology",
+    course: "PATH-201",
+    poWeights: { PO1: 3, PO2: 2, PO3: 1, PO4: 0, PO5: 2, PO6: 1, PO7: 3 },
+    targetAttainment: 75,
+    actualAttainment: 78.4,
+    status: "Attained",
+  },
+  {
+    coCode: "CO2: Microbial Antimicrobial Resistance",
+    course: "MICRO-202",
+    poWeights: { PO1: 2, PO2: 3, PO3: 2, PO4: 1, PO5: 3, PO6: 2, PO7: 2 },
+    targetAttainment: 70,
+    actualAttainment: 72.1,
+    status: "Attained",
+  },
+  {
+    coCode: "CO3: Clinical Auscultation & Vitals",
+    course: "CLIN-301",
+    poWeights: { PO1: 1, PO2: 2, PO3: 3, PO4: 3, PO5: 2, PO6: 3, PO7: 3 },
+    targetAttainment: 80,
+    actualAttainment: 69.5,
+    status: "Continuous Improvement Plan",
+  },
+  {
+    coCode: "CO4: Pharmacokinetics & Dosing",
+    course: "PHARM-203",
+    poWeights: { PO1: 3, PO2: 3, PO3: 2, PO4: 1, PO5: 2, PO6: 1, PO7: 2 },
+    targetAttainment: 70,
+    actualAttainment: 74.0,
+    status: "Attained",
+  },
+];
 
 const coSchema = zod.object({
-  course: zod.string().min(1, "Course is required"),
-  code: zod.string().min(1, "Code is required"),
+  course: zod.string().min(1, "Course code or ID is required"),
+  code: zod.string().min(1, "Outcome code is required"),
   description: zod.string().min(1, "Description is required"),
   cognitiveLevel: zod.string().min(1, "Cognitive level is required"),
 });
 
 const poSchema = zod.object({
-  code: zod.string().min(1, "Code is required"),
+  code: zod.string().min(1, "Outcome code is required"),
   description: zod.string().min(1, "Description is required"),
 });
 
@@ -31,7 +129,7 @@ type POFormValues = zod.infer<typeof poSchema>;
 export default function CurriculumPage() {
   const { can } = usePermission();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"cos" | "pos" | "maps">("cos");
+  const [activeTab, setActiveTab] = useState<string>("cos");
   const [isCOModalOpen, setIsCOModalOpen] = useState(false);
   const [isPOModalOpen, setIsPOModalOpen] = useState(false);
   const [editingCO, setEditingCO] = useState<any>(null);
@@ -64,7 +162,10 @@ export default function CurriculumPage() {
   });
 
   const createCOMutation = useMutation({
-    mutationFn: (data: any) => editingCO ? api.updateCourseOutcome(editingCO.id, data) : api.createCourseOutcome(data),
+    mutationFn: (data: any) =>
+      editingCO
+        ? api.updateCourseOutcome(editingCO.id, data)
+        : api.createCourseOutcome(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseOutcomes"] });
       setSuccessMsg(editingCO ? "Course Outcome updated." : "Course Outcome created.");
@@ -77,11 +178,18 @@ export default function CurriculumPage() {
 
   const deleteCOMutation = useMutation({
     mutationFn: (id: string) => api.deleteCourseOutcome(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["courseOutcomes"] }); setSuccessMsg("Course Outcome deleted."); setTimeout(() => setSuccessMsg(""), 4000); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courseOutcomes"] });
+      setSuccessMsg("Course Outcome deleted.");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    },
   });
 
   const createPOMutation = useMutation({
-    mutationFn: (data: any) => editingPO ? api.updateProgramOutcome(editingPO.id, data) : api.createProgramOutcome(data),
+    mutationFn: (data: any) =>
+      editingPO
+        ? api.updateProgramOutcome(editingPO.id, data)
+        : api.createProgramOutcome(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programOutcomes"] });
       setSuccessMsg(editingPO ? "Program Outcome updated." : "Program Outcome created.");
@@ -94,12 +202,20 @@ export default function CurriculumPage() {
 
   const deletePOMutation = useMutation({
     mutationFn: (id: string) => api.deleteProgramOutcome(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["programOutcomes"] }); setSuccessMsg("Program Outcome deleted."); setTimeout(() => setSuccessMsg(""), 4000); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programOutcomes"] });
+      setSuccessMsg("Program Outcome deleted.");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    },
   });
 
   const deleteMapMutation = useMutation({
     mutationFn: (id: string) => api.deleteCurriculumMap(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["curriculumMaps"] }); setSuccessMsg("Curriculum map deleted."); setTimeout(() => setSuccessMsg(""), 4000); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["curriculumMaps"] });
+      setSuccessMsg("Curriculum map deleted.");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    },
   });
 
   const {
@@ -108,7 +224,10 @@ export default function CurriculumPage() {
     reset: resetCOForm,
     setValue: setCOValue,
     formState: { errors: coErrors },
-  } = useForm<COFormValues>({ resolver: zodResolver(coSchema), defaultValues: { course: "", code: "", description: "", cognitiveLevel: "apply" } });
+  } = useForm<COFormValues>({
+    resolver: zodResolver(coSchema),
+    defaultValues: { course: "", code: "", description: "", cognitiveLevel: "C3 - Apply" },
+  });
 
   const {
     register: registerPO,
@@ -116,293 +235,670 @@ export default function CurriculumPage() {
     reset: resetPOForm,
     setValue: setPOValue,
     formState: { errors: poErrors },
-  } = useForm<POFormValues>({ resolver: zodResolver(poSchema), defaultValues: { code: "", description: "" } });
+  } = useForm<POFormValues>({
+    resolver: zodResolver(poSchema),
+    defaultValues: { code: "", description: "" },
+  });
 
   const openCOModal = (co?: any) => {
-    if (co) { setEditingCO(co); setCOValue("course", co.course); setCOValue("code", co.code); setCOValue("description", co.description); setCOValue("cognitiveLevel", co.cognitiveLevel); }
-    else { setEditingCO(null); resetCOForm(); }
+    if (co) {
+      setEditingCO(co);
+      setCOValue("course", co.course);
+      setCOValue("code", co.code);
+      setCOValue("description", co.description);
+      setCOValue("cognitiveLevel", co.cognitiveLevel);
+    } else {
+      setEditingCO(null);
+      resetCOForm();
+    }
     setIsCOModalOpen(true);
   };
 
   const openPOModal = (po?: any) => {
-    if (po) { setEditingPO(po); setPOValue("code", po.code); setPOValue("description", po.description); }
-    else { setEditingPO(null); resetPOForm(); }
+    if (po) {
+      setEditingPO(po);
+      setPOValue("code", po.code);
+      setPOValue("description", po.description);
+    } else {
+      setEditingPO(null);
+      resetPOForm();
+    }
     setIsPOModalOpen(true);
   };
 
+  const tabItems = [
+    {
+      id: "cos",
+      label: "Course Outcomes (CO)",
+      icon: <Target size={14} />,
+      count: courseOutcomes.length,
+    },
+    {
+      id: "pos",
+      label: "Program Outcomes (PO)",
+      icon: <GitBranch size={14} />,
+      count: programOutcomes.length,
+    },
+    {
+      id: "weighted_matrix",
+      label: "CO-PO Correlation Matrix & Attainment",
+      icon: <BookOpen size={14} />,
+      count: MOCK_WEIGHTED_MATRIX.length,
+    },
+    {
+      id: "bos_governance",
+      label: "Board of Studies (BoS) Revisions",
+      icon: <CheckCircle2 size={14} />,
+      count: MOCK_BOS_REVISIONS.length,
+    },
+    {
+      id: "maps",
+      label: "Curriculum Maps & Syllabi Links",
+      icon: <BookOpen size={14} />,
+      count: curriculumMaps.length,
+    },
+  ];
+
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><BookOpen className="text-[#2563EB]" /> Curriculum & Outcomes</h1>
-          <p className="text-xs text-slate-400 mt-1">Course outcomes, program outcomes, and curriculum mapping.</p>
-        </div>
-        <div className="flex gap-2">
-          {activeTab === "cos" && isEditor && (
-            <button onClick={() => openCOModal()} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors cursor-pointer"><Plus size={16} /> Add CO</button>
-          )}
-          {activeTab === "pos" && isEditor && (
-            <button onClick={() => openPOModal()} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors cursor-pointer"><Plus size={16} /> Add PO</button>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Curriculum & Outcomes"
+        subtitle="Outcome-Based Education (OBE) course outcomes, program outcomes, and curriculum mapping."
+        actions={
+          <div className="flex items-center gap-2">
+            {activeTab === "cos" && isEditor && (
+              <Button
+                variant="gold"
+                size="md"
+                onClick={() => openCOModal()}
+                icon={<Plus size={15} />}
+              >
+                Add Course Outcome
+              </Button>
+            )}
+            {activeTab === "pos" && isEditor && (
+              <Button
+                variant="gold"
+                size="md"
+                onClick={() => openPOModal()}
+                icon={<Plus size={15} />}
+              >
+                Add Program Outcome
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} /><span>{successMsg}</span>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-lg flex items-center gap-2"
+        >
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="flex border-b border-[#e1e2ed] bg-slate-50/50 px-4 gap-4">
-          <button onClick={() => setActiveTab("cos")} className={`py-2 text-xs font-bold tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "cos" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            <Target size={14} className="inline mr-1" /> Course Outcomes
-          </button>
-          <button onClick={() => setActiveTab("pos")} className={`py-2 text-xs font-bold tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "pos" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            <GitBranch size={14} className="inline mr-1" /> Program Outcomes
-          </button>
-          <button onClick={() => setActiveTab("maps")} className={`py-2 text-xs font-bold tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "maps" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            <BookOpen size={14} className="inline mr-1" /> Curriculum Map
-          </button>
-        </div>
+      {/* Tabs */}
+      <Tabs items={tabItems} value={activeTab} onChange={(id) => setActiveTab(id)} />
 
-        {/* Course Outcomes */}
-        {activeTab === "cos" && (
-          <div>
-            {loadingCO ? <TableSkeleton rows={4} cols={5} /> : courseOutcomes.length === 0 ? (
-              <p className="p-12 text-center text-xs text-slate-400">No course outcomes defined yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Code</th>
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Course</th>
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Description</th>
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Cognitive Level</th>
-                      {isEditor && <th className="p-3 text-xs font-bold text-slate-400 uppercase">Actions</th>}
+      {/* Course Outcomes Tab */}
+      {activeTab === "cos" && (
+        <Card noPadding>
+          {loadingCO ? (
+            <div className="p-6">
+              <TableSkeleton rows={4} cols={5} />
+            </div>
+          ) : courseOutcomes.length === 0 ? (
+            <EmptyState
+              title="No Course Outcomes Registered"
+              description="Define course learning outcomes according to Bloom's Taxonomy."
+              icon={<Target size={28} className="text-gold" />}
+              action={
+                isEditor ? (
+                  <Button variant="gold" onClick={() => openCOModal()} icon={<Plus size={15} />}>
+                    Add Course Outcome
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-muted/50 border-b border-border">
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Code</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Course</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Description</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Cognitive Level</th>
+                    {isEditor && (
+                      <th className="p-3 text-[11px] font-semibold text-text-muted uppercase text-right">
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {courseOutcomes.map((co: any) => (
+                    <tr key={co.id} className="hover:bg-surface-hover text-xs">
+                      <td className="p-3 font-mono font-bold text-primary">{co.code}</td>
+                      <td className="p-3 font-semibold text-text">{co.courseTitle || co.course}</td>
+                      <td className="p-3 text-text-muted max-w-sm">{co.description}</td>
+                      <td className="p-3">
+                        <Badge variant="neutral" size="sm">
+                          {co.cognitiveLevel}
+                        </Badge>
+                      </td>
+                      {isEditor && (
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              label="Edit CO"
+                              icon={<Edit2 size={13} />}
+                              onClick={() => openCOModal(co)}
+                            />
+                            {isAdmin && (
+                              <IconButton
+                                variant="ghost"
+                                size="sm"
+                                label="Delete CO"
+                                icon={<Trash2 size={13} className="text-rose-500" />}
+                                onClick={() => {
+                                  if (confirm("Delete this course outcome?")) {
+                                    deleteCOMutation.mutate(co.id);
+                                  }
+                                }}
+                              />
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e1e2ed]">
-                    {courseOutcomes.map((co: any) => (
-                      <tr key={co.id} className="hover:bg-slate-50/50 text-xs">
-                        <td className="p-3 font-mono font-bold text-[#2563EB]">{co.code}</td>
-                        <td className="p-3 font-semibold text-slate-700">{co.courseTitle || co.course}</td>
-                        <td className="p-3 text-slate-500 max-w-xs truncate">{co.description}</td>
-                        <td className="p-3"><span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded text-[10px] font-semibold">{co.cognitiveLevel}</span></td>
-                        {isEditor && (
-                          <td className="p-3">
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => openCOModal(co)} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors"><Edit2 size={13} /></button>
-                              {isAdmin && <button onClick={() => { if (confirm("Delete this course outcome?")) deleteCOMutation.mutate(co.id); }} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
-        {/* Program Outcomes */}
-        {activeTab === "pos" && (
-          <div>
-            {loadingPO ? <TableSkeleton rows={4} cols={3} /> : programOutcomes.length === 0 ? (
-              <p className="p-12 text-center text-xs text-slate-400">No program outcomes defined yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Code</th>
-                      <th className="p-3 text-xs font-bold text-slate-400 uppercase">Description</th>
-                      {isEditor && <th className="p-3 text-xs font-bold text-slate-400 uppercase">Actions</th>}
+      {/* Program Outcomes Tab */}
+      {activeTab === "pos" && (
+        <Card noPadding>
+          {loadingPO ? (
+            <div className="p-6">
+              <TableSkeleton rows={4} cols={3} />
+            </div>
+          ) : programOutcomes.length === 0 ? (
+            <EmptyState
+              title="No Program Outcomes Registered"
+              description="Define overarching degree program graduate attributes (POs)."
+              icon={<GitBranch size={28} className="text-gold" />}
+              action={
+                isEditor ? (
+                  <Button variant="gold" onClick={() => openPOModal()} icon={<Plus size={15} />}>
+                    Add Program Outcome
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-muted/50 border-b border-border">
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase w-28">
+                      Code
+                    </th>
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">
+                      Graduate Attribute / Description
+                    </th>
+                    {isEditor && (
+                      <th className="p-3 text-[11px] font-semibold text-text-muted uppercase text-right w-24">
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {programOutcomes.map((po: any) => (
+                    <tr key={po.id} className="hover:bg-surface-hover text-xs">
+                      <td className="p-3 font-mono font-bold text-primary">{po.code}</td>
+                      <td className="p-3 text-text">{po.description}</td>
+                      {isEditor && (
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              label="Edit PO"
+                              icon={<Edit2 size={13} />}
+                              onClick={() => openPOModal(po)}
+                            />
+                            {isAdmin && (
+                              <IconButton
+                                variant="ghost"
+                                size="sm"
+                                label="Delete PO"
+                                icon={<Trash2 size={13} className="text-rose-500" />}
+                                onClick={() => {
+                                  if (confirm("Delete this program outcome?")) {
+                                    deletePOMutation.mutate(po.id);
+                                  }
+                                }}
+                              />
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e1e2ed]">
-                    {programOutcomes.map((po: any) => (
-                      <tr key={po.id} className="hover:bg-slate-50/50 text-xs">
-                        <td className="p-3 font-mono font-bold text-[#2563EB]">{po.code}</td>
-                        <td className="p-3 text-slate-500">{po.description}</td>
-                        {isEditor && (
-                          <td className="p-3">
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => openPOModal(po)} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors"><Edit2 size={13} /></button>
-                              {isAdmin && <button onClick={() => { if (confirm("Delete this program outcome?")) deletePOMutation.mutate(po.id); }} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
-        {/* Curriculum Maps */}
-        {activeTab === "maps" && (
-          <div>
-            {viewingMatrixId ? (
-              <div>
-                <div className="p-3 border-b border-[#e1e2ed] bg-slate-50/50 flex items-center gap-2">
-                  <button onClick={() => setViewingMatrixId(null)} className="text-xs text-[#2563EB] font-semibold hover:underline cursor-pointer">&larr; Back to Maps</button>
-                  <span className="text-xs text-slate-400">|</span>
-                  <span className="text-xs font-bold text-slate-500">CO-PO Matrix</span>
+      {/* Curriculum Maps Tab */}
+      {activeTab === "maps" && (
+        <Card noPadding>
+          {viewingMatrixId ? (
+            <div>
+              <div className="p-4 border-b border-border bg-surface-muted/30 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewingMatrixId(null)}
+                    icon={<ArrowLeft size={14} />}
+                  >
+                    Back to Maps
+                  </Button>
+                  <span className="text-xs font-semibold text-text">
+                    CO-PO Correlation Matrix
+                  </span>
                 </div>
-                {loadingMatrix ? <TableSkeleton rows={4} cols={5} /> : coPoMatrix.length === 0 ? (
-                  <p className="p-8 text-center text-xs text-slate-400">No matrix data available for this map.</p>
-                ) : (
-                  <div className="overflow-x-auto p-4">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                          <th className="p-2 text-xs font-bold text-slate-400 uppercase">CO</th>
-                          {coPoMatrix[0]?.poMappings?.map((pm: any) => (
-                            <th key={pm.po?.id || pm.po} className="p-2 text-xs font-bold text-slate-400 uppercase text-center">{pm.po?.code || pm.po}</th>
+              </div>
+              {loadingMatrix ? (
+                <div className="p-6">
+                  <TableSkeleton rows={4} cols={5} />
+                </div>
+              ) : coPoMatrix.length === 0 ? (
+                <EmptyState
+                  title="No Matrix Data Available"
+                  description="No mapping relationships defined for this curriculum map yet."
+                />
+              ) : (
+                <div className="overflow-x-auto p-4">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-surface-muted/50 border-b border-border">
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase w-24">
+                          CO Code
+                        </th>
+                        {coPoMatrix[0]?.poMappings?.map((pm: any) => (
+                          <th
+                            key={pm.po?.id || pm.po}
+                            className="p-3 text-[11px] font-semibold text-text-muted uppercase text-center"
+                          >
+                            {pm.po?.code || pm.po}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {coPoMatrix.map((row: any, i: number) => (
+                        <tr key={i} className="hover:bg-surface-hover text-xs">
+                          <td className="p-3 font-mono font-bold text-primary">
+                            {row.co?.code || row.co}
+                          </td>
+                          {row.poMappings?.map((pm: any, j: number) => (
+                            <td key={j} className="p-3 text-center">
+                              <span
+                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                                  pm.mapped
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-surface-muted text-text-subtle border border-border"
+                                }`}
+                              >
+                                {pm.mapped ? <Check size={12} /> : "—"}
+                              </span>
+                            </td>
                           ))}
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#e1e2ed]">
-                        {coPoMatrix.map((row: any, i: number) => (
-                          <tr key={i} className="hover:bg-slate-50/50 text-xs">
-                            <td className="p-2 font-mono font-bold text-[#2563EB]">{row.co?.code || row.co}</td>
-                            {row.poMappings?.map((pm: any, j: number) => (
-                              <td key={j} className="p-2 text-center">
-                                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${pm.mapped ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-50 text-slate-300 border border-slate-200"}`}>
-                                  {pm.mapped ? "\u2713" : "\u2014"}
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                {loadingMaps ? <TableSkeleton rows={3} cols={5} /> : curriculumMaps.length === 0 ? (
-                  <p className="p-12 text-center text-xs text-slate-400">No curriculum maps created yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                          <th className="p-3 text-xs font-bold text-slate-400 uppercase">Course</th>
-                          <th className="p-3 text-xs font-bold text-slate-400 uppercase">Semester</th>
-                          <th className="p-3 text-xs font-bold text-slate-400 uppercase">Outcomes</th>
-                          <th className="p-3 text-xs font-bold text-slate-400 uppercase">Topics</th>
-                          <th className="p-3 text-xs font-bold text-slate-400 uppercase">Actions</th>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              {loadingMaps ? (
+                <div className="p-6">
+                  <TableSkeleton rows={3} cols={5} />
+                </div>
+              ) : curriculumMaps.length === 0 ? (
+                <EmptyState
+                  title="No Curriculum Maps Created"
+                  description="Curriculum maps connect course outcomes with semester syllabi."
+                  icon={<BookOpen size={28} className="text-gold" />}
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-surface-muted/50 border-b border-border">
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Course</th>
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Semester</th>
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Outcomes</th>
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Topics</th>
+                        <th className="p-3 text-[11px] font-semibold text-text-muted uppercase text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {curriculumMaps.map((cm: any) => (
+                        <tr key={cm.id} className="hover:bg-surface-hover text-xs">
+                          <td className="p-3 font-semibold text-text">{cm.courseTitle || cm.course}</td>
+                          <td className="p-3 text-text-muted">{cm.academicSemester}</td>
+                          <td className="p-3">
+                            <Badge variant="primary" size="sm">
+                              {cm.courseOutcomes?.length || 0} COs
+                            </Badge>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="neutral" size="sm">
+                              {cm.topics?.length || 0} topics
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewingMatrixId(cm.id)}
+                                icon={<Eye size={12} />}
+                              >
+                                View Matrix
+                              </Button>
+                              {isAdmin && (
+                                <IconButton
+                                  variant="ghost"
+                                  size="sm"
+                                  label="Delete Map"
+                                  icon={<Trash2 size={13} className="text-rose-500" />}
+                                  onClick={() => {
+                                    if (confirm("Delete this curriculum map?")) {
+                                      deleteMapMutation.mutate(cm.id);
+                                    }
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#e1e2ed]">
-                        {curriculumMaps.map((cm: any) => (
-                          <tr key={cm.id} className="hover:bg-slate-50/50 text-xs">
-                            <td className="p-3 font-semibold text-slate-700">{cm.courseTitle || cm.course}</td>
-                            <td className="p-3 text-slate-500">{cm.academicSemester}</td>
-                            <td className="p-3"><span className="px-2 py-0.5 bg-blue-50 text-[#2563EB] border border-blue-100 rounded text-[10px] font-semibold">{(cm.courseOutcomes?.length || 0)} COs</span></td>
-                            <td className="p-3"><span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded text-[10px] font-semibold">{(cm.topics?.length || 0)} topics</span></td>
-                            <td className="p-3">
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => setViewingMatrixId(cm.id)} className="h-7 px-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded text-[10px] transition-colors cursor-pointer flex items-center gap-1 border border-slate-200">
-                                  <Eye size={11} /> CO-PO Matrix
-                                </button>
-                                {isAdmin && (
-                                  <button onClick={() => { if (confirm("Delete this curriculum map?")) deleteMapMutation.mutate(cm.id); }} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors">
-                                    <Trash2 size={13} />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Weighted CO-PO Correlation Matrix Tab */}
+      {activeTab === "weighted_matrix" && (
+        <Card noPadding>
+          <div className="p-4 border-b border-border bg-surface-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 className="text-xs font-bold text-text uppercase tracking-wider">
+                NBA / Washington Accord CO-PO Correlation Matrix & Direct Cohort Attainment
+              </h4>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Correlation weights: 1 (Slight/Low), 2 (Moderate/Medium), 3 (Substantial/High). Attainment benchmark: $\ge 60\%$ threshold.
+              </p>
+            </div>
+            <Badge variant="gold" size="sm">UGC OBE Framework</Badge>
           </div>
-        )}
-      </div>
+
+          <div className="overflow-x-auto p-4">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-muted/50 border-b border-border text-[11px] text-text-muted uppercase font-semibold">
+                  <th className="p-3">Course & Learning Outcome</th>
+                  <th className="p-3 text-center">PO1 (Knowledge)</th>
+                  <th className="p-3 text-center">PO2 (Analysis)</th>
+                  <th className="p-3 text-center">PO3 (Design/Clinical)</th>
+                  <th className="p-3 text-center">PO4 (Investigation)</th>
+                  <th className="p-3 text-center">PO5 (Modern Tools)</th>
+                  <th className="p-3 text-center">PO6 (Ethics)</th>
+                  <th className="p-3 text-center">PO7 (Lifelong)</th>
+                  <th className="p-3 text-center">Target %</th>
+                  <th className="p-3 text-center">Attained %</th>
+                  <th className="p-3 text-right">CQI Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border text-xs">
+                {MOCK_WEIGHTED_MATRIX.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-surface-hover">
+                    <td className="p-3">
+                      <span className="font-bold text-text block">{row.coCode}</span>
+                      <span className="text-[11px] text-text-muted font-mono">{row.course}</span>
+                    </td>
+                    {Object.values(row.poWeights).map((weight, wIdx) => (
+                      <td key={wIdx} className="p-3 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-md font-mono font-bold text-xs ${
+                            weight === 3
+                              ? "bg-emerald-500/10 text-emerald-700 border border-emerald-300"
+                              : weight === 2
+                              ? "bg-amber-500/10 text-amber-700 border border-amber-300"
+                              : weight === 1
+                              ? "bg-blue-500/10 text-blue-700 border border-blue-200"
+                              : "text-text-subtle"
+                          }`}
+                        >
+                          {weight > 0 ? weight : "—"}
+                        </span>
+                      </td>
+                    ))}
+                    <td className="p-3 text-center font-mono font-semibold text-text">{row.targetAttainment}%</td>
+                    <td className="p-3 text-center font-mono font-bold text-gold">{row.actualAttainment}%</td>
+                    <td className="p-3 text-right">
+                      <Badge
+                        variant={row.status === "Attained" ? "success" : "warning"}
+                        size="sm"
+                      >
+                        {row.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* BoS Governance Tab */}
+      {activeTab === "bos_governance" && (
+        <Card noPadding>
+          <div className="p-4 border-b border-border bg-surface-muted/30 flex items-center justify-between">
+            <div>
+              <h4 className="text-xs font-bold text-text uppercase tracking-wider">
+                Board of Studies (BoS) Curriculum Resolutions & Academic Council Gazette
+              </h4>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Statutory tracking of degree syllabi versioning, total credit ceilings, and Academic Council ratifications.
+              </p>
+            </div>
+            <Badge variant="gold" size="sm">Statutory Gazette</Badge>
+          </div>
+
+          <div className="divide-y divide-border">
+            {MOCK_BOS_REVISIONS.map((bos) => (
+              <div key={bos.id} className="p-4 hover:bg-surface-hover transition-colors space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-gold/10 text-gold flex items-center justify-center font-bold text-xs">
+                      {bos.version.slice(0, 4)}
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-text text-sm">{bos.degreeProgram}</h5>
+                      <span className="text-xs text-text-muted font-mono">{bos.resolutionNo} • Session {bos.academicSession}</span>
+                    </div>
+                  </div>
+                  <Badge variant="success" size="sm">{bos.status}</Badge>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-muted/40 p-3 rounded-lg text-xs">
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-semibold block">BoS Approval</span>
+                    <span className="font-mono text-text font-medium">{bos.bosApprovalDate}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-semibold block">Academic Council</span>
+                    <span className="font-mono text-text font-medium">{bos.academicCouncilApprovalDate}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-semibold block">Total Degree Credits</span>
+                    <span className="font-mono text-gold font-bold">{bos.totalCredits} Credits</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-semibold block">Attainment Target</span>
+                    <span className="text-text font-medium">{bos.directAttainmentBenchmark}</span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-text-muted flex items-center justify-between">
+                  <span>Signatory: <strong>{bos.leadSignatory}</strong></span>
+                  <span className="text-gold font-bold cursor-pointer hover:underline">Download BoS Resolution PDF</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Course Outcome Modal */}
-      <AnimatePresence>{isCOModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-800">{editingCO ? "Edit" : "Add"} Course Outcome</span>
-              <button onClick={() => { setIsCOModalOpen(false); setEditingCO(null); }} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600"><X size={18} /></button>
-            </div>
-            <form onSubmit={handleSubmitCO((values) => createCOMutation.mutate(values))} className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Course ID</label>
-                <input type="text" {...registerCO("course")} placeholder="e.g. CRS-001" className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {coErrors.course && <span className="text-[10px] text-red-500 font-semibold">{coErrors.course.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Outcome Code</label>
-                <input type="text" {...registerCO("code")} placeholder="e.g. CO1" className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {coErrors.code && <span className="text-[10px] text-red-500 font-semibold">{coErrors.code.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Description</label>
-                <textarea {...registerCO("description")} rows={3} className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {coErrors.description && <span className="text-[10px] text-red-500 font-semibold">{coErrors.description.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Cognitive Level</label>
-                <select {...registerCO("cognitiveLevel")} className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]">
-                  {COGNITIVE_LEVELS.map((lvl) => (<option key={lvl} value={lvl}>{lvl.charAt(0).toUpperCase() + lvl.slice(1)}</option>))}
-                </select>
-                {coErrors.cognitiveLevel && <span className="text-[10px] text-red-500 font-semibold">{coErrors.cognitiveLevel.message}</span>}
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => { setIsCOModalOpen(false); setEditingCO(null); }} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm flex items-center gap-1.5">
-                  <CheckCircle2 size={14} /> {editingCO ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}</AnimatePresence>
+      <Modal
+        isOpen={isCOModalOpen}
+        onClose={() => {
+          setIsCOModalOpen(false);
+          setEditingCO(null);
+        }}
+        title={editingCO ? "Edit Course Outcome" : "Add Course Outcome"}
+        subtitle="Specify measurable performance outcome and target cognitive level"
+        size="md"
+      >
+        <form
+          onSubmit={handleSubmitCO((values) => createCOMutation.mutate(values))}
+          className="space-y-4"
+        >
+          <FormField label="Course Code / ID" required error={coErrors.course?.message}>
+            <Input {...registerCO("course")} placeholder="e.g. MBBS-101" />
+          </FormField>
+
+          <FormField label="Outcome Code" required error={coErrors.code?.message}>
+            <Input {...registerCO("code")} placeholder="e.g. CO1" />
+          </FormField>
+
+          <FormField label="Outcome Description" required error={coErrors.description?.message}>
+            <Textarea
+              {...registerCO("description")}
+              rows={3}
+              placeholder="Describe student capability upon completing course module..."
+            />
+          </FormField>
+
+          <FormField label="Cognitive Level & Domain" required error={coErrors.cognitiveLevel?.message}>
+            <Select {...registerCO("cognitiveLevel")}>
+              {COGNITIVE_LEVELS.map((lvl) => (
+                <option key={lvl.level} value={lvl.level}>
+                  {lvl.level} ({lvl.domain})
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsCOModalOpen(false);
+                setEditingCO(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={createCOMutation.isPending}
+              icon={<CheckCircle2 size={14} />}
+            >
+              {editingCO ? "Update Outcome" : "Create Outcome"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Program Outcome Modal */}
-      <AnimatePresence>{isPOModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-800">{editingPO ? "Edit" : "Add"} Program Outcome</span>
-              <button onClick={() => { setIsPOModalOpen(false); setEditingPO(null); }} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600"><X size={18} /></button>
-            </div>
-            <form onSubmit={handleSubmitPO((values) => createPOMutation.mutate(values))} className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Outcome Code</label>
-                <input type="text" {...registerPO("code")} placeholder="e.g. PO1" className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {poErrors.code && <span className="text-[10px] text-red-500 font-semibold">{poErrors.code.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Description</label>
-                <textarea {...registerPO("description")} rows={3} className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {poErrors.description && <span className="text-[10px] text-red-500 font-semibold">{poErrors.description.message}</span>}
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => { setIsPOModalOpen(false); setEditingPO(null); }} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm flex items-center gap-1.5">
-                  <CheckCircle2 size={14} /> {editingPO ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}</AnimatePresence>
+      <Modal
+        isOpen={isPOModalOpen}
+        onClose={() => {
+          setIsPOModalOpen(false);
+          setEditingPO(null);
+        }}
+        title={editingPO ? "Edit Program Outcome" : "Add Program Outcome"}
+        subtitle="Institutional graduate attribute for accreditation (NBA / PMDC / BMDC)"
+        size="md"
+      >
+        <form
+          onSubmit={handleSubmitPO((values) => createPOMutation.mutate(values))}
+          className="space-y-4"
+        >
+          <FormField label="Outcome Code" required error={poErrors.code?.message}>
+            <Input {...registerPO("code")} placeholder="e.g. PO1" />
+          </FormField>
+
+          <FormField label="Graduate Attribute Description" required error={poErrors.description?.message}>
+            <Textarea
+              {...registerPO("description")}
+              rows={3}
+              placeholder="Describe overarching graduate skill, ethics, or clinical competence..."
+            />
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsPOModalOpen(false);
+                setEditingPO(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={createPOMutation.isPending}
+              icon={<CheckCircle2 size={14} />}
+            >
+              {editingPO ? "Update PO" : "Create PO"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

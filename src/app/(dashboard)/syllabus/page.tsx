@@ -2,11 +2,32 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/services/api";
 import { usePermission } from "@/hooks/usePermission";
 import { TableSkeleton } from "@/components/ui/Skeleton";
-import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Plus, Pencil, Trash2, CheckCircle2, X, FileText, Clock } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  Plus,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  FileText,
+  Clock,
+  Award,
+} from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+  IconButton,
+  Badge,
+  EmptyState,
+} from "@/components/ui";
 
 interface Syllabus {
   id: string;
@@ -23,17 +44,59 @@ interface Syllabus {
 }
 
 const MOCK_SYLLABUS: Syllabus[] = [
-  { id: "SYL-001", courseCode: "MBBS-101", courseName: "Anatomy - I", department: "Anatomy", semester: 1, credits: 4, objectives: "Understand gross anatomy of human body", topics: "General anatomy, Upper limb, Lower limb, Thorax", textbooks: "Gray's Anatomy, BDC Vol 1", evaluation: "Internal 40 + External 60", status: "published" },
-  { id: "SYL-002", courseCode: "MBBS-102", courseName: "Physiology - I", department: "Physiology", semester: 1, credits: 4, objectives: "Understand basic physiological processes", topics: "General physiology, Blood, Nerve-Muscle, CNS", textbooks: "Guyton, Sembulingam", evaluation: "Internal 40 + External 60", status: "published" },
-  { id: "SYL-003", courseCode: "MBBS-103", courseName: "Biochemistry - I", department: "Biochemistry", semester: 1, credits: 4, objectives: "Understand molecular basis of life", topics: "Cell biology, Enzymes, Carbohydrates, Lipids", textbooks: "Harper, Satyanarayana", evaluation: "Internal 40 + External 60", status: "approved" },
-  { id: "SYL-004", courseCode: "MBBS-201", courseName: "Anatomy - II", department: "Anatomy", semester: 2, credits: 4, objectives: "Understand abdomen, pelvis, and head-neck anatomy", topics: "Abdomen, Pelvis, Head & Neck, Brain", textbooks: "Gray's Anatomy, BDC Vol 2", evaluation: "Internal 40 + External 60", status: "draft" },
+  {
+    id: "SYL-001",
+    courseCode: "MBBS-101",
+    courseName: "Anatomy - I",
+    department: "Anatomy",
+    semester: 1,
+    credits: 4,
+    objectives: "Understand gross anatomy of human body and clinical correlations.",
+    topics: "General anatomy, Upper limb, Lower limb, Thorax",
+    textbooks: "Gray's Anatomy, BDC Vol 1",
+    evaluation: "Internal 40 + External 60",
+    status: "published",
+  },
+  {
+    id: "SYL-002",
+    courseCode: "MBBS-102",
+    courseName: "Physiology - I",
+    department: "Physiology",
+    semester: 1,
+    credits: 4,
+    objectives: "Understand fundamental human physiological mechanisms.",
+    topics: "General physiology, Blood, Nerve-Muscle, CNS",
+    textbooks: "Guyton & Hall, Sembulingam",
+    evaluation: "Internal 40 + External 60",
+    status: "published",
+  },
+  {
+    id: "SYL-003",
+    courseCode: "MBBS-103",
+    courseName: "Biochemistry - I",
+    department: "Biochemistry",
+    semester: 1,
+    credits: 4,
+    objectives: "Understand molecular pathways, enzymatic kinetics, and bioenergetics.",
+    topics: "Cell biology, Enzymes, Carbohydrates, Lipids",
+    textbooks: "Harper's Illustrated Biochemistry, Satyanarayana",
+    evaluation: "Internal 40 + External 60",
+    status: "approved",
+  },
+  {
+    id: "SYL-004",
+    courseCode: "MBBS-201",
+    courseName: "Anatomy - II",
+    department: "Anatomy",
+    semester: 2,
+    credits: 4,
+    objectives: "Understand abdomen, pelvis, neuroanatomy, and embryology.",
+    topics: "Abdomen, Pelvis, Head & Neck, Brain",
+    textbooks: "Gray's Anatomy, BDC Vol 2",
+    evaluation: "Internal 40 + External 60",
+    status: "draft",
+  },
 ];
-
-const STATUS_STYLES: Record<string, string> = {
-  published: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  approved: "bg-blue-50 text-blue-700 border-blue-200",
-  draft: "bg-amber-50 text-amber-700 border-amber-200",
-};
 
 export default function SyllabusPage() {
   const { can } = usePermission();
@@ -58,41 +121,35 @@ export default function SyllabusPage() {
 
   const { data: syllabusList = MOCK_SYLLABUS, isLoading } = useQuery({
     queryKey: ["syllabus"],
-    queryFn: async () => {
-      // Mock data since backend doesn't exist yet
-      return MOCK_SYLLABUS;
-    },
+    queryFn: async () => MOCK_SYLLABUS,
   });
 
   const createMutation = useMutation({
     mutationFn: async (payload: any) => {
-      // Mock create
       return { success: true, data: { id: `SYL-${Date.now()}`, ...payload } };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["syllabus"] });
       closeModal();
-      setSuccessMsg("Syllabus created successfully.");
+      setSuccessMsg("Course syllabus created successfully.");
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      // Mock update
       return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["syllabus"] });
       closeModal();
-      setSuccessMsg("Syllabus updated successfully.");
+      setSuccessMsg("Course syllabus updated successfully.");
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Mock delete
       return { success: true };
     },
     onSuccess: () => {
@@ -105,7 +162,18 @@ export default function SyllabusPage() {
   const closeModal = () => {
     setShowModal(false);
     setEditItem(null);
-    setForm({ courseCode: "", courseName: "", department: "", semester: "1", credits: "4", objectives: "", topics: "", textbooks: "", evaluation: "", status: "draft" });
+    setForm({
+      courseCode: "",
+      courseName: "",
+      department: "",
+      semester: "1",
+      credits: "4",
+      objectives: "",
+      topics: "",
+      textbooks: "",
+      evaluation: "",
+      status: "draft",
+    });
   };
 
   const openEdit = (item: Syllabus) => {
@@ -126,7 +194,18 @@ export default function SyllabusPage() {
   };
 
   const openCreate = () => {
-    setForm({ courseCode: "", courseName: "", department: "", semester: "1", credits: "4", objectives: "", topics: "", textbooks: "", evaluation: "", status: "draft" });
+    setForm({
+      courseCode: "",
+      courseName: "",
+      department: "",
+      semester: "1",
+      credits: "4",
+      objectives: "",
+      topics: "",
+      textbooks: "",
+      evaluation: "",
+      status: "draft",
+    });
     setShowModal(true);
   };
 
@@ -141,137 +220,158 @@ export default function SyllabusPage() {
   const draftCount = syllabusList.filter((s: Syllabus) => s.status === "draft").length;
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BookOpen className="text-[#2563EB]" />
-            Course Syllabus
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage course syllabi, topics, and evaluation criteria.
-          </p>
-        </div>
-        {isEditor && (
-          <button
-            onClick={openCreate}
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer"
-          >
-            <Plus size={16} /> Add Syllabus
-          </button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Course Syllabus"
+        subtitle="Manage academic curriculum, credit distributions, learning objectives, and prescribed textbooks."
+        actions={
+          isEditor ? (
+            <Button
+              variant="gold"
+              size="md"
+              onClick={openCreate}
+              icon={<Plus size={15} />}
+            >
+              Add Syllabus
+            </Button>
+          ) : undefined
+        }
+      />
 
       {successMsg && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-lg flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" /> {successMsg}
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>{successMsg}</span>
         </motion.div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-[#e1e2ed] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <FileText size={20} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800">{syllabusList.length}</p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase">Total</p>
-            </div>
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+            <FileText size={20} />
           </div>
-        </div>
-        <div className="bg-white border border-[#e1e2ed] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <CheckCircle2 size={20} className="text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800">{publishedCount}</p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase">Published</p>
-            </div>
+          <div>
+            <p className="text-2xl font-bold text-text">{syllabusList.length}</p>
+            <p className="text-xs text-text-muted font-medium">Total Curriculum Syllabi</p>
           </div>
-        </div>
-        <div className="bg-white border border-[#e1e2ed] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Clock size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800">{draftCount}</p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase">Drafts</p>
-            </div>
+        </Card>
+
+        <Card className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-success-soft text-success flex items-center justify-center">
+            <CheckCircle2 size={20} />
           </div>
-        </div>
+          <div>
+            <p className="text-2xl font-bold text-text">{publishedCount}</p>
+            <p className="text-xs text-text-muted font-medium">Published & Active</p>
+          </div>
+        </Card>
+
+        <Card className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-warning-soft text-warning flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-text">{draftCount}</p>
+            <p className="text-xs text-text-muted font-medium">Under Review / Drafts</p>
+          </div>
+        </Card>
       </div>
 
-      {/* Syllabus List */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Course Syllabi
+      {/* Syllabus Table */}
+      <Card noPadding>
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+            Approved Curriculum Outlines
           </span>
+          <Badge variant="neutral">{syllabusList.length} courses</Badge>
         </div>
 
         {isLoading ? (
-          <TableSkeleton rows={4} cols={5} />
-        ) : syllabusList.length === 0 ? (
-          <div className="p-12 text-center">
-            <BookOpen size={32} className="text-slate-200 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-400">No syllabi found.</p>
-            <p className="text-[10px] text-slate-300 mt-1">Add a syllabus to get started.</p>
+          <div className="p-6">
+            <TableSkeleton rows={4} cols={6} />
           </div>
+        ) : syllabusList.length === 0 ? (
+          <EmptyState
+            title="No Syllabi Registered"
+            description="Add course syllabi to outline credit hours and learning objectives."
+            icon={<BookOpen size={28} className="text-gold" />}
+            action={
+              isEditor ? (
+                <Button variant="gold" onClick={openCreate} icon={<Plus size={15} />}>
+                  Add First Syllabus
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-[#e1e2ed]">
-                  <th className="p-3 text-xs font-bold text-slate-400 uppercase">Course</th>
-                  <th className="p-3 text-xs font-bold text-slate-400 uppercase">Department</th>
-                  <th className="p-3 text-xs font-bold text-slate-400 uppercase">Sem</th>
-                  <th className="p-3 text-xs font-bold text-slate-400 uppercase">Credits</th>
-                  <th className="p-3 text-xs font-bold text-slate-400 uppercase">Status</th>
-                  {isEditor && <th className="p-3 text-xs font-bold text-slate-400 uppercase">Actions</th>}
+                <tr className="bg-surface-muted/50 border-b border-border">
+                  <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Course</th>
+                  <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Department</th>
+                  <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Semester</th>
+                  <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Credits</th>
+                  <th className="p-3 text-[11px] font-semibold text-text-muted uppercase">Status</th>
+                  {isEditor && (
+                    <th className="p-3 text-[11px] font-semibold text-text-muted uppercase text-right">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#e1e2ed]">
+              <tbody className="divide-y divide-border">
                 {syllabusList.map((item: Syllabus) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 text-xs">
+                  <tr key={item.id} className="hover:bg-surface-hover text-xs">
                     <td className="p-3">
                       <div>
-                        <p className="font-semibold text-slate-700">{item.courseName}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{item.courseCode}</p>
+                        <p className="font-semibold text-text">{item.courseName}</p>
+                        <p className="text-[11px] text-text-subtle font-mono">{item.courseCode}</p>
                       </div>
                     </td>
-                    <td className="p-3 text-slate-600">{item.department}</td>
-                    <td className="p-3 text-slate-600">{item.semester}</td>
-                    <td className="p-3 text-slate-600">{item.credits}</td>
+                    <td className="p-3 text-text-muted">{item.department}</td>
+                    <td className="p-3 font-medium text-text">Term {item.semester}</td>
+                    <td className="p-3 font-mono font-medium text-text">{item.credits} Cr</td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase ${STATUS_STYLES[item.status]}`}>
-                        {item.status}
-                      </span>
+                      <Badge
+                        variant={
+                          item.status === "published"
+                            ? "success"
+                            : item.status === "approved"
+                            ? "primary"
+                            : "warning"
+                        }
+                        size="sm"
+                      >
+                        {item.status.toUpperCase()}
+                      </Badge>
                     </td>
                     {isEditor && (
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <button
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            label="Edit Syllabus"
+                            icon={<Pencil size={13} />}
                             onClick={() => openEdit(item)}
-                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors cursor-pointer"
-                            title="Edit syllabus"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          <button
-                            onClick={() => { if (confirm("Delete this syllabus?")) deleteMutation.mutate(item.id); }}
-                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
-                            title="Delete syllabus"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          />
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            label="Delete Syllabus"
+                            icon={<Trash2 size={13} className="text-rose-500" />}
+                            onClick={() => {
+                              if (confirm(`Delete syllabus for ${item.courseName}?`)) {
+                                deleteMutation.mutate(item.id);
+                              }
+                            }}
+                          />
                         </div>
                       </td>
                     )}
@@ -281,159 +381,131 @@ export default function SyllabusPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* Create/Edit Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-lg overflow-hidden"
-            >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">{editItem ? "Edit Syllabus" : "New Syllabus"}</span>
-                <button
-                  onClick={closeModal}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Course Code</label>
-                    <input
-                      type="text"
-                      value={form.courseCode}
-                      onChange={(e) => setForm({ ...form, courseCode: e.target.value })}
-                      placeholder="MBBS-101"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Course Name</label>
-                    <input
-                      type="text"
-                      value={form.courseName}
-                      onChange={(e) => setForm({ ...form, courseName: e.target.value })}
-                      placeholder="Anatomy - I"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Department</label>
-                    <input
-                      type="text"
-                      value={form.department}
-                      onChange={(e) => setForm({ ...form, department: e.target.value })}
-                      placeholder="Anatomy"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Semester</label>
-                    <select
-                      value={form.semester}
-                      onChange={(e) => setForm({ ...form, semester: e.target.value })}
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                        <option key={s} value={s}>Sem {s}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Credits</label>
-                    <input
-                      type="number"
-                      value={form.credits}
-                      onChange={(e) => setForm({ ...form, credits: e.target.value })}
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Course Objectives</label>
-                  <textarea
-                    value={form.objectives}
-                    onChange={(e) => setForm({ ...form, objectives: e.target.value })}
-                    placeholder="Understand gross anatomy of human body"
-                    rows={2}
-                    className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] resize-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Topics Covered</label>
-                  <textarea
-                    value={form.topics}
-                    onChange={(e) => setForm({ ...form, topics: e.target.value })}
-                    placeholder="General anatomy, Upper limb, Lower limb"
-                    rows={2}
-                    className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] resize-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Textbooks</label>
-                  <input
-                    type="text"
-                    value={form.textbooks}
-                    onChange={(e) => setForm({ ...form, textbooks: e.target.value })}
-                    placeholder="Gray's Anatomy, BDC Vol 1"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Evaluation Pattern</label>
-                  <input
-                    type="text"
-                    value={form.evaluation}
-                    onChange={(e) => setForm({ ...form, evaluation: e.target.value })}
-                    placeholder="Internal 40 + External 60"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="approved">Approved</option>
-                    <option value="published">Published</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50 cursor-pointer"
-                  >
-                    {editItem ? "Update Syllabus" : "Create Syllabus"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      {/* Modal for Create/Edit */}
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editItem ? "Edit Course Syllabus" : "New Course Syllabus"}
+        subtitle="Specify academic credits, syllabus topics, and reference books"
+        size="lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Course Code" required>
+              <Input
+                value={form.courseCode}
+                onChange={(e) => setForm({ ...form, courseCode: e.target.value })}
+                placeholder="MBBS-101"
+                className="font-mono"
+                required
+              />
+            </FormField>
+            <FormField label="Course Title" required>
+              <Input
+                value={form.courseName}
+                onChange={(e) => setForm({ ...form, courseName: e.target.value })}
+                placeholder="Gross Anatomy - I"
+                required
+              />
+            </FormField>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="grid grid-cols-3 gap-4">
+            <FormField label="Department" required>
+              <Input
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                placeholder="Anatomy"
+                required
+              />
+            </FormField>
+            <FormField label="Semester / Term" required>
+              <Input
+                type="number"
+                min={1}
+                max={12}
+                value={form.semester}
+                onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="Credits" required>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={form.credits}
+                onChange={(e) => setForm({ ...form, credits: e.target.value })}
+                required
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Course Learning Objectives" required>
+            <Textarea
+              value={form.objectives}
+              onChange={(e) => setForm({ ...form, objectives: e.target.value })}
+              rows={2}
+              placeholder="Primary academic objectives and cognitive outcomes..."
+              required
+            />
+          </FormField>
+
+          <FormField label="Core Topics & Curriculum Outline" required>
+            <Textarea
+              value={form.topics}
+              onChange={(e) => setForm({ ...form, topics: e.target.value })}
+              rows={2}
+              placeholder="List syllabus chapters and modular topics..."
+              required
+            />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Prescribed Textbooks">
+              <Input
+                value={form.textbooks}
+                onChange={(e) => setForm({ ...form, textbooks: e.target.value })}
+                placeholder="e.g. Gray's Anatomy, Guyton & Hall"
+              />
+            </FormField>
+            <FormField label="Evaluation Schema">
+              <Input
+                value={form.evaluation}
+                onChange={(e) => setForm({ ...form, evaluation: e.target.value })}
+                placeholder="e.g. Internal 40 + Final Exam 60"
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Publication Status" required>
+            <Select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              <option value="draft">Draft (Under Faculty Review)</option>
+              <option value="approved">Approved (Department Head Signed)</option>
+              <option value="published">Published (Visible to Students)</option>
+            </Select>
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button type="button" variant="outline" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              icon={<Award size={14} />}
+            >
+              {editItem ? "Update Syllabus" : "Create Syllabus"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
