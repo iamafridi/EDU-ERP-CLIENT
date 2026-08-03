@@ -76,7 +76,7 @@ export default function ClinicalPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Stethoscope className="text-[#2563EB]" />
+            <Stethoscope className="text-gold" />
             Clinical Rotations & Health Services
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -87,7 +87,7 @@ export default function ClinicalPage() {
         {activeTab === "counseling" && (
           <button
             onClick={() => setIsBookModalOpen(true)}
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
+            className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-sm"
           >
             <Plus size={16} />
             Book Counselor Appointment
@@ -107,12 +107,12 @@ export default function ClinicalPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-[#e1e2ed] gap-2">
+      <div className="flex border-b border-border gap-2">
         <button
           onClick={() => setActiveTab("rotation")}
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
             activeTab === "rotation"
-              ? "border-[#2563EB] text-[#2563EB]"
+              ? "border-gold text-gold"
               : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
@@ -122,7 +122,7 @@ export default function ClinicalPage() {
           onClick={() => setActiveTab("skills")}
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
             activeTab === "skills"
-              ? "border-[#2563EB] text-[#2563EB]"
+              ? "border-gold text-gold"
               : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
@@ -132,7 +132,7 @@ export default function ClinicalPage() {
           onClick={() => setActiveTab("counseling")}
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
             activeTab === "counseling"
-              ? "border-[#2563EB] text-[#2563EB]"
+              ? "border-gold text-gold"
               : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
@@ -141,10 +141,10 @@ export default function ClinicalPage() {
       </div>
 
       {/* Viewport */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
         {activeTab === "rotation" ? (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Stethoscope size={16} /> Hospital Duty Roster
               </span>
@@ -158,7 +158,7 @@ export default function ClinicalPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                    <tr className="bg-slate-50 border-b border-border">
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Student</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Department</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Hospital Placement</th>
@@ -170,7 +170,7 @@ export default function ClinicalPage() {
                     {rotations.map((rot: any) => (
                       <tr key={rot.id} className="hover:bg-slate-50/50 text-xs">
                         <td className="p-3 font-semibold text-slate-700">{rot.studentName}</td>
-                        <td className="p-3 text-[#2563EB] font-bold">{rot.department}</td>
+                        <td className="p-3 text-gold font-bold">{rot.department}</td>
                         <td className="p-3 text-slate-500">{rot.hospital}</td>
                         <td className="p-3 text-slate-600 font-medium">{rot.supervisor}</td>
                         <td className="p-3 text-slate-400 font-mono font-semibold">{rot.shift}</td>
@@ -183,7 +183,7 @@ export default function ClinicalPage() {
           </div>
         ) : activeTab === "skills" ? (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <CheckSquare size={16} /> Skill Lab Checklists
               </span>
@@ -192,7 +192,7 @@ export default function ClinicalPage() {
             {isLoadingSkills ? (
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-4 border border-[#e1e2ed] rounded-xl flex items-center justify-between">
+                  <div key={i} className="p-4 border border-border rounded-xl flex items-center justify-between">
                     <div className="space-y-2">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-3 w-56" />
@@ -211,7 +211,7 @@ export default function ClinicalPage() {
                     className={`p-4 border rounded-xl flex items-center justify-between transition-all ${
                       skl.completed
                         ? "border-emerald-200 bg-emerald-50/30"
-                        : "border-[#e1e2ed] hover:bg-slate-50"
+                        : "border-border hover:bg-slate-50"
                     }`}
                   >
                     <div className="space-y-1">
@@ -243,7 +243,7 @@ export default function ClinicalPage() {
           </div>
         ) : (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <HeartHandshake size={16} /> Mental Health & Counselor Logs
               </span>
@@ -252,7 +252,7 @@ export default function ClinicalPage() {
             {isLoadingCounseling ? (
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-white p-4 border border-[#e1e2ed] rounded-xl flex items-start gap-4">
+                  <div key={i} className="bg-white p-4 border border-border rounded-xl flex items-start gap-4">
                     <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center justify-between">
@@ -269,7 +269,7 @@ export default function ClinicalPage() {
             ) : (
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {counselingSessions.map((cns: any) => (
-                  <div key={cns.id} className="bg-white p-4 border border-[#e1e2ed] rounded-xl flex items-start gap-4 shadow-xs">
+                  <div key={cns.id} className="bg-white p-4 border border-border rounded-xl flex items-start gap-4 shadow-xs">
                     <div className="w-10 h-10 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center shrink-0">
                       <HeartHandshake size={20} />
                     </div>
@@ -303,9 +303,9 @@ export default function ClinicalPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col"
+              className="bg-white border border-border rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col"
             >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+              <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-800">Book Counseling Slot</span>
                 <button
                   onClick={() => setIsBookModalOpen(false)}
@@ -320,7 +320,7 @@ export default function ClinicalPage() {
                   <label className="text-xs font-semibold text-slate-500">Counselor Specialist</label>
                   <select
                     {...registerCounseling("counselorName")}
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
+                    className="w-full h-10 px-2 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all"
                   >
                     <option value="Dr. Sarah Jenkins">Dr. Sarah Jenkins (Lead Counselor)</option>
                     <option value="Prof. Arthur Dent">Prof. Arthur Dent (Behavioral Therapist)</option>
@@ -332,7 +332,7 @@ export default function ClinicalPage() {
                   <input
                     type="datetime-local"
                     {...registerCounseling("dateTime")}
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono"
+                    className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono"
                   />
                   {counselingErrors.dateTime && (
                     <span className="text-[10px] text-red-500 font-semibold block">{counselingErrors.dateTime.message}</span>
@@ -344,21 +344,21 @@ export default function ClinicalPage() {
                   <textarea
                     {...registerCounseling("notes")}
                     placeholder="E.g. exam anxiety / sleep guidance..."
-                    className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none font-sans"
+                    className="w-full h-20 px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all resize-none font-sans"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
+                <div className="flex justify-end gap-3 pt-4 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setIsBookModalOpen(false)}
-                    className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors"
+                    className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
+                    className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
                   >
                     <HeartHandshake size={14} />
                     Schedule Slot

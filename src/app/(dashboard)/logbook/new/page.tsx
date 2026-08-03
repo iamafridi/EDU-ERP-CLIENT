@@ -40,11 +40,11 @@ const logEntrySchema = z.object({
 type LogEntryForm = z.infer<typeof logEntrySchema>;
 
 const inputClass =
-  "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono";
+  "w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono";
 const selectClass =
-  "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+  "w-full h-10 px-2 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const textareaClass =
-  "w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+  "w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const labelClass = "text-xs font-semibold text-slate-500";
 const errorClass = "text-[10px] text-red-500 mt-0.5";
 
@@ -120,7 +120,7 @@ export default function NewLogbookEntryPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <ClipboardList className="text-[#2563EB]" />
+            <ClipboardList className="text-gold" />
             New Logbook Entry
           </h1>
           <p className="text-xs text-slate-400 mt-1">Create a clinical procedure or log an entry.</p>
@@ -137,26 +137,26 @@ export default function NewLogbookEntryPage() {
       {!entryType ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
           <button onClick={() => setEntryType("procedure")}
-            className="bg-white border border-[#e1e2ed] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-md transition-all cursor-pointer text-left space-y-3 group">
-            <div className="h-10 w-10 rounded-lg bg-[#2563EB]/10 flex items-center justify-center group-hover:bg-[#2563EB]/20 transition-colors">
-              <BookOpen size={20} className="text-[#2563EB]" />
+            className="bg-white border border-border rounded-xl p-6 hover:border-[#2563EB] hover:shadow-md transition-all cursor-pointer text-left space-y-3 group">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <BookOpen size={20} className="text-gold" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">Clinical Procedure</h3>
             <p className="text-xs text-slate-400">Add a new procedure to the catalog for students to log against.</p>
           </button>
 
           <button onClick={() => setEntryType("log-entry")}
-            className="bg-white border border-[#e1e2ed] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-md transition-all cursor-pointer text-left space-y-3 group">
-            <div className="h-10 w-10 rounded-lg bg-[#2563EB]/10 flex items-center justify-center group-hover:bg-[#2563EB]/20 transition-colors">
-              <User size={20} className="text-[#2563EB]" />
+            className="bg-white border border-border rounded-xl p-6 hover:border-[#2563EB] hover:shadow-md transition-all cursor-pointer text-left space-y-3 group">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <User size={20} className="text-gold" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">Log Entry</h3>
             <p className="text-xs text-slate-400">Record a patient encounter or clinical experience for a student.</p>
           </button>
         </div>
       ) : entryType === "procedure" ? (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+          <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
             <span className="text-sm font-bold text-slate-800">Add Clinical Procedure</span>
             <button onClick={() => setEntryType(null)} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 text-xs cursor-pointer">X</button>
           </div>
@@ -189,17 +189,17 @@ export default function NewLogbookEntryPage() {
               <label className={labelClass}>Description</label>
               <textarea {...procForm.register("description")} rows={2} className={textareaClass} />
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <button type="button" onClick={() => setEntryType(null)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Back</button>
-              <button type="submit" disabled={createProcMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <button type="button" onClick={() => setEntryType(null)} className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Back</button>
+              <button type="submit" disabled={createProcMutation.isPending} className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
                 <Plus size={14} /> Create Procedure
               </button>
             </div>
           </form>
         </div>
       ) : (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+          <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
             <span className="text-sm font-bold text-slate-800">New Log Entry</span>
             <button onClick={() => setEntryType(null)} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 text-xs cursor-pointer">X</button>
           </div>
@@ -259,9 +259,9 @@ export default function NewLogbookEntryPage() {
               <label className={labelClass}>Notes</label>
               <textarea {...entryForm.register("notes")} rows={2} className={textareaClass} />
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <button type="button" onClick={() => setEntryType(null)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Back</button>
-              <button type="submit" disabled={createEntryMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"><Plus size={14} /> Record Entry</button>
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <button type="button" onClick={() => setEntryType(null)} className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Back</button>
+              <button type="submit" disabled={createEntryMutation.isPending} className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"><Plus size={14} /> Record Entry</button>
             </div>
           </form>
         </div>

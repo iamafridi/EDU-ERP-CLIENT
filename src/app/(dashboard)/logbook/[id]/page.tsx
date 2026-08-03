@@ -41,11 +41,11 @@ const logEntrySchema = z.object({
 type LogEntryForm = z.infer<typeof logEntrySchema>;
 
 const inputClass =
-  "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono";
+  "w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono";
 const selectClass =
-  "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+  "w-full h-10 px-2 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const textareaClass =
-  "w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+  "w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const labelClass = "text-xs font-semibold text-slate-500";
 const errorClass = "text-[10px] text-red-500 mt-0.5";
 
@@ -166,7 +166,7 @@ export default function LogbookDetailPage() {
     return (
       <div className="p-12 text-center">
         <p className="text-xs text-slate-400">Item not found.</p>
-        <Link href="/logbook" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Logbook</Link>
+        <Link href="/logbook" className="text-xs text-gold hover:underline mt-2 inline-block">Back to Logbook</Link>
       </div>
     );
   }
@@ -181,20 +181,20 @@ export default function LogbookDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <ClipboardList className="text-[#2563EB]" />
+            <ClipboardList className="text-gold" />
             {isProcedure ? "Procedure Details" : "Log Entry Details"}
           </h1>
         </div>
         <div className="flex gap-2">
           {isProcedure && isAdminOrHod && !isEditing && (
             <button onClick={() => setIsEditing(true)}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
+              className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
               <Pencil size={14} /> Edit
             </button>
           )}
           {isProcedure && isAdminOrHod && isEditing && (
             <button onClick={() => { setIsEditing(false); procForm.reset(); }}
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
+              className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
               Cancel
             </button>
           )}
@@ -219,8 +219,8 @@ export default function LogbookDetailPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+        <div className="p-4 border-b border-border bg-slate-50">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             {isProcedure ? "Procedure Information" : "Entry Information"}
           </span>
@@ -256,9 +256,9 @@ export default function LogbookDetailPage() {
                 <label className={labelClass}>Description</label>
                 <textarea {...procForm.register("description")} rows={2} className={textareaClass} />
               </div>
-              <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
+              <div className="flex justify-end pt-4 border-t border-border">
                 <button type="submit" disabled={updateProcMutation.isPending}
-                  className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                  className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
                   <Pencil size={14} /> Update Procedure
                 </button>
               </div>
@@ -268,7 +268,7 @@ export default function LogbookDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Code</label>
-                  <p className="text-sm font-mono font-bold text-[#2563EB]">{item.code}</p>
+                  <p className="text-sm font-mono font-bold text-gold">{item.code}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Min Required</label>
