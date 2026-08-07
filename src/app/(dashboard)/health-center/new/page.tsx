@@ -84,7 +84,7 @@ export default function NewHealthVisitPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Stethoscope className="text-[#2563EB]" />
+            <Stethoscope className="text-gold" />
             Record Health Visit
           </h1>
           <p className="text-xs text-slate-400 mt-1">Create a new student health visit record.</p>
@@ -102,19 +102,19 @@ export default function NewHealthVisitPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Student Name</label>
               <input type="text" {...register("studentName")} placeholder="Full name"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all" />
               {errors.studentName && <span className="text-[10px] text-red-500 font-semibold block">{errors.studentName.message}</span>}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Student ID</label>
               <input type="text" {...register("studentId")} placeholder="e.g. STU-001"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono" />
               {errors.studentId && <span className="text-[10px] text-red-500 font-semibold block">{errors.studentId.message}</span>}
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function NewHealthVisitPage() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Symptoms</label>
             <textarea {...register("symptoms")} placeholder="Describe symptoms presented..."
-              className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
+              className="w-full h-20 px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all resize-none" />
             {errors.symptoms && <span className="text-[10px] text-red-500 font-semibold block">{errors.symptoms.message}</span>}
           </div>
 
@@ -130,13 +130,13 @@ export default function NewHealthVisitPage() {
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Diagnosis</label>
               <input type="text" {...register("diagnosis")} placeholder="Preliminary diagnosis"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all" />
               {errors.diagnosis && <span className="text-[10px] text-red-500 font-semibold block">{errors.diagnosis.message}</span>}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Visit Date</label>
               <input type="date" {...register("visitDate")}
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all" />
               {errors.visitDate && <span className="text-[10px] text-red-500 font-semibold block">{errors.visitDate.message}</span>}
             </div>
           </div>
@@ -144,16 +144,16 @@ export default function NewHealthVisitPage() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Prescribed Medications</label>
             <textarea {...register("prescribedMeds")} placeholder="List prescribed medications..."
-              className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
+              className="w-full h-20 px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all resize-none" />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Link href="/health-center"
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">
+              className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">
               Cancel
             </Link>
             <button type="submit" disabled={createVisitMutation.isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+              className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
               <Stethoscope size={14} />
               Record Visit
             </button>

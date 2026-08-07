@@ -90,19 +90,19 @@ export default function OPDPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Stethoscope className="text-[#2563EB]" />
+            <Stethoscope className="text-gold" />
             OPD Management
           </h1>
           <p className="text-xs text-slate-400 mt-1">Manage outpatient appointments, consultations, and patient visits.</p>
         </div>
         <div className="flex gap-2">
           {activeTab === "appointments" && isReceptionist && (
-            <Link href="/opd/new" className="h-9 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-blue-500/10">
+            <Link href="/opd/new" className="h-9 px-3 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-sm">
               <Plus size={14} /> New Appointment
             </Link>
           )}
           {activeTab === "visits" && isDoctor && (
-            <Link href="/opd/new" className="h-9 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-blue-500/10">
+            <Link href="/opd/new" className="h-9 px-3 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-sm">
               <Plus size={14} /> Record Visit
             </Link>
           )}
@@ -116,26 +116,26 @@ export default function OPDPage() {
         </motion.div>
       )}
 
-      <div className="flex border-b border-[#e1e2ed] gap-2">
+      <div className="flex border-b border-border gap-2">
         <button onClick={() => setActiveTab("appointments")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "appointments" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "appointments" ? "border-gold text-gold" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
           <Calendar size={14} className="inline mr-1" /> Appointments
         </button>
         <button onClick={() => setActiveTab("visits")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "visits" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "visits" ? "border-gold text-gold" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
           <FileText size={14} className="inline mr-1" /> Visit Records
         </button>
       </div>
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
         {activeTab === "appointments" && (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar size={16} /> OPD Appointments
               </span>
               <input type="text" placeholder="Search patient or complaint..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-8 px-3 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all w-48 font-mono" />
+                className="h-8 px-3 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all w-48 font-mono" />
             </div>
             {loadingAppts ? <TableSkeleton rows={5} cols={6} /> : visibleAppointments.length === 0 ? (
               <p className="p-12 text-center text-xs text-slate-400">No appointments found.</p>
@@ -143,7 +143,7 @@ export default function OPDPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                    <tr className="bg-slate-50 border-b border-border">
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Patient</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Doctor</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Date</th>
@@ -157,7 +157,7 @@ export default function OPDPage() {
                     {visibleAppointments.map((a: any) => (
                       <tr key={a.id} className="hover:bg-slate-50/50 text-xs">
                         <td className="p-3">
-                          <Link href={`/opd/${a.id}`} className="font-semibold text-slate-700 hover:text-[#2563EB] transition-colors">
+                          <Link href={`/opd/${a.id}`} className="font-semibold text-slate-700 hover:text-gold transition-colors">
                             {a.patientName || a.patientId}
                           </Link>
                         </td>
@@ -186,7 +186,7 @@ export default function OPDPage() {
                                 </button>
                               )}
                               <Link href={`/opd/${a.id}`}
-                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors"
+                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-gold transition-colors"
                                 title="Edit appointment">
                                 <Pencil size={13} />
                               </Link>
@@ -208,12 +208,12 @@ export default function OPDPage() {
 
         {activeTab === "visits" && (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <FileText size={16} /> Consultation Records
               </span>
               <input type="text" placeholder="Search patient or diagnosis..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-8 px-3 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all w-48 font-mono" />
+                className="h-8 px-3 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all w-48 font-mono" />
             </div>
             {loadingVisits ? <TableSkeleton rows={5} cols={6} /> : visibleVisits.length === 0 ? (
               <p className="p-12 text-center text-xs text-slate-400">No visit records found.</p>
@@ -221,7 +221,7 @@ export default function OPDPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                    <tr className="bg-slate-50 border-b border-border">
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Patient</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Doctor</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Symptoms</th>
@@ -235,7 +235,7 @@ export default function OPDPage() {
                     {visibleVisits.map((v: any) => (
                       <tr key={v.id} className="hover:bg-slate-50/50 text-xs">
                         <td className="p-3">
-                          <Link href={`/opd/${v.id}`} className="font-semibold text-slate-700 hover:text-[#2563EB] transition-colors">
+                          <Link href={`/opd/${v.id}`} className="font-semibold text-slate-700 hover:text-gold transition-colors">
                             {v.patientName || v.patientId}
                           </Link>
                         </td>
@@ -250,7 +250,7 @@ export default function OPDPage() {
                           <td className="p-3">
                             <div className="flex items-center gap-1">
                               <Link href={`/opd/${v.id}`}
-                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors">
+                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-gold transition-colors">
                                 <Pencil size={13} />
                               </Link>
                               <button onClick={() => { if (confirm("Delete this visit?")) deleteVisitMutation.mutate(v.id); }}

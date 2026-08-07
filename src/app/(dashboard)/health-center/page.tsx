@@ -64,7 +64,7 @@ export default function HealthCenterPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Stethoscope className="text-[#2563EB]" />
+            <Stethoscope className="text-gold" />
             Health Center
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -75,7 +75,7 @@ export default function HealthCenterPage() {
         {isStaff && (
           <Link
             href="/health-center/new"
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
+            className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-sm"
           >
             <Plus size={16} />
             New Visit Record
@@ -94,8 +94,8 @@ export default function HealthCenterPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
             Health Visit Records
           </span>
@@ -104,14 +104,14 @@ export default function HealthCenterPage() {
             placeholder="Search student, diagnosis, symptoms..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 px-3 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all w-48 font-mono"
+            className="h-8 px-3 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all w-48 font-mono"
           />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+              <tr className="bg-slate-50 border-b border-border">
                 <th className="p-3 text-xs font-bold text-slate-400 uppercase">Student</th>
                 <th className="p-3 text-xs font-bold text-slate-400 uppercase">Doctor</th>
                 <th className="p-3 text-xs font-bold text-slate-400 uppercase">Symptoms</th>
@@ -140,7 +140,7 @@ export default function HealthCenterPage() {
                 visibleVisits.map((visit: any) => (
                   <tr key={visit.id} className="hover:bg-slate-50/50 text-xs">
                     <td className="p-3">
-                      <Link href={`/health-center/${visit.id}`} className="font-bold text-slate-700 hover:text-[#2563EB] transition-colors block">
+                      <Link href={`/health-center/${visit.id}`} className="font-bold text-slate-700 hover:text-gold transition-colors block">
                         {visit.studentName}
                       </Link>
                       <span className="text-[10px] text-slate-400 font-mono block">{visit.studentId}</span>
@@ -163,7 +163,7 @@ export default function HealthCenterPage() {
                         <div className="flex items-center gap-1">
                           <Link
                             href={`/health-center/${visit.id}`}
-                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-[#2563EB] transition-colors"
+                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-gold transition-colors"
                             title="Edit visit"
                           >
                             <Pencil size={13} />

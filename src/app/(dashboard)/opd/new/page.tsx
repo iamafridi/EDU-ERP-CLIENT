@@ -6,12 +6,22 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
-import { motion } from "framer-motion";
-import { Stethoscope, CheckCircle2, ArrowLeft, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Stethoscope, CheckCircle2, Calendar, FileText } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  Tabs,
+  Button,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+} from "@/components/ui";
 
 const TIME_SLOTS = [
   "09:00-09:15","09:15-09:30","09:30-09:45","09:45-10:00",
@@ -27,7 +37,7 @@ const apptSchema = z.object({
   appointmentDate: z.string().min(1, "Date is required"),
   timeSlot: z.string().min(1, "Time slot is required"),
   chiefComplaint: z.string().min(1, "Chief complaint is required"),
-  notes: z.string(),
+  notes: z.string().optional(),
 });
 
 type ApptForm = z.infer<typeof apptSchema>;
@@ -38,18 +48,13 @@ const visitSchema = z.object({
   doctorId: z.string().min(1, "Doctor ID is required"),
   symptoms: z.string().min(1, "Symptoms are required"),
   diagnosis: z.string().min(1, "Diagnosis is required"),
-  investigations: z.string(),
-  prescription: z.string(),
-  followUpDate: z.string(),
-  notes: z.string(),
+  investigations: z.string().optional(),
+  prescription: z.string().optional(),
+  followUpDate: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type VisitForm = z.infer<typeof visitSchema>;
-
-const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono";
-const textareaClass = "w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-const labelClass = "text-xs font-semibold text-slate-500";
-const errorClass = "text-[10px] text-red-500 mt-0.5";
 
 export default function NewOPDPage() {
   const router = useRouter();
@@ -57,7 +62,7 @@ export default function NewOPDPage() {
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
   const [successMsg, setSuccessMsg] = useState("");
-  const [mode, setMode] = useState<"appointment" | "visit">("appointment");
+  const [mode, setMode] = useState<string>("appointment");
 
   const isReceptionist = user?.staffSubRole === "receptionist" || roleIs("domain-admin", "super-admin");
   const isDoctor = user?.staffSubRole === "doctor";
@@ -121,148 +126,214 @@ export default function NewOPDPage() {
     createVisitMutation.mutate(data);
   };
 
-  return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/opd" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Stethoscope className="text-[#2563EB]" />
-            {mode === "appointment" ? "New OPD Appointment" : "Record OPD Visit"}
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {mode === "appointment" ? "Schedule a new outpatient appointment." : "Record a new consultation visit."}
-          </p>
-        </div>
-      </div>
+  const tabItems = [
+    ...(isReceptionist ? [{ id: "appointment", label: "Schedule Appointment", icon: <Calendar className="w-4 h-4" /> }] : []),
+    ...(isDoctor ? [{ id: "visit", label: "Record Consultation Visit", icon: <FileText className="w-4 h-4" /> }] : []),
+  ];
 
-      {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
-          <span>{successMsg}</span>
-        </motion.div>
+  return (
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        eyebrow="Outpatient Department (OPD)"
+        title={mode === "appointment" ? "New OPD Appointment" : "Record OPD Visit"}
+        description={
+          mode === "appointment"
+            ? "Schedule a new outpatient appointment slot and assign consulting physician."
+            : "Record clinical symptoms, diagnosis, ordered investigations, and Rx regimen."
+        }
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "OPD", href: "/opd" },
+          { label: mode === "appointment" ? "New Appointment" : "Record Visit" },
+        ]}
+      />
+
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="p-3.5 rounded-xl bg-success-soft border border-success/20 text-success text-xs sm:text-sm font-medium flex items-center gap-2.5"
+          >
+            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+            <span>{successMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {tabItems.length > 1 && (
+        <Tabs
+          items={tabItems}
+          value={mode}
+          onChange={setMode}
+        />
       )}
 
-      <div className="flex gap-2">
-        {isReceptionist && (
-          <button onClick={() => setMode("appointment")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${mode === "appointment" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            Appointment
-          </button>
-        )}
-        {isDoctor && (
-          <button onClick={() => setMode("visit")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${mode === "visit" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            Visit Record
-          </button>
-        )}
-      </div>
-
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
+      <Card pad="md">
         {mode === "appointment" && (
-          <form onSubmit={apptForm.handleSubmit(handleCreateAppt)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Patient ID</label>
-                <input type="text" {...apptForm.register("patientId")} placeholder="e.g. PAT-001" className={inputClass} />
-                {apptForm.formState.errors.patientId && <p className={errorClass}>{apptForm.formState.errors.patientId.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Doctor ID</label>
-                <input type="text" {...apptForm.register("doctorId")} placeholder="e.g. DR-001" className={inputClass} />
-                {apptForm.formState.errors.doctorId && <p className={errorClass}>{apptForm.formState.errors.doctorId.message}</p>}
-              </div>
+          <form onSubmit={apptForm.handleSubmit(handleCreateAppt)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Patient ID" required error={apptForm.formState.errors.patientId?.message}>
+                <Input
+                  type="text"
+                  {...apptForm.register("patientId")}
+                  placeholder="e.g. PAT-001"
+                  className="font-mono"
+                />
+              </FormField>
+
+              <FormField label="Doctor ID" required error={apptForm.formState.errors.doctorId?.message}>
+                <Input
+                  type="text"
+                  {...apptForm.register("doctorId")}
+                  placeholder="e.g. DR-001"
+                  className="font-mono"
+                />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Date</label>
-                <input type="date" {...apptForm.register("appointmentDate")} className={inputClass} />
-                {apptForm.formState.errors.appointmentDate && <p className={errorClass}>{apptForm.formState.errors.appointmentDate.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Time Slot</label>
-                <select {...apptForm.register("timeSlot")} className={inputClass}>
-                  {TIME_SLOTS.map((s) => (<option key={s} value={s}>{s}</option>))}
-                </select>
-              </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Appointment Date" required error={apptForm.formState.errors.appointmentDate?.message}>
+                <Input
+                  type="date"
+                  {...apptForm.register("appointmentDate")}
+                />
+              </FormField>
+
+              <FormField label="Consultation Time Slot" required>
+                <Select {...apptForm.register("timeSlot")}>
+                  {TIME_SLOTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </Select>
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Chief Complaint</label>
-              <textarea {...apptForm.register("chiefComplaint")} placeholder="e.g. Fever and cough for 3 days" rows={2} className={textareaClass} />
-              {apptForm.formState.errors.chiefComplaint && <p className={errorClass}>{apptForm.formState.errors.chiefComplaint.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Notes</label>
-              <textarea {...apptForm.register("notes")} rows={2} className={textareaClass} />
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/opd" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createApptMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Create
-              </button>
+
+            <FormField label="Chief Complaint" required error={apptForm.formState.errors.chiefComplaint?.message}>
+              <Textarea
+                {...apptForm.register("chiefComplaint")}
+                placeholder="e.g. High fever, productive cough, and shortness of breath for 3 days"
+                rows={2}
+              />
+            </FormField>
+
+            <FormField label="Administrative Notes">
+              <Textarea
+                {...apptForm.register("notes")}
+                placeholder="Special triage instructions or referral details..."
+                rows={2}
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-border">
+              <Link href="/opd">
+                <Button variant="outline" type="button">
+                  Cancel
+                </Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createApptMutation.isPending}
+              >
+                Schedule Appointment
+              </Button>
             </div>
           </form>
         )}
 
         {mode === "visit" && (
-          <form onSubmit={visitForm.handleSubmit(handleCreateVisit)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Appointment ID</label>
-                <input type="text" {...visitForm.register("appointmentId")} placeholder="e.g. OPD-APPT-001" className={inputClass} />
-                {visitForm.formState.errors.appointmentId && <p className={errorClass}>{visitForm.formState.errors.appointmentId.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Patient ID</label>
-                <input type="text" {...visitForm.register("patientId")} placeholder="e.g. PAT-001" className={inputClass} />
-                {visitForm.formState.errors.patientId && <p className={errorClass}>{visitForm.formState.errors.patientId.message}</p>}
-              </div>
+          <form onSubmit={visitForm.handleSubmit(handleCreateVisit)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Appointment ID" required error={visitForm.formState.errors.appointmentId?.message}>
+                <Input
+                  type="text"
+                  {...visitForm.register("appointmentId")}
+                  placeholder="e.g. OPD-APPT-001"
+                  className="font-mono"
+                />
+              </FormField>
+
+              <FormField label="Patient ID" required error={visitForm.formState.errors.patientId?.message}>
+                <Input
+                  type="text"
+                  {...visitForm.register("patientId")}
+                  placeholder="e.g. PAT-001"
+                  className="font-mono"
+                />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Doctor ID</label>
-              <input type="text" {...visitForm.register("doctorId")} placeholder="e.g. DR-001" className={inputClass} />
-              {visitForm.formState.errors.doctorId && <p className={errorClass}>{visitForm.formState.errors.doctorId.message}</p>}
+
+            <FormField label="Doctor ID" required error={visitForm.formState.errors.doctorId?.message}>
+              <Input
+                type="text"
+                {...visitForm.register("doctorId")}
+                placeholder="e.g. DR-001"
+                className="font-mono"
+              />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Clinical Symptoms" required error={visitForm.formState.errors.symptoms?.message}>
+                <Textarea
+                  {...visitForm.register("symptoms")}
+                  placeholder="e.g. Fever, productive cough, shortness of breath"
+                  rows={2}
+                />
+              </FormField>
+
+              <FormField label="Provisional Diagnosis" required error={visitForm.formState.errors.diagnosis?.message}>
+                <Input
+                  type="text"
+                  {...visitForm.register("diagnosis")}
+                  placeholder="e.g. Community-Acquired Pneumonia (LRTI)"
+                />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Symptoms</label>
-                <textarea {...visitForm.register("symptoms")} placeholder="e.g. Fever, cough, SOB" rows={2} className={textareaClass} />
-                {visitForm.formState.errors.symptoms && <p className={errorClass}>{visitForm.formState.errors.symptoms.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Diagnosis</label>
-                <input type="text" {...visitForm.register("diagnosis")} placeholder="e.g. LRTI" className={inputClass} />
-                {visitForm.formState.errors.diagnosis && <p className={errorClass}>{visitForm.formState.errors.diagnosis.message}</p>}
-              </div>
+
+            <FormField label="Ordered Lab Investigations">
+              <Input
+                type="text"
+                {...visitForm.register("investigations")}
+                placeholder="e.g. CBC, ESR, Chest X-ray PA View, Sputum AFB"
+              />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Rx Prescription Summary">
+                <Textarea
+                  {...visitForm.register("prescription")}
+                  placeholder="Tab. Cefuroxime 500mg TDS x 7 days..."
+                  rows={2}
+                />
+              </FormField>
+
+              <FormField label="Follow Up Date">
+                <Input
+                  type="date"
+                  {...visitForm.register("followUpDate")}
+                />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Investigations</label>
-              <input type="text" {...visitForm.register("investigations")} placeholder="e.g. CBC, Chest X-ray" className={inputClass} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Prescription</label>
-                <textarea {...visitForm.register("prescription")} rows={2} className={textareaClass} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Follow Up Date</label>
-                <input type="date" {...visitForm.register("followUpDate")} className={inputClass} />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/opd" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createVisitMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Record
-              </button>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-border">
+              <Link href="/opd">
+                <Button variant="outline" type="button">
+                  Cancel
+                </Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createVisitMutation.isPending}
+              >
+                Record Consultation Visit
+              </Button>
             </div>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
