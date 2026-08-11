@@ -71,14 +71,14 @@ export default function IPDPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Bed className="text-[#2563EB]" />
+            <Bed className="text-gold" />
             IPD Management
           </h1>
           <p className="text-xs text-slate-400 mt-1">Manage inpatient admissions, ward allocation, and discharges.</p>
         </div>
         <div className="flex gap-2">
           {activeTab === "admissions" && isDoctorOrNurse && (
-            <Link href="/ipd/new" className="h-9 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-blue-500/10">
+            <Link href="/ipd/new" className="h-9 px-3 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-sm">
               <Plus size={14} /> Admit Patient
             </Link>
           )}
@@ -92,26 +92,26 @@ export default function IPDPage() {
         </motion.div>
       )}
 
-      <div className="flex border-b border-[#e1e2ed] gap-2">
+      <div className="flex border-b border-border gap-2">
         <button onClick={() => setActiveTab("admissions")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "admissions" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "admissions" ? "border-gold text-gold" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
           <DoorOpen size={14} className="inline mr-1" /> Admissions
         </button>
         <button onClick={() => setActiveTab("discharges")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "discharges" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === "discharges" ? "border-gold text-gold" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
           <LogOut size={14} className="inline mr-1" /> Discharges
         </button>
       </div>
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
         {activeTab === "admissions" && (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <DoorOpen size={16} /> IPD Admissions
               </span>
               <input type="text" placeholder="Search patient, diagnosis, bed..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-8 px-3 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all w-48 font-mono" />
+                className="h-8 px-3 bg-white border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all w-48 font-mono" />
             </div>
             {loadingAdmissions ? <TableSkeleton rows={5} cols={7} /> : visibleAdmissions.length === 0 ? (
               <p className="p-12 text-center text-xs text-slate-400">No admissions found.</p>
@@ -119,7 +119,7 @@ export default function IPDPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                    <tr className="bg-slate-50 border-b border-border">
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Patient</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Doctor</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Ward</th>
@@ -134,7 +134,7 @@ export default function IPDPage() {
                     {visibleAdmissions.map((a: any) => (
                       <tr key={a.id} className="hover:bg-slate-50/50 text-xs">
                         <td className="p-3">
-                          <Link href={`/ipd/${a.id}`} className="font-semibold text-slate-700 hover:text-[#2563EB] transition-colors">
+                          <Link href={`/ipd/${a.id}`} className="font-semibold text-slate-700 hover:text-gold transition-colors">
                             {a.patientName || a.patientId}
                           </Link>
                         </td>
@@ -177,7 +177,7 @@ export default function IPDPage() {
 
         {activeTab === "discharges" && (
           <div>
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <LogOut size={16} /> Discharge Records
               </span>
@@ -188,7 +188,7 @@ export default function IPDPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                    <tr className="bg-slate-50 border-b border-border">
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Patient</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Discharge Date</th>
                       <th className="p-3 text-xs font-bold text-slate-400 uppercase">Type</th>
@@ -201,7 +201,7 @@ export default function IPDPage() {
                     {visibleDischarges.map((d: any) => (
                       <tr key={d.id} className="hover:bg-slate-50/50 text-xs">
                         <td className="p-3">
-                          <Link href={`/ipd/${d.admissionId?._id || d.admissionId || d.id}`} className="font-semibold text-slate-700 hover:text-[#2563EB] transition-colors">
+                          <Link href={`/ipd/${d.admissionId?._id || d.admissionId || d.id}`} className="font-semibold text-slate-700 hover:text-gold transition-colors">
                             {d.patientName || d.patientId || (d.admissionId?.patientName) || "\u2014"}
                           </Link>
                         </td>

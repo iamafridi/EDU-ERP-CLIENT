@@ -48,8 +48,8 @@ const dischargeSchema = z.object({
 
 type DischargeFormData = z.infer<typeof dischargeSchema>;
 
-const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono";
-const textareaClass = "w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+const inputClass = "w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono";
+const textareaClass = "w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const labelClass = "text-xs font-semibold text-slate-500";
 const errorClass = "text-[10px] text-red-500 mt-0.5";
 
@@ -177,7 +177,7 @@ export default function IPDDetailPage() {
     return (
       <div className="p-12 text-center">
         <p className="text-xs text-slate-400">Admission not found.</p>
-        <Link href="/ipd" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to IPD</Link>
+        <Link href="/ipd" className="text-xs text-gold hover:underline mt-2 inline-block">Back to IPD</Link>
       </div>
     );
   }
@@ -190,7 +190,7 @@ export default function IPDDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Bed className="text-[#2563EB]" />
+            <Bed className="text-gold" />
             Admission Details
           </h1>
         </div>
@@ -198,13 +198,13 @@ export default function IPDDetailPage() {
           <div className="flex gap-2">
             {!isEditing && !showDischargeForm && (
               <button onClick={() => setIsEditing(true)}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
+                className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
                 <Pencil size={14} /> Edit
               </button>
             )}
             {isEditing && (
               <button onClick={() => { setIsEditing(false); admitForm.reset(); }}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
+                className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
                 Cancel
               </button>
             )}
@@ -230,8 +230,8 @@ export default function IPDDetailPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+        <div className="p-4 border-b border-border bg-slate-50">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Admission Information</span>
         </div>
         {isEditing ? (
@@ -277,9 +277,9 @@ export default function IPDDetailPage() {
               <label className={labelClass}>Notes</label>
               <textarea {...admitForm.register("notes")} rows={2} className={textareaClass} />
             </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
+            <div className="flex justify-end pt-4 border-t border-border">
               <button type="submit" disabled={updateAdmissionMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
                 <Pencil size={14} /> Update
               </button>
             </div>
@@ -329,8 +329,8 @@ export default function IPDDetailPage() {
       </div>
 
       {showDischargeForm && (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
+        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+          <div className="p-4 border-b border-border bg-slate-50">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {discharge ? "Edit Discharge" : "Discharge Patient"}
             </span>
@@ -358,11 +358,11 @@ export default function IPDDetailPage() {
               <label className={labelClass}>Follow Up Instructions</label>
               <textarea {...dischargeForm.register("followUpInstructions")} rows={2} className={textareaClass} />
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <button type="button" onClick={() => { setShowDischargeForm(false); dischargeForm.reset(); }}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
+                className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
               <button type="submit" disabled={dischargeMutation.isPending || updateDischargeMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
                 <LogOut size={14} /> {discharge ? "Update" : "Discharge"}
               </button>
             </div>
@@ -371,8 +371,8 @@ export default function IPDDetailPage() {
       )}
 
       {discharge && !showDischargeForm && (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
+        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+          <div className="p-4 border-b border-border bg-slate-50">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Discharge Information</span>
           </div>
           <div className="p-6 space-y-4">

@@ -27,8 +27,8 @@ const admitSchema = z.object({
 
 type AdmitFormData = z.infer<typeof admitSchema>;
 
-const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono";
-const textareaClass = "w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
+const inputClass = "w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono";
+const textareaClass = "w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all";
 const labelClass = "text-xs font-semibold text-slate-500";
 const errorClass = "text-[10px] text-red-500 mt-0.5";
 
@@ -80,7 +80,7 @@ export default function NewIPDPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Bed className="text-[#2563EB]" />
+            <Bed className="text-gold" />
             Admit Patient
           </h1>
           <p className="text-xs text-slate-400 mt-1">Create a new inpatient admission record.</p>
@@ -95,7 +95,7 @@ export default function NewIPDPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
         <form onSubmit={admitForm.handleSubmit(handleAdmit)} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -138,10 +138,10 @@ export default function NewIPDPage() {
             <label className={labelClass}>Notes</label>
             <textarea {...admitForm.register("notes")} rows={2} className={textareaClass} />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-            <Link href="/ipd" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Link href="/ipd" className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
             <button type="submit" disabled={createAdmissionMutation.isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+              className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
               <Plus size={14} /> Admit
             </button>
           </div>
