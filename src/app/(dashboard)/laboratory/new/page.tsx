@@ -88,7 +88,7 @@ export default function NewLabRequestPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Beaker className="text-[#2563EB]" />
+            <Beaker className="text-gold" />
             New Lab Request
           </h1>
           <p className="text-xs text-slate-400 mt-1">Create a new laboratory test request.</p>
@@ -103,19 +103,19 @@ export default function NewLabRequestPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Patient ID</label>
               <input type="text" {...register("patientId")} placeholder="e.g. PAT-001"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono" />
               {errors.patientId && <span className="text-[10px] text-red-500 font-semibold block">{errors.patientId.message}</span>}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Doctor ID</label>
               <input type="text" {...register("doctorId")} placeholder="e.g. DR-001"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono" />
+                className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono" />
               {errors.doctorId && <span className="text-[10px] text-red-500 font-semibold block">{errors.doctorId.message}</span>}
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function NewLabRequestPage() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Select Test</label>
             <select {...register("testId")}
-              className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono">
+              className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all font-mono">
               <option value="">Choose a test...</option>
               {tests.map((t: any) => (
                 <option key={t.id} value={t.id}>{t.code} — {t.name}</option>
@@ -135,23 +135,23 @@ export default function NewLabRequestPage() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Request Date</label>
             <input type="date" {...register("requestDate")}
-              className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
+              className="w-full h-10 px-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all" />
             {errors.requestDate && <span className="text-[10px] text-red-500 font-semibold block">{errors.requestDate.message}</span>}
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Notes</label>
             <textarea {...register("notes")} rows={2}
-              className="w-full px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold transition-all" />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Link href="/laboratory"
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">
+              className="h-10 px-4 bg-white border border-border text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">
               Cancel
             </Link>
             <button type="submit" disabled={createRequestMutation.isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+              className="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
               <Plus size={14} /> Submit Request
             </button>
           </div>

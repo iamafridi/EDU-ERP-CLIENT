@@ -119,7 +119,7 @@ export default function LabRequestDetailPage() {
     return (
       <div className="p-12 text-center">
         <p className="text-xs text-slate-400">Request not found.</p>
-        <Link href="/laboratory" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Laboratory</Link>
+        <Link href="/laboratory" className="text-xs text-gold hover:underline mt-2 inline-block">Back to Laboratory</Link>
       </div>
     );
   }
@@ -132,7 +132,7 @@ export default function LabRequestDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Beaker className="text-[#2563EB]" />
+            <Beaker className="text-gold" />
             Lab Request Details
           </h1>
         </div>
@@ -150,8 +150,8 @@ export default function LabRequestDetailPage() {
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+        <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Request Information</span>
           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
             request.status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
@@ -199,7 +199,7 @@ export default function LabRequestDetailPage() {
           )}
 
           {isLabTech && (
-            <div className="flex gap-2 pt-3 border-t border-[#e1e2ed]">
+            <div className="flex gap-2 pt-3 border-t border-border">
               {request.status === "pending" && (
                 <button onClick={() => updateStatusMutation.mutate({ id: request.id, payload: { status: "collected" } })}
                   className="h-8 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded text-xs transition-colors cursor-pointer border border-amber-200">Collect</button>
@@ -217,53 +217,53 @@ export default function LabRequestDetailPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm max-w-lg">
+        <div className="p-4 border-b border-border bg-slate-50 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Test Results</span>
           {isLabTech && (
             <button onClick={() => startEditResult()}
-              className="h-8 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5">
+              className="h-8 px-3 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5">
               <Plus size={14} /> Add Result
             </button>
           )}
         </div>
 
         {isEditingResult && (
-          <div className="p-4 bg-slate-50 border-b border-[#e1e2ed] space-y-3">
+          <div className="p-4 bg-slate-50 border-b border-border space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Test ID</label>
                 <input type="text" value={newResult.testId} onChange={(e) => setNewResult((p) => ({ ...p, testId: e.target.value }))}
                   placeholder="e.g. LAB-TST-001"
-                  className="w-full h-8 px-2 bg-white border border-[#c3c6d7] rounded text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] font-mono" />
+                  className="w-full h-8 px-2 bg-white border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold font-mono" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Result Value</label>
                 <input type="text" value={newResult.resultValue} onChange={(e) => setNewResult((p) => ({ ...p, resultValue: e.target.value }))}
                   placeholder="e.g. 11.5"
-                  className="w-full h-8 px-2 bg-white border border-[#c3c6d7] rounded text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
+                  className="w-full h-8 px-2 bg-white border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Normal Range</label>
                 <input type="text" value={newResult.normalRange} onChange={(e) => setNewResult((p) => ({ ...p, normalRange: e.target.value }))}
                   placeholder="e.g. 4.5-11.0"
-                  className="w-full h-8 px-2 bg-white border border-[#c3c6d7] rounded text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
+                  className="w-full h-8 px-2 bg-white border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Date</label>
                 <input type="date" value={newResult.resultDate} onChange={(e) => setNewResult((p) => ({ ...p, resultDate: e.target.value }))}
-                  className="w-full h-8 px-2 bg-white border border-[#c3c6d7] rounded text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
+                  className="w-full h-8 px-2 bg-white border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold" />
               </div>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Remarks</label>
               <input type="text" value={newResult.remarks} onChange={(e) => setNewResult((p) => ({ ...p, remarks: e.target.value }))}
                 placeholder="Optional remarks"
-                className="w-full h-8 px-2 bg-white border border-[#c3c6d7] rounded text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
+                className="w-full h-8 px-2 bg-white border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold" />
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setIsEditingResult(null)} className="h-8 px-3 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded text-xs hover:bg-slate-50 transition-colors">Cancel</button>
-              <button onClick={handleSaveResult} className="h-8 px-3 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded text-xs transition-colors flex items-center gap-1">
+              <button onClick={() => setIsEditingResult(null)} className="h-8 px-3 bg-white border border-border text-slate-600 font-semibold rounded text-xs hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={handleSaveResult} className="h-8 px-3 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded text-xs transition-colors flex items-center gap-1">
                 <CheckCircle2 size={12} /> Save
               </button>
             </div>
@@ -276,7 +276,7 @@ export default function LabRequestDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-[#e1e2ed]">
+                <tr className="bg-slate-50 border-b border-border">
                   <th className="p-3 text-xs font-bold text-slate-400 uppercase">Test</th>
                   <th className="p-3 text-xs font-bold text-slate-400 uppercase">Result</th>
                   <th className="p-3 text-xs font-bold text-slate-400 uppercase">Normal Range</th>
