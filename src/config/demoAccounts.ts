@@ -1,221 +1,131 @@
 import type { UserRole } from "@/store/useAuthStore";
 
 /**
- * DEMO ACCOUNTS
+ * CLIENT DEMO ACCOUNTS
  * ---------------------------------------------------------------------------
- * Single source of truth for every seeded demo account, shared by:
- *   - the login screen's "Demo credentials" panel
- *   - the in-app demo role switcher
- *   - the standalone /demo cheat sheet
+ * The five accounts shown to clients, in presentation order. These are the ONLY
+ * demo accounts the UI advertises - the login panel, the header switcher and
+ * the /demo guide all render from this single file.
  *
- * IMPORTANT: the backend `auth.service` rejects a login when the selected role
- * does not match the account's stored role. `role` below is therefore part of
- * the credential, not a hint. Everything the UI does with a demo account must
- * send this exact role.
+ * Every account here is created by `backend/src/app/seed/index.ts` with
+ * `isDemo: true`, so the backend demoGuard blocks ALL write requests: the demo
+ * is browse-only by design and no client action can mutate seeded data.
  *
- * These accounts are created by `backend/src/app/seed/index.ts`, which runs on
- * every backend start and resets the database first.
+ * The backend also seeds other operational accounts (nurse, librarian, warden,
+ * guard, additional students) which remain writable for development, but they
+ * are intentionally NOT listed here.
+ *
+ * IMPORTANT: the backend rejects a login when the selected role does not match
+ * the account's stored role, so `role` is part of the credential.
  */
 
 export type DemoAccess = "read-only" | "full";
 
 export interface DemoAccount {
-  /** Stable key for React lists and "reveal password" state. */
+  /** Stable key for React lists. */
   key: string;
   /** The role that MUST be selected at login. */
   role: NonNullable<UserRole>;
   /** Human label for that role. */
   roleLabel: string;
-  /** Short persona blurb, for the presenter. */
+  /** Short persona blurb for the presenter. */
   persona: string;
   email: string;
   password: string;
-  /** `read-only` accounts are blocked from writes by the backend demoGuard. */
+  /** All showcase accounts are view-only (backend demoGuard blocks writes). */
   access: DemoAccess;
   /** What is worth showing a client while signed in as this account. */
   highlights: string[];
 }
 
-/**
- * The five headline roles. These are what a client demo walks through, in
- * order, so both admin tiers plus the three operational roles are covered.
- */
-export const PRIMARY_DEMO_ACCOUNTS: DemoAccount[] = [
+export const SHOWCASE_ACCOUNTS: DemoAccount[] = [
   {
     key: "super-admin",
     role: "super-admin",
     roleLabel: "Super Administrator",
-    persona: "Full institutional access across every module",
-    email: "arcraain@gmail.com",
+    persona: "Complete institution-wide access - every module, every screen",
+    email: "super.admin@college.edu",
     password: "Demo@123",
-    access: "full",
+    access: "read-only",
     highlights: [
-      "Institution-wide dashboard: enrollment, finance, attendance, alerts",
-      "User Management — the only role that can create and delete users",
-      "Audit Trail and system-wide Reports",
-      "Every domain module is visible in the sidebar",
+      "Every module: Academics, Students, Clinical, Finance, Campus, Administration",
+      "User Management - the only role that can create and delete users",
+      "Audit Trail, Activity Log and institution-wide Reports",
+      "Clinical desks: OPD, IPD, Laboratory, Pharmacy, Health Center",
+      "Finance suite: Fees & Ledger, Receipts, Payroll, Expenses, Budget",
     ],
   },
   {
-    key: "domain-admin",
+    key: "faculty-admin",
     role: "domain-admin",
     roleLabel: "Domain Administrator",
-    persona: "Faculty-scoped administrator",
+    persona: "Academic operations - manages programs, students and approvals",
     email: "faculty.admin@college.edu",
     password: "Demo@123",
-    access: "full",
+    access: "read-only",
     highlights: [
-      "Academics: semesters, courses, departments, curriculum, syllabus",
-      "Student onboarding, admissions, enrollment and transcripts",
-      "Read access to Audit Log and Reports",
-      "Scoped admin dashboard, distinct from the super admin view",
+      "Academic management: semesters, courses, departments, curriculum, syllabus",
+      "Student onboarding, admissions with merit lists, enrollment",
+      "Approve scholarships and leave requests",
+      "Accreditation and research oversight",
+      "Scoped powers: reads Audit Trail and Reports, cannot create or delete users",
+    ],
+  },
+  {
+    key: "finance-admin",
+    role: "domain-admin",
+    roleLabel: "Domain Administrator",
+    persona: "Finance office - the money desk for the institution",
+    email: "finance.admin@college.edu",
+    password: "Demo@123",
+    access: "read-only",
+    highlights: [
+      "Fees & Ledger with student balances and overdue tracking",
+      "Receipts history and printable receipts",
+      "Payroll runs, Expenses and Budget planning",
+      "Finance reporting views with export",
+      "Same admin navigation, finance-focused story",
     ],
   },
   {
     key: "faculty",
     role: "faculty",
     roleLabel: "Faculty Member",
-    persona: "Teaching and academic delivery",
+    persona: "Teaching workflow - classes, attendance and grading",
     email: "j.sterling@college.edu",
     password: "Demo@123",
-    access: "full",
+    access: "read-only",
     highlights: [
-      "Faculty dashboard: classes, attendance tasks, grading queue",
-      "Mark attendance and publish grades",
-      "Exams & Grades, Assessments, Study Materials",
-      "Read the student directory (no create/delete rights)",
+      "Faculty dashboard: today's classes, attendance tasks, grading queue",
+      "Mark attendance and publish grades (Exams & Grades, Assessments)",
+      "Timetable, academic calendar and course catalog",
+      "Upload study materials, manage the clinical logbook",
+      "Read the student directory - no create or delete rights",
     ],
   },
   {
     key: "student",
     role: "student",
     roleLabel: "Student",
-    persona: "View-only student portal",
+    persona: "The student portal experience - personal, calm, view-only",
     email: "demo.student@erp.demo",
     password: "Demo@123",
     access: "read-only",
     highlights: [
-      "Student dashboard: schedule, attendance, fees, results, deadlines",
-      "Own profile, timetable, results and fee ledger",
-      "Submit leave requests and grievances",
-      "Write actions are blocked — this is the safe, view-only account",
-    ],
-  },
-  {
-    key: "staff",
-    role: "staff",
-    roleLabel: "Staff (Doctor)",
-    persona: "Clinical operations",
-    email: "priya.v@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: [
-      "Clinical dashboard and clinical & counseling workspace",
-      "OPD, IPD, Laboratory and Pharmacy desks",
-      "Health Center records and patient encounters",
-      "Note how the sidebar differs from the faculty view",
+      "Personal dashboard: schedule, attendance, fees, results, deadlines",
+      "Timetable, transcripts and own fee ledger with receipts",
+      "Mess menu, library catalogue, transport routes, notices",
+      "Leave requests and grievances views",
+      "View-only: every write action is blocked by design",
     ],
   },
 ];
 
-/** Secondary accounts, useful for showing that scoping is real. */
-export const EXTRA_DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    key: "super-admin-legacy",
-    role: "super-admin",
-    roleLabel: "Super Administrator",
-    persona: "Second super admin (reporting persona)",
-    email: "super.admin@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Identical access to the primary super admin", "Useful for side-by-side comparison"],
-  },
-  {
-    key: "finance-admin",
-    role: "domain-admin",
-    roleLabel: "Domain Administrator",
-    persona: "Finance administrator",
-    email: "finance.admin@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Fees & ledger, receipts, payroll, expenses, budget", "Finance-heavy reporting views"],
-  },
-  {
-    key: "medical-admin",
-    role: "domain-admin",
-    roleLabel: "Domain Administrator",
-    persona: "Medical administrator",
-    email: "medical.admin@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Clinical modules and health center administration", "Staff roster management"],
-  },
-  {
-    key: "staff-admin",
-    role: "domain-admin",
-    roleLabel: "Domain Administrator",
-    persona: "Staff administrator",
-    email: "staff.admin@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Staff directory, shifts, rosters", "Campus operations and facilities"],
-  },
-  {
-    key: "student-full",
-    role: "student",
-    roleLabel: "Student",
-    persona: "Student with write access",
-    email: "marcus.c@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Student portal that can submit forms and requests", "Use when the view-only account is too limiting"],
-  },
-  {
-    key: "staff-nurse",
-    role: "staff",
-    roleLabel: "Staff (Nurse)",
-    persona: "Nursing station",
-    email: "anita.n@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Ward and IPD workflows", "Health center patient records"],
-  },
-  {
-    key: "staff-librarian",
-    role: "staff",
-    roleLabel: "Staff (Librarian)",
-    persona: "Library desk",
-    email: "sarita.y@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Library catalogue, issue and return", "Study materials"],
-  },
-  {
-    key: "staff-warden",
-    role: "staff",
-    roleLabel: "Staff (Warden)",
-    persona: "Hostel warden",
-    email: "manoj.s@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Dorms, rooms and occupancy", "Mess and hostel operations"],
-  },
-  {
-    key: "staff-guard",
-    role: "staff",
-    roleLabel: "Staff (Security Guard)",
-    persona: "Security desk",
-    email: "dinesh.k@college.edu",
-    password: "Demo@123",
-    access: "full",
-    highlights: ["Security desk and visitor logs", "Incident reporting"],
-  },
-];
+/** Alias kept for consumers; the showcase list IS the full UI list now. */
+export const ALL_DEMO_ACCOUNTS: DemoAccount[] = SHOWCASE_ACCOUNTS;
 
-export const ALL_DEMO_ACCOUNTS: DemoAccount[] = [
-  ...PRIMARY_DEMO_ACCOUNTS,
-  ...EXTRA_DEMO_ACCOUNTS,
-];
+/** Backward-compatible alias used by the login panel and the header switcher. */
+export const PRIMARY_DEMO_ACCOUNTS: DemoAccount[] = SHOWCASE_ACCOUNTS;
 
 /**
  * Whether demo-account UI may render.
@@ -224,9 +134,6 @@ export const ALL_DEMO_ACCOUNTS: DemoAccount[] = [
  * "development only" and requires an explicit opt-in for production builds:
  *
  *   NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS=true
- *
- * `NEXT_PUBLIC_*` values are inlined at build time, so when the flag is absent
- * a production bundle omits this UI entirely rather than hiding it with CSS.
  */
 export const DEMO_ACCOUNTS_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS === "true" ||

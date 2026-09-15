@@ -1,38 +1,34 @@
 /**
- * Verifies the role-demo feature end to end.
+ * Verifies the five-account client demo end to end.
  *
- *  1. API login matrix - every demo account signs in and returns the expected role
- *  2. Negative check - a mismatched role is rejected (proves role is part of the credential)
- *  3. /demo guide page renders every account
- *  4. Login demo panel lists roles and fills the form
- *  5. Header role switcher really switches the signed-in account
+ *  1. API login matrix - each showcase account signs in with the right role, name and isDemo flag
+ *  2. View-only enforcement - a write attempt with a demo token is rejected (403)
+ *  3. Wrong-role rejection - role is part of the credential
+ *  4. /demo guide renders the five accounts with screen inventories
+ *  5. Login demo panel shows exactly 5 accounts (no "show all" expander)
+ *  6. Header switcher lists exactly 5 accounts and really switches
+ *
+ * Login is deliberately slow (BCRYPT_SALT_ROUNDS=15, ~7s) and rate limited
+ * (5/min) - the script paces itself.
  */
 import { chromium } from "playwright-core";
 
 const BASE = "http://localhost:3000";
 const API = "http://localhost:5000/api/v1";
+const PASSWORD = "Demo@123";
 
-// Mirrors src/config/demoAccounts.ts
+// Mirrors src/config/demoAccounts.ts (the showcase five).
 const ACCOUNTS = [
-  { email: "arcraain@gmail.com", role: "super-admin", access: "full", name: "Primary Administrator" },
-  { email: "faculty.admin@college.edu", role: "domain-admin", access: "full", name: "Rajesh Khanna" },
-  { email: "finance.admin@college.edu", role: "domain-admin", access: "full", name: "Meera Desai" },
-  { email: "medical.admin@college.edu", role: "domain-admin", access: "full", name: "Arun Patel" },
-  { email: "staff.admin@college.edu", role: "domain-admin", access: "full", name: "Sunita Sharma" },
-  { email: "super.admin@college.edu", role: "super-admin", access: "full", name: "System Administrator" },
-  { email: "j.sterling@college.edu", role: "faculty", access: "full", name: "James Sterling" },
-  { email: "demo.student@erp.demo", role: "student", access: "read-only", name: "Demo Student" },
-  { email: "marcus.c@college.edu", role: "student", access: "full", name: "Marcus Chen" },
-  { email: "priya.v@college.edu", role: "staff", access: "full", name: "Priya Verma" },
-  { email: "anita.n@college.edu", role: "staff", access: "full", name: "Anita Nair" },
-  { email: "sarita.y@college.edu", role: "staff", access: "full", name: "Sarita Yadav" },
-  { email: "manoj.s@college.edu", role: "staff", access: "full", name: "Manoj Singh" },
-  { email: "dinesh.k@college.edu", role: "staff", access: "full", name: "Dinesh Kumar" },
+  { email: "super.admin@college.edu", role: "super-admin", name: "System Administrator" },
+  { email: "faculty.admin@college.edu", role: "domain-admin", name: "Rajesh Khanna" },
+  { email: "finance.admin@college.edu", role: "domain-admin", name: "Meera Desai" },
+  { email: "j.sterling@college.edu", role: "faculty", name: "James Sterling" },
+  { email: "demo.student@erp.demo", role: "student", name: "Demo Student" },
 ];
 
-const PASSWORD = "Demo@123";
 const results = [];
 const record = (check, actual, pass) => results.push({ check, actual, pass });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function fakeJwt() {
   const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64");
@@ -45,11 +41,6 @@ function session(role, name = "QA Super Admin", email = "qa@erp.demo") {
     version: 0,
   };
 }
-
-/* ------------------------------------------------------------------ 1 + 2 */
-// The login route is rate limited to 5 requests/minute, so space the attempts
-// out and back off whenever a 429 comes back.
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function tryLogin(email, role) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -67,26 +58,58 @@ async function tryLogin(email, role) {
   return { status: 429, body: {} };
 }
 
+/* ------------------------------------------------------- 1. login matrix */
 console.log("=== API login matrix ===");
 for (const acct of ACCOUNTS) {
-  let ok = false;
-  let actual = "";
   try {
     const { status, body } = await tryLogin(acct.email, acct.role);
     const profile = body?.data?.profile;
-    const nameOk = profile?.name === acct.name;
-    ok = status === 200 && profile?.role === acct.role && nameOk;
-    actual = `${status} role=${profile?.role ?? "-"} name=${profile?.name ?? "-"}${nameOk ? "" : ` (expected ${acct.name})`} isDemo=${profile?.isDemo} msg=${body?.message ?? ""}`.slice(0, 130);
+    const ok =
+      status === 200 &&
+      profile?.role === acct.role &&
+      profile?.name === acct.name &&
+      profile?.isDemo === true;
+    record(
+      `login ${acct.role} <${acct.email}> (isDemo, name)`,
+      `${status} role=${profile?.role ?? "-"} name=${profile?.name ?? "-"} isDemo=${profile?.isDemo}`,
+      ok,
+    );
   } catch (err) {
-    actual = `error: ${err.message}`;
+    record(`login ${acct.role} <${acct.email}>`, `error: ${err.message}`, false);
   }
-  record(`login ${acct.role} <${acct.email}>`, actual, ok);
   await sleep(13000);
 }
 
-// Negative: correct email, wrong role must be rejected.
+/* --------------------------------------------- 2. view-only enforcement */
+console.log("=== view-only enforcement ===");
 try {
-  const { status, body } = await tryLogin("arcraain@gmail.com", "student");
+  const { body } = await tryLogin("demo.student@erp.demo", "student");
+  const token = body?.data?.token;
+  if (!token) {
+    record("write attempt blocked for demo account", "no token", false);
+  } else {
+    // /grievances/submit is a real POST route any role can reach; the demoGuard
+    // sits on the module router, so it fires before validation/controller.
+    const write = await fetch(`${API}/grievances/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: "demo write attempt" }),
+    });
+    const writeBody = await write.json().catch(() => ({}));
+    record(
+      "write attempt blocked for demo account (403)",
+      `${write.status} ${writeBody?.message ?? ""}`.slice(0, 90),
+      write.status === 403 && /view-only/i.test(writeBody?.message ?? ""),
+    );
+  }
+} catch (err) {
+  record("write attempt blocked for demo account", `error: ${err.message}`, false);
+}
+
+/* ------------------------------------------------- 3. wrong-role rejection */
+console.log("=== wrong-role rejection ===");
+try {
+  const { status, body } = await tryLogin("super.admin@college.edu", "student");
   record(
     "wrong role is rejected (super-admin email as student)",
     `${status} ${body?.message ?? ""}`.slice(0, 80),
@@ -96,7 +119,7 @@ try {
   record("wrong role is rejected", `error: ${err.message}`, false);
 }
 
-/* --------------------------------------------------------------- 3, 4, 5 */
+/* ------------------------------------------------------------ 4, 5, 6 UI */
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
@@ -113,21 +136,28 @@ const dismissOverlay = async () => {
   } catch {}
 };
 
-// --- 3. /demo guide -------------------------------------------------------
+// --- 4. /demo guide -------------------------------------------------------
 console.log("=== /demo guide ===");
 await page.goto(`${BASE}/demo`, { waitUntil: "domcontentloaded", timeout: 45000 });
 await page.waitForTimeout(1200);
 await dismissOverlay();
 
 const demoText = await page.locator("body").innerText();
-const missing = ACCOUNTS.filter((a) => !demoText.includes(a.email));
-record("/demo lists every demo account", `${ACCOUNTS.length - missing.length}/${ACCOUNTS.length}`, missing.length === 0);
-if (missing.length) record("/demo missing emails", missing.map((m) => m.email).join(", "), false);
-record("/demo shows title", /EDU-ERP Demo Guide/.test(demoText), /EDU-ERP Demo Guide/.test(demoText));
-record("/demo shows enabled badge", /Demo UI enabled/.test(demoText), /Demo UI enabled/.test(demoText));
+record(
+  "/demo lists exactly the five showcase emails",
+  ACCOUNTS.filter((a) => demoText.includes(a.email)).length + "/5",
+  ACCOUNTS.every((a) => demoText.includes(a.email)),
+);
+record(
+  "/demo does not advertise hidden accounts",
+  /priya\.v|anita\.n|sarita\.y|manoj\.s|dinesh\.k|marcus\.c|arcraain/.test(demoText) ? "leaked" : "hidden",
+  !/priya\.v|anita\.n|sarita\.y|manoj\.s|dinesh\.k|marcus\.c|arcraain/.test(demoText),
+);
+record("/demo shows screen inventory", /Screen lists below|Super Administrator/i.test(demoText) && /User Management/.test(demoText), /User Management/.test(demoText));
+record("/demo flags view-only", /view-only/i.test(demoText), /view-only/i.test(demoText));
 record("/demo shows walkthrough", /Suggested walkthrough/.test(demoText), /Suggested walkthrough/.test(demoText));
 
-// --- 4. Login demo panel -------------------------------------------------
+// --- 5. login demo panel -------------------------------------------------
 console.log("=== login demo panel ===");
 await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 45000 });
 await page.waitForTimeout(1000);
@@ -137,13 +167,22 @@ await page.getByRole("button", { name: /Demo credentials/i }).click();
 await page.waitForTimeout(600);
 
 const useButtons = page.getByRole("button", { name: /Use this account/i });
-const primaryCount = await useButtons.count();
-record("login panel shows 5 headline roles", `${primaryCount}`, primaryCount === 5);
+const panelCount = await useButtons.count();
+record("login panel shows exactly 5 accounts", `${panelCount}`, panelCount === 5);
 
-const loginPanelText = await page.locator("body").innerText();
-record("login panel offers to show all accounts", /Show all 14 demo accounts/.test(loginPanelText), /Show all 14 demo accounts/.test(loginPanelText));
+const bodyText = await page.locator("body").innerText();
+record(
+  "login panel has no 'show all' expander",
+  /Show all \d+ demo accounts/.test(bodyText) ? "expander present" : "none",
+  !/Show all \d+ demo accounts/.test(bodyText),
+);
+record(
+  "login panel hides non-showcase accounts",
+  /priya\.v|anita\.n|marcus\.c|arcraain/.test(bodyText) ? "leaked" : "hidden",
+  !/priya\.v|anita\.n|marcus\.c|arcraain/.test(bodyText),
+);
 
-// Click "Use this account" for the super admin (first card) and confirm the form is filled.
+// First card = Super Administrator: fill and confirm.
 await useButtons.first().click();
 await page.waitForTimeout(400);
 const filledEmail = await page.locator("#login-email").inputValue();
@@ -151,22 +190,15 @@ const filledRole = await page.locator("#login-role").inputValue();
 record(
   "clicking an account fills email + role",
   `email=${filledEmail} role=${filledRole}`,
-  filledEmail === "arcraain@gmail.com" && filledRole === "super-admin",
+  filledEmail === "super.admin@college.edu" && filledRole === "super-admin",
 );
 
-// Expand to all accounts.
-await page.getByRole("button", { name: /Show all 14 demo accounts/i }).click();
-await page.waitForTimeout(400);
-record("show all reveals 14 accounts", `${await useButtons.count()}`, (await useButtons.count()) === 14);
-
-// --- 5. Header switcher --------------------------------------------------
+// --- 6. header switcher --------------------------------------------------
 console.log("=== header role switcher ===");
-// The switcher signs in through the same rate-limited endpoint (5/min) that the
-// matrix above just exercised, so let that window reset before testing it.
+// Fresh context keeps this independent of the login-page state above; the wait
+// also lets the login rate-limit window reset before the switcher logs in.
 await sleep(62000);
 
-// A fresh context + injected session keeps this section independent of the
-// login-page state exercised above.
 const switchContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const switchPage = await switchContext.newPage();
 switchPage.on("console", (m) => {
@@ -189,21 +221,24 @@ record("header shows the demo switcher", `${switcherCount}`, switcherCount === 1
 if (switcherCount === 1) {
   await switcher.click();
   await switchPage.waitForTimeout(600);
-  const panelText = await switchPage
-    .locator("[role='dialog'][aria-label='Demo role switcher']")
-    .innerText()
-    .catch(() => "");
+  const panel = switchPage.locator("[role='dialog'][aria-label='Demo role switcher']");
+  const panelText = await panel.innerText().catch(() => "");
   record("switcher panel opens", panelText.replace(/\s+/g, " ").slice(0, 40), /Switch demo role/.test(panelText));
 
-  // Switch to the domain admin (a headline account) and confirm the signed-in user changes.
-  const target = switchPage
-    .locator("[role='dialog'][aria-label='Demo role switcher'] button")
-    .filter({ hasText: "faculty.admin@college.edu" })
-    .first();
+  const accountButtons = panel.locator("button").filter({ hasText: /@/ });
+  record("switcher lists exactly 5 accounts", `${await accountButtons.count()}`, (await accountButtons.count()) === 5);
+
+  const hiddenInSwitcher = await panel.innerText();
+  record(
+    "switcher hides non-showcase accounts",
+    /priya\.v|anita\.n|marcus\.c|arcraain/.test(hiddenInSwitcher) ? "leaked" : "hidden",
+    !/priya\.v|anita\.n|marcus\.c|arcraain/.test(hiddenInSwitcher),
+  );
+
+  const target = panel.locator("button").filter({ hasText: "faculty.admin@college.edu" }).first();
   if ((await target.count()) > 0) {
     await target.click();
-    // Login is deliberately slow here (BCRYPT_SALT_ROUNDS=15 => ~7s per login),
-    // so allow generous headroom before asserting the switch completed.
+    // ~7s bcrypt login; allow generous headroom.
     await switchPage.waitForTimeout(22000);
     await switchPage
       .evaluate(() => document.querySelectorAll("nextjs-portal").forEach((el) => el.remove()))

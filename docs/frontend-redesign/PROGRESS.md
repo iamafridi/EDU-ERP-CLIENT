@@ -89,6 +89,12 @@ Phase 12 Final QA: lint/test/build, browser matrix, web-design-guidelines audit,
   - `scripts/verify-role-visuals.mjs` signs in as each of the 5 headline roles through the real login UI (form fill + submit, not token injection) and captures 21 screenshots: 16 desktop pages (dashboards, user management, audit trail, student directory, admissions, attendance, exams, timetable, fees, OPD, laboratory) + 5 mobile dashboards, into `.qa/screenshots/role-demo/` (gitignored).
   - Result: all 5 roles logged in and navigated with **zero unexpected console errors** and real seeded data loading - the strongest end-to-end signal before the client demo. Note for future runs: the output path must go through `fileURLToPath`; a raw `URL.pathname` keeps `%20` encoded and writes a stray directory outside the project on Windows.
 
+- **2026-09-15 (session 3, showcase lineup) — client demo finalized**:
+  - Lineup cut to exactly 5 showcase accounts (super.admin, faculty.admin, finance.admin, j.sterling, demo.student) rendered by the login panel, header switcher and /demo guide from the single demoAccounts.ts source; the other 9 seeded accounts stay in the database but are never advertised in the UI. arcraain@gmail.com remains a functional seed account, off the client lineup.
+  - All 5 showcase accounts are now created with isDemo:true in the seed (student was already; the other four newly flagged), so the backend demoGuard blocks every write - the demo is browse-only by design. Non-showcase accounts remain writable for development.
+  - /demo guide rebuilt as the client-facing walkthrough: per-account credential card plus the FULL screen inventory for that role, generated live from NAV_SECTIONS so it can never drift from the sidebar. Verification adds checks that the hidden accounts do not leak into any demo surface.
+  - Verification: 22/22 green (login matrix incl. isDemo flags + resolved names, 403 view-only enforcement via /grievances/submit, wrong-role 401, /demo content + leak checks, login panel = exactly 5 with no expander, switcher = exactly 5 and really switches, zero unexpected console errors). Production build passes with /demo.
+
 ## Remaining phases (next sessions)
 
 - Phase 6: DataTable upgrade (sorting, selection, bulk bar, density, loading/error/empty, responsive priority columns) + migrate Directory archetype (students, faculties, users, alumni...).
