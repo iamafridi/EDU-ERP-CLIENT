@@ -95,6 +95,10 @@ Phase 12 Final QA: lint/test/build, browser matrix, web-design-guidelines audit,
   - /demo guide rebuilt as the client-facing walkthrough: per-account credential card plus the FULL screen inventory for that role, generated live from NAV_SECTIONS so it can never drift from the sidebar. Verification adds checks that the hidden accounts do not leak into any demo surface.
   - Verification: 22/22 green (login matrix incl. isDemo flags + resolved names, 403 view-only enforcement via /grievances/submit, wrong-role 401, /demo content + leak checks, login panel = exactly 5 with no expander, switcher = exactly 5 and really switches, zero unexpected console errors). Production build passes with /demo.
 
+- **2026-09-15 (session 3, login dropdown) — demo credentials discoverable in one click**:
+  - The login card now has a "Demo accounts (5)" dropdown directly under the sign-in button: one click opens it, clicking a row fills role + email + password (fill only, no auto-submit, per operator choice) and closes the panel. Password is shown once in the dropdown footer; copy button per row; Escape/click-outside close; still gated by NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS. The old bottom accordion panel is disabled in place ({ false && ... }), not deleted, preserving the commented legacy single-account code too.
+  - Verification updated and extended to 25 checks (adds collapsed-leak, dropdown trigger, no-expander, dropdown-leak and dropdown-closes assertions). All green; production build passes.
+
 ## Remaining phases (next sessions)
 
 - Phase 6: DataTable upgrade (sorting, selection, bulk bar, density, loading/error/empty, responsive priority columns) + migrate Directory archetype (students, faculties, users, alumni...).

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore, UserRole, roleLabels } from "@/store/useAuthStore";
@@ -18,6 +18,7 @@ import {
   KeyRound,
   Mail,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 import { auth, sendPasswordResetEmail } from "@/lib/firebase";
 import {
@@ -73,6 +74,10 @@ export default function LoginPage() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [showAllDemo, setShowAllDemo] = useState(false);
 
+  /* Demo accounts dropdown (sits directly under the sign-in button). */
+  const [demoOpen, setDemoOpen] = useState(false);
+  const demoWrapRef = useRef<HTMLDivElement | null>(null);
+
   const demoAccountsToShow = showAllDemo ? ALL_DEMO_ACCOUNTS : PRIMARY_DEMO_ACCOUNTS;
 
   /** Fills the sign-in form with a demo account (role included - it is part of the credential). */
@@ -81,7 +86,18 @@ export default function LoginPage() {
     setPassword(acct.password);
     setRole(acct.role);
     setErrorMsg("");
+    setDemoOpen(false);
   }, []);
+
+  // Close the demo dropdown on Escape.
+  useEffect(() => {
+    if (!demoOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDemoOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [demoOpen]);
 
 
 
@@ -257,6 +273,102 @@ export default function LoginPage() {
                   <Button type="submit" size="lg" className="w-full" loading={isLoading}>
                     {isLoading ? "Signing in..." : "Sign in to EDU-ERP"}
                   </Button>
+
+                  {/* Demo accounts dropdown - one click fills the form (role is
+                      part of the credential). Only rendered when the demo flag
+                      is on; see src/config/demoAccounts.ts. */}
+                  {DEMO_ACCOUNTS_ENABLED && (
+                    <div ref={demoWrapRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setDemoOpen((o) => !o)}
+                        aria-expanded={demoOpen}
+                        aria-haspopup="dialog"
+                        className="w-full flex items-center justify-center gap-1.5 h-10 rounded-md border border-border bg-surface-muted/60 text-xs font-medium text-text-muted hover:text-text hover:border-border-strong transition-colors cursor-pointer"
+                      >
+                        <Users size={14} aria-hidden="true" />
+                        Demo accounts ({ALL_DEMO_ACCOUNTS.length})
+                        <motion.span animate={{ rotate: demoOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
+                          <ChevronDown size={13} aria-hidden="true" />
+                        </motion.span>
+                      </button>
+
+                      {demoOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-30"
+                            onClick={() => setDemoOpen(false)}
+                            aria-hidden="true"
+                          />
+                          <div
+                            role="dialog"
+                            aria-label="Demo accounts"
+                            className="absolute left-0 right-0 top-full mt-1.5 z-40 rounded-lg bg-surface-raised border border-border shadow-lg overflow-hidden"
+                          >
+                            <div className="px-3 py-2 border-b border-border">
+                              <p className="text-[11px] font-semibold text-text">Sign in as a demo role</p>
+                              <p className="text-[10px] text-text-subtle">
+                                Click an account to fill the form - then press Sign in.
+                              </p>
+                            </div>
+                            <div className="p-1 space-y-0.5 max-h-72 overflow-y-auto">
+                              {ALL_DEMO_ACCOUNTS.map((acct, idx) => (
+                                <div
+                                  key={acct.key}
+                                  className="flex items-center gap-1 rounded-md hover:bg-surface-muted transition-colors"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => applyDemoAccount(acct)}
+                                    className="flex-1 min-w-0 text-left px-2.5 py-2 cursor-pointer"
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="text-[11px] font-semibold text-text truncate">
+                                        {acct.roleLabel}
+                                      </span>
+                                      <Badge tone={acct.access === "read-only" ? "warning" : "success"}>
+                                        {acct.access === "read-only" ? "View-Only" : "Full"}
+                                      </Badge>
+                                    </span>
+                                    <span className="block text-[10px] text-text-subtle truncate">
+                                      {acct.persona}
+                                    </span>
+                                    <span className="block text-[11px] text-text-muted truncate">
+                                      {acct.email}
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(acct.email, idx)}
+                                    title="Copy email"
+                                    aria-label={`Copy email for ${acct.roleLabel}`}
+                                    className="p-1.5 mr-1 rounded-md hover:bg-surface text-text-muted hover:text-text transition-colors cursor-pointer shrink-0"
+                                  >
+                                    {copiedIdx === idx ? (
+                                      <Check size={13} className="text-success" />
+                                    ) : (
+                                      <Copy size={13} />
+                                    )}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="px-3 py-2 border-t border-border flex items-center justify-between gap-2">
+                              <span className="text-[10px] text-text-subtle font-mono">
+                                Password: Demo@123
+                              </span>
+                              <a
+                                href="/demo"
+                                className="text-[10px] text-primary hover:text-primary-hover font-medium"
+                              >
+                                Full demo guide
+                              </a>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -321,9 +433,11 @@ export default function LoginPage() {
             </AnimatePresence>
           </form>
 
-          {/* Demo credentials - only rendered when the demo flag is on.
-              See src/config/demoAccounts.ts for the gate and the account list. */}
-          {DEMO_ACCOUNTS_ENABLED && (
+          {/* LEGACY bottom accordion demo panel - superseded by the "Demo accounts"
+              dropdown under the sign-in button. Kept disabled (not deleted) for
+              reference; see src/config/demoAccounts.ts for the gate and list. */}
+          {false &&
+            DEMO_ACCOUNTS_ENABLED && (
           <div className="mt-6 border-t border-border pt-4">
             <button
               type="button"

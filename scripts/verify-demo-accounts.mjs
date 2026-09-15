@@ -157,32 +157,47 @@ record("/demo shows screen inventory", /Screen lists below|Super Administrator/i
 record("/demo flags view-only", /view-only/i.test(demoText), /view-only/i.test(demoText));
 record("/demo shows walkthrough", /Suggested walkthrough/.test(demoText), /Suggested walkthrough/.test(demoText));
 
-// --- 5. login demo panel -------------------------------------------------
-console.log("=== login demo panel ===");
+// --- 5. login demo dropdown ----------------------------------------------
+console.log("=== login demo dropdown ===");
 await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 45000 });
 await page.waitForTimeout(1000);
 await dismissOverlay();
 
-await page.getByRole("button", { name: /Demo credentials/i }).click();
-await page.waitForTimeout(600);
-
-const useButtons = page.getByRole("button", { name: /Use this account/i });
-const panelCount = await useButtons.count();
-record("login panel shows exactly 5 accounts", `${panelCount}`, panelCount === 5);
-
 const bodyText = await page.locator("body").innerText();
 record(
-  "login panel has no 'show all' expander",
-  /Show all \d+ demo accounts/.test(bodyText) ? "expander present" : "none",
-  !/Show all \d+ demo accounts/.test(bodyText),
-);
-record(
-  "login panel hides non-showcase accounts",
+  "login page hides non-showcase accounts while collapsed",
   /priya\.v|anita\.n|marcus\.c|arcraain/.test(bodyText) ? "leaked" : "hidden",
   !/priya\.v|anita\.n|marcus\.c|arcraain/.test(bodyText),
 );
 
-// First card = Super Administrator: fill and confirm.
+const demoTrigger = page.getByRole("button", { name: /Demo accounts \(\d+\)/i });
+record(
+  "login page shows the demo accounts dropdown",
+  `${await demoTrigger.count()}`,
+  (await demoTrigger.count()) === 1,
+);
+
+await demoTrigger.click();
+await page.waitForTimeout(600);
+
+const dropdown = page.locator("[role='dialog'][aria-label='Demo accounts']");
+const useButtons = dropdown.locator("button").filter({ hasText: /@/ });
+const panelCount = await useButtons.count();
+record("dropdown lists exactly 5 accounts", `${panelCount}`, panelCount === 5);
+
+const dropdownText = await page.locator("body").innerText();
+record(
+  "dropdown has no 'show all' expander",
+  /Show all \d+ demo accounts/.test(dropdownText) ? "expander present" : "none",
+  !/Show all \d+ demo accounts/.test(dropdownText),
+);
+record(
+  "dropdown hides non-showcase accounts",
+  /priya\.v|anita\.n|marcus\.c|arcraain/.test(dropdownText) ? "leaked" : "hidden",
+  !/priya\.v|anita\.n|marcus\.c|arcraain/.test(dropdownText),
+);
+
+// First row = Super Administrator: fills the form and closes the dropdown.
 await useButtons.first().click();
 await page.waitForTimeout(400);
 const filledEmail = await page.locator("#login-email").inputValue();
@@ -191,6 +206,11 @@ record(
   "clicking an account fills email + role",
   `email=${filledEmail} role=${filledRole}`,
   filledEmail === "super.admin@college.edu" && filledRole === "super-admin",
+);
+record(
+  "dropdown closes after picking an account",
+  `${await dropdown.count()}`,
+  (await dropdown.count()) === 0,
 );
 
 // --- 6. header switcher --------------------------------------------------
