@@ -12,13 +12,13 @@ export default function DashboardError({
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4">
       <div className="text-center max-w-md">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
           <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Something went wrong</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Something went wrong</h2>
+        <p className="text-sm text-slate-500 mb-4">
           {error.message || "An unexpected error occurred in this section."}
         </p>
         <button

@@ -32,7 +32,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-background text-on-background font-sans">
+      <body className="min-h-full bg-background text-text font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

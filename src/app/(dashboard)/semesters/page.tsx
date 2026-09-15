@@ -3,12 +3,14 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import DataTable, { Column } from "@/components/ui/DataTable";
-import { TableSkeleton } from "@/components/ui/Skeleton";
-import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Plus, Pencil, Trash2, CheckCircle2, X } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button, IconButton } from "@/components/ui/Button";
+import { Dialog, ConfirmDialog } from "@/components/ui/Dialog";
+import { FormField, Input, Select } from "@/components/ui/Form";
+import { Alert } from "@/components/ui/Feedback";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Semester {
   id: string;
@@ -18,23 +20,30 @@ interface Semester {
   endMonth: string;
 }
 
+interface SemForm {
+  name: string;
+  code: string;
+  startMonth: string;
+  endMonth: string;
+}
+
+const EMPTY_FORM: SemForm = { name: "", code: "", startMonth: "", endMonth: "" };
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
 export default function SemestersPage() {
-  const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
-  const [successMsg, setSuccessMsg] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedSem, setSelectedSem] = useState<Semester | null>(null);
-  const [formData, setFormData] = useState({ name: "", code: "", startMonth: "", endMonth: "" });
-
   const canModify = roleIs("super-admin", "domain-admin");
+
+  const [successMsg, setSuccessMsg] = useState("");
+  const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
+  const [form, setForm] = useState<SemForm>(EMPTY_FORM);
+  const [selectedSem, setSelectedSem] = useState<Semester | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Semester | null>(null);
 
   const { data: semesters = [], isLoading } = useQuery<Semester[]>({
     queryKey: ["semesters"],
@@ -46,21 +55,21 @@ export default function SemestersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       setSuccessMsg("Semester created successfully.");
-      setIsCreateOpen(false);
-      setFormData({ name: "", code: "", startMonth: "", endMonth: "" });
+      setModalMode(null);
+      setForm(EMPTY_FORM);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { id: string; data: Record<string, unknown> }) =>
-      api.updateSemester(payload.id, payload.data),
+    mutationFn: (payload: { id: string; data: SemForm }) =>
+      api.updateSemester(payload.id, payload.data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       setSuccessMsg("Semester updated successfully.");
-      setIsEditOpen(false);
+      setModalMode(null);
       setSelectedSem(null);
-      setFormData({ name: "", code: "", startMonth: "", endMonth: "" });
+      setForm(EMPTY_FORM);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
@@ -70,79 +79,56 @@ export default function SemestersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       setSuccessMsg("Semester deleted successfully.");
-      setIsDeleteOpen(false);
-      setSelectedSem(null);
+      setDeleteTarget(null);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  };
-
-  const handleEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedSem) {
-      updateMutation.mutate({ id: selectedSem.id, data: formData });
-    }
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setSelectedSem(null);
+    setModalMode("create");
   };
 
   const openEdit = (sem: Semester) => {
     setSelectedSem(sem);
-    setFormData({
-      name: sem.name,
-      code: sem.code,
-      startMonth: sem.startMonth,
-      endMonth: sem.endMonth,
-    });
-    setIsEditOpen(true);
+    setForm({ name: sem.name, code: sem.code, startMonth: sem.startMonth, endMonth: sem.endMonth });
+    setModalMode("edit");
   };
 
-  const openDelete = (sem: Semester) => {
-    setSelectedSem(sem);
-    setIsDeleteOpen(true);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (modalMode === "create") {
+      createMutation.mutate(form);
+    } else if (modalMode === "edit" && selectedSem) {
+      updateMutation.mutate({ id: selectedSem.id, data: form });
+    }
   };
 
   const columns: Column<Semester>[] = [
     {
       header: "Semester Name",
-      accessor: (row) => (
-        <span className="font-semibold text-slate-800">{row.name}</span>
-      ),
+      accessor: (row) => <span className="font-medium text-text">{row.name}</span>,
+      sortValue: (row) => row.name,
     },
-    {
-      header: "Code",
-      accessor: (row) => (
-        <span className="font-mono text-slate-500">{row.code}</span>
-      ),
-    },
-    {
-      header: "Start Month",
-      accessor: "startMonth",
-    },
-    {
-      header: "End Month",
-      accessor: "endMonth",
-    },
+    { header: "Code", accessor: "code", className: "font-mono text-text-muted" },
+    { header: "Start Month", accessor: "startMonth" },
+    { header: "End Month", accessor: "endMonth" },
     ...(canModify
       ? [
           {
             header: "Actions",
+            id: "actions",
+            sortable: false,
+            hideable: false,
             accessor: (row: Semester) => (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openEdit(row)}
-                  className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => openDelete(row)}
-                  className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+              <div className="flex items-center gap-1">
+                <IconButton label={`Edit ${row.name}`} size="sm" onClick={() => openEdit(row)}>
+                  <Pencil size={14} aria-hidden="true" />
+                </IconButton>
+                <IconButton label={`Delete ${row.name}`} size="sm" variant="danger" onClick={() => setDeleteTarget(row)}>
+                  <Trash2 size={14} aria-hidden="true" />
+                </IconButton>
               </div>
             ),
           } as Column<Semester>,
@@ -151,223 +137,129 @@ export default function SemestersPage() {
   ];
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            Academic Semesters
-            <Calendar size={22} className="text-[#2563EB]" />
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage academic semesters and their time periods.
-          </p>
-        </div>
-        {canModify && (
-          <button
-            onClick={() => { setFormData({ name: "", code: "", startMonth: "", endMonth: "" }); setIsCreateOpen(true); }}
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
-          >
-            <Plus size={16} />
-            Add Semester
-          </button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Academic Semesters"
+        description="Manage academic semesters and their time periods."
+        actions={
+          canModify ? (
+            <Button leftIcon={<Plus size={15} aria-hidden="true" />} onClick={openCreate}>
+              Add Semester
+            </Button>
+          ) : undefined
+        }
+      />
 
       {successMsg && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
-        >
-          <CheckCircle2 size={16} className="text-emerald-600" />
-          <span>{successMsg}</span>
-        </motion.div>
+        <Alert tone="success" className="max-w-xl">
+          {successMsg}
+        </Alert>
       )}
 
-      {isLoading ? (
-        <TableSkeleton rows={5} cols={6} />
-      ) : (
-        <DataTable<Semester>
-          data={semesters}
-          columns={columns}
-          searchPlaceholder="Search semesters by name..."
-          searchField="name"
-        />
-      )}
+      <DataTable<Semester>
+        data={semesters}
+        columns={columns}
+        loading={isLoading}
+        searchPlaceholder="Search semesters by name..."
+        searchField="name"
+        tableId="semesters"
+        emptyTitle="No semesters yet"
+        emptyDescription="Create your first semester to schedule courses and exams."
+        emptyAction={
+          canModify ? (
+            <Button size="sm" leftIcon={<Plus size={14} aria-hidden="true" />} onClick={openCreate}>
+              Add Semester
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <AnimatePresence>
-        {isCreateOpen && (
-          <ModalShell title="Create Semester" onClose={() => setIsCreateOpen(false)}>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Semester Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="e.g. Fall 2026"
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Code</label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData((p) => ({ ...p, code: e.target.value }))}
-                    placeholder="e.g. 01"
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Start Month</label>
-                  <select
-                    value={formData.startMonth}
-                    onChange={(e) => setFormData((p) => ({ ...p, startMonth: e.target.value }))}
-                    required
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  >
-                    <option value="">Select month...</option>
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">End Month</label>
-                  <select
-                    value={formData.endMonth}
-                    onChange={(e) => setFormData((p) => ({ ...p, endMonth: e.target.value }))}
-                    required
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  >
-                    <option value="">Select month...</option>
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsCreateOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"><Plus size={14} /> Create</button>
-              </div>
-            </form>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isEditOpen && selectedSem && (
-          <ModalShell title="Edit Semester" onClose={() => setIsEditOpen(false)}>
-            <form onSubmit={handleEdit} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Semester Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Code</label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData((p) => ({ ...p, code: e.target.value }))}
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Start Month</label>
-                  <select
-                    value={formData.startMonth}
-                    onChange={(e) => setFormData((p) => ({ ...p, startMonth: e.target.value }))}
-                    required
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  >
-                    <option value="">Select month...</option>
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">End Month</label>
-                  <select
-                    value={formData.endMonth}
-                    onChange={(e) => setFormData((p) => ({ ...p, endMonth: e.target.value }))}
-                    required
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  >
-                    <option value="">Select month...</option>
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsEditOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"><Pencil size={14} /> Update</button>
-              </div>
-            </form>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isDeleteOpen && selectedSem && (
-          <ModalShell title="Delete Semester" onClose={() => setIsDeleteOpen(false)}>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-600">
-                Are you sure you want to delete <strong>{selectedSem.name}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsDeleteOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button
-                  onClick={() => deleteMutation.mutate(selectedSem.id)}
-                  className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
-              </div>
-            </div>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
+      <Dialog
+        open={modalMode !== null}
+        onClose={() => setModalMode(null)}
+        title={modalMode === "create" ? "Create Semester" : "Edit Semester"}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setModalMode(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="sem-form" loading={createMutation.isPending || updateMutation.isPending}>
+              {modalMode === "create" ? "Create semester" : "Save changes"}
+            </Button>
+          </>
+        }
       >
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-800">{title}</span>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        {children}
-      </motion.div>
+        <form id="sem-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Semester Name" htmlFor="sem-name" required>
+              <Input
+                id="sem-name"
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="e.g. Fall 2026"
+                required
+              />
+            </FormField>
+            <FormField label="Code" htmlFor="sem-code" required>
+              <Input
+                id="sem-code"
+                value={form.code}
+                onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
+                placeholder="e.g. 01"
+                required
+              />
+            </FormField>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Start Month" htmlFor="sem-start" required>
+              <Select
+                id="sem-start"
+                value={form.startMonth}
+                onChange={(e) => setForm((p) => ({ ...p, startMonth: e.target.value }))}
+                placeholder="Select month..."
+                required
+              >
+                {MONTHS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="End Month" htmlFor="sem-end" required>
+              <Select
+                id="sem-end"
+                value={form.endMonth}
+                onChange={(e) => setForm((p) => ({ ...p, endMonth: e.target.value }))}
+                placeholder="Select month..."
+                required
+              >
+                {MONTHS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          </div>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        title="Delete semester?"
+        tone="danger"
+        confirmLabel={deleteMutation.isPending ? "Deleting..." : "Delete"}
+        loading={deleteMutation.isPending}
+        description={
+          <>
+            You are about to permanently delete <strong className="text-text">{deleteTarget?.name}</strong>. Enrollments
+            and schedules tied to this semester will need review.
+          </>
+        }
+      />
     </div>
   );
 }

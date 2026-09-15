@@ -108,9 +108,40 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Demo accounts UI (login demo panel, header role switcher, /demo guide).
+# Enabled automatically in development. REQUIRED to be set explicitly for a
+# production build, otherwise the demo UI is omitted from the bundle entirely.
+NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS=true
 ```
 
 > **Note:** Never commit `.env.local` to version control. It is already in `.gitignore`.
+
+---
+
+## Demo Accounts
+
+The backend seed creates the accounts used for client demonstrations and prints
+them to the console on every start:
+
+```bash
+cd ../backend && npm run dev
+```
+
+The seed **clears the database first**, so each restart produces a clean, known
+dataset. Two things to know when presenting:
+
+1. **The role selected at login is part of the credential.** The backend rejects a
+   sign-in whose selected role does not match the account's stored role.
+2. **`View-Only` accounts are blocked from writes** by the backend `demoGuard` and
+   show an amber banner in the app. All other demo accounts have full write access.
+
+Every account is defined in one place, `src/config/demoAccounts.ts`, which drives
+the login demo panel, the header role switcher and the `/demo` guide. That file is
+also the single source of truth for the shared demo password.
+
+> For a production build, set `NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS=true` to expose the
+> demo UI, or leave it unset to ship without it.
 
 ---
 

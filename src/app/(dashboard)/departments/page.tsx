@@ -3,12 +3,14 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import DataTable, { Column } from "@/components/ui/DataTable";
-import { TableSkeleton } from "@/components/ui/Skeleton";
-import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Plus, Pencil, Trash2, CheckCircle2, X } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button, IconButton } from "@/components/ui/Button";
+import { Dialog, ConfirmDialog } from "@/components/ui/Dialog";
+import { FormField, Input, Select } from "@/components/ui/Form";
+import { Alert } from "@/components/ui/Feedback";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Department {
   id: string;
@@ -16,25 +18,30 @@ interface Department {
   academicFaculty: string;
 }
 
+interface DeptForm {
+  name: string;
+  academicFaculty: string;
+}
+
+const EMPTY_FORM: DeptForm = { name: "", academicFaculty: "" };
+
 export default function DepartmentsPage() {
-  const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
-  const [successMsg, setSuccessMsg] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedDept, setSelectedDept] = useState<Department | null>(null);
-  const [formData, setFormData] = useState({ name: "", academicFaculty: "" });
-
   const canModify = roleIs("super-admin", "domain-admin");
+
+  const [successMsg, setSuccessMsg] = useState("");
+  const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
+  const [form, setForm] = useState<DeptForm>(EMPTY_FORM);
+  const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
 
   const { data: departments = [], isLoading } = useQuery<Department[]>({
     queryKey: ["departments"],
     queryFn: api.getAcademicDepartments,
   });
 
-  const { data: faculties = [] } = useQuery<any[]>({
+  const { data: faculties = [] } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["academicFaculties"],
     queryFn: api.getAcademicFaculties,
   });
@@ -44,21 +51,21 @@ export default function DepartmentsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       setSuccessMsg("Department created successfully.");
-      setIsCreateOpen(false);
-      setFormData({ name: "", academicFaculty: "" });
+      setModalMode(null);
+      setForm(EMPTY_FORM);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { id: string; data: any }) =>
-      api.updateDepartment(payload.id, payload.data),
+    mutationFn: (payload: { id: string; data: DeptForm }) =>
+      api.updateDepartment(payload.id, payload.data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       setSuccessMsg("Department updated successfully.");
-      setIsEditOpen(false);
+      setModalMode(null);
       setSelectedDept(null);
-      setFormData({ name: "", academicFaculty: "" });
+      setForm(EMPTY_FORM);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
@@ -68,66 +75,62 @@ export default function DepartmentsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       setSuccessMsg("Department deleted successfully.");
-      setIsDeleteOpen(false);
-      setSelectedDept(null);
+      setDeleteTarget(null);
       setTimeout(() => setSuccessMsg(""), 4000);
     },
   });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  };
-
-  const handleEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedDept) {
-      updateMutation.mutate({ id: selectedDept.id, data: formData });
-    }
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setSelectedDept(null);
+    setModalMode("create");
   };
 
   const openEdit = (dept: Department) => {
     setSelectedDept(dept);
-    setFormData({ name: dept.name, academicFaculty: dept.academicFaculty });
-    setIsEditOpen(true);
+    setForm({ name: dept.name, academicFaculty: String(typeof dept.academicFaculty === "string" ? dept.academicFaculty : (dept.academicFaculty as { name?: string })?.name ?? "") });
+    setModalMode("edit");
   };
 
-  const openDelete = (dept: Department) => {
-    setSelectedDept(dept);
-    setIsDeleteOpen(true);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (modalMode === "create") {
+      createMutation.mutate(form);
+    } else if (modalMode === "edit" && selectedDept) {
+      updateMutation.mutate({ id: selectedDept.id, data: form });
+    }
   };
 
   const columns: Column<Department>[] = [
     {
       header: "Department Name",
-      accessor: (row) => (
-        <span className="font-semibold text-slate-800">{row.name}</span>
-      ),
+      accessor: (row) => <span className="font-medium text-text">{row.name}</span>,
+      sortValue: (row) => row.name,
     },
     {
       header: "Faculty Division",
       accessor: (row) => (
-        <span className="text-slate-600 font-medium">{typeof row.academicFaculty === 'string' ? row.academicFaculty : (row.academicFaculty as any)?.name ?? ''}</span>
+        <span className="text-text-muted">
+          {typeof row.academicFaculty === "string" ? row.academicFaculty : (row.academicFaculty as { name?: string })?.name ?? ""}
+        </span>
       ),
+      sortValue: (row) => (typeof row.academicFaculty === "string" ? row.academicFaculty : ""),
     },
     ...(canModify
       ? [
           {
             header: "Actions",
+            id: "actions",
+            sortable: false,
+            hideable: false,
             accessor: (row: Department) => (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openEdit(row)}
-                  className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => openDelete(row)}
-                  className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+              <div className="flex items-center gap-1">
+                <IconButton label={`Edit ${row.name}`} size="sm" onClick={() => openEdit(row)}>
+                  <Pencil size={14} aria-hidden="true" />
+                </IconButton>
+                <IconButton label={`Delete ${row.name}`} size="sm" variant="danger" onClick={() => setDeleteTarget(row)}>
+                  <Trash2 size={14} aria-hidden="true" />
+                </IconButton>
               </div>
             ),
           } as Column<Department>,
@@ -136,169 +139,101 @@ export default function DepartmentsPage() {
   ];
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            Academic Departments
-            <Building2 size={22} className="text-[#2563EB]" />
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage academic divisions and their faculty mappings.
-          </p>
-        </div>
-        {canModify && (
-          <button
-            onClick={() => { setFormData({ name: "", academicFaculty: "" }); setIsCreateOpen(true); }}
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
-          >
-            <Plus size={16} />
-            Add Department
-          </button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Academic Departments"
+        description="Manage academic divisions and their faculty mappings."
+        actions={
+          canModify ? (
+            <Button leftIcon={<Plus size={15} aria-hidden="true" />} onClick={openCreate}>
+              Add Department
+            </Button>
+          ) : undefined
+        }
+      />
 
       {successMsg && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
-        >
-          <CheckCircle2 size={16} className="text-emerald-600" />
-          <span>{successMsg}</span>
-        </motion.div>
+        <Alert tone="success" className="max-w-xl">
+          {successMsg}
+        </Alert>
       )}
 
-      {isLoading ? (
-        <TableSkeleton rows={5} cols={6} />
-      ) : (
-        <DataTable<Department>
-          data={departments}
-          columns={columns}
-          searchPlaceholder="Search departments by name..."
-          searchField="name"
-        />
-      )}
+      <DataTable<Department>
+        data={departments}
+        columns={columns}
+        loading={isLoading}
+        searchPlaceholder="Search departments by name..."
+        searchField="name"
+        tableId="departments"
+        emptyTitle="No departments yet"
+        emptyDescription="Create your first department to organize courses and faculty."
+        emptyAction={
+          canModify ? (
+            <Button size="sm" leftIcon={<Plus size={14} aria-hidden="true" />} onClick={openCreate}>
+              Add Department
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Create Modal */}
-      <AnimatePresence>
-        {isCreateOpen && (
-          <ModalShell title="Create Department" onClose={() => setIsCreateOpen(false)}>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Department Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g. Computer Science"
-                  required
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Faculty Division</label>
-                <select
-                  value={formData.academicFaculty}
-                  onChange={(e) => setFormData((p) => ({ ...p, academicFaculty: e.target.value }))}
-                  required
-                  className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                >
-                  <option value="">Select faculty...</option>
-                  {faculties.map((f: any) => (
-                    <option key={f.id} value={f.name}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsCreateOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"><Plus size={14} /> Create</button>
-              </div>
-            </form>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Modal */}
-      <AnimatePresence>
-        {isEditOpen && selectedDept && (
-          <ModalShell title="Edit Department" onClose={() => setIsEditOpen(false)}>
-            <form onSubmit={handleEdit} className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Department Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                  required
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Faculty Division</label>
-                <select
-                  value={formData.academicFaculty}
-                  onChange={(e) => setFormData((p) => ({ ...p, academicFaculty: e.target.value }))}
-                  required
-                  className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                >
-                  <option value="">Select faculty...</option>
-                  {faculties.map((f: any) => (
-                    <option key={f.id} value={f.name}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsEditOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"><Pencil size={14} /> Update</button>
-              </div>
-            </form>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Confirmation */}
-      <AnimatePresence>
-        {isDeleteOpen && selectedDept && (
-          <ModalShell title="Delete Department" onClose={() => setIsDeleteOpen(false)}>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-600">
-                Are you sure you want to delete <strong>{selectedDept.name}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={() => setIsDeleteOpen(false)} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors">Cancel</button>
-                <button
-                  onClick={() => deleteMutation.mutate(selectedDept.id)}
-                  className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
-              </div>
-            </div>
-          </ModalShell>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
+      <Dialog
+        open={modalMode !== null}
+        onClose={() => setModalMode(null)}
+        title={modalMode === "create" ? "Create Department" : "Edit Department"}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setModalMode(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="dept-form" loading={createMutation.isPending || updateMutation.isPending}>
+              {modalMode === "create" ? "Create department" : "Save changes"}
+            </Button>
+          </>
+        }
       >
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-800">{title}</span>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        {children}
-      </motion.div>
+        <form id="dept-form" onSubmit={handleSubmit} className="space-y-4">
+          <FormField label="Department Name" htmlFor="dept-name" required>
+            <Input
+              id="dept-name"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="e.g. Computer Science"
+              required
+            />
+          </FormField>
+          <FormField label="Faculty Division" htmlFor="dept-faculty" required>
+            <Select
+              id="dept-faculty"
+              value={form.academicFaculty}
+              onChange={(e) => setForm((p) => ({ ...p, academicFaculty: e.target.value }))}
+              placeholder="Select faculty..."
+              required
+            >
+              {faculties.map((f) => (
+                <option key={f.id} value={f.name}>
+                  {f.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        title="Delete department?"
+        tone="danger"
+        confirmLabel={deleteMutation.isPending ? "Deleting..." : "Delete"}
+        loading={deleteMutation.isPending}
+        description={
+          <>
+            You are about to permanently delete <strong className="text-text">{deleteTarget?.name}</strong>. Courses
+            linked to this department will need to be reassigned.
+          </>
+        }
+      />
     </div>
   );
 }

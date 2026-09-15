@@ -44,3 +44,6 @@ next-env.d.ts
 # AI-generated files
 AGENTS.md
 CLAUDE.md
+
+# local QA artifacts
+/.qa/

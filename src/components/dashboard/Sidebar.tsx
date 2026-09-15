@@ -1,242 +1,60 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useAuthStore, UserRole } from "@/store/useAuthStore";
-import {
-  LayoutDashboard,
-  Users,
-  UserPlus,
-  BookOpen,
-  Home,
-  ChevronLeft,
-  ChevronDown,
-  GraduationCap,
-  Building2,
-  AlertOctagon,
-  Wrench,
-  Shield,
-  CreditCard,
-  Calendar,
-  Stethoscope,
-  ClipboardList,
-  Bus,
-  MessageSquare,
-  Bell,
-  DollarSign,
-  Library,
-  UserCheck,
-  Heart,
-  Megaphone,
-  UsersRound,
-  FileText,
-  User,
-  Receipt,
-  Bed,
-  Beaker,
-  Pill,
-  Settings,
-  ShieldCheck,
-  Wallet,
-} from "lucide-react";
+import { NAV_SECTIONS, FOOTER_NAV, filterSectionsByRole, type NavItem, type NavSection } from "@/config/navigation";
+import { ChevronDown, ChevronLeft, PanelLeftClose, PanelLeftOpen, GraduationCap } from "lucide-react";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ElementType;
-  roles: UserRole[];
+/** Structural ink sidebar: intentionally dark in both themes. */
+const INK = {
+  bg: "bg-slate-950",
+  border: "border-slate-800",
+  text: "text-slate-400",
+  textDim: "text-slate-500",
+  hover: "hover:text-slate-100 hover:bg-slate-800/60",
+  active: "bg-blue-500/15 text-blue-300",
+  activeBar: "bg-blue-400",
+  accent: "text-blue-400",
+};
+
+function isActivePath(pathname: string, href: string): boolean {
+  return pathname === href || (href !== "/" && pathname.startsWith(href));
 }
 
-interface NavSection {
-  label: string;
-  icon: React.ElementType;
-  items: NavItem[];
-}
-
-// ——— Original flat nav items (commented out for reference) ———
-// const mainNavItems: NavItem[] = [
-//   { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/profile", label: "My Profile", icon: User, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/students", label: "Student Directory", icon: Users, roles: ["super-admin", "domain-admin", "faculty", "staff"] },
-//   { href: "/students/register", label: "Student Onboarding", icon: UserPlus, roles: ["super-admin", "domain-admin"] },
-//   { href: "/semesters", label: "Semesters", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/faculties", label: "Faculty Directory", icon: GraduationCap, roles: ["super-admin", "domain-admin", "faculty"] },
-//   { href: "/courses", label: "Course Catalog", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/departments", label: "Departments", icon: Building2, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/rooms", label: "Dorms & Rooms", icon: Home, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/attendance", label: "Attendance", icon: UserCheck, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/exams", label: "Exams & Grades", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/fees", label: "Fees & Ledger", icon: CreditCard, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/receipts", label: "Receipts", icon: Receipt, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/payroll", label: "Payroll", icon: DollarSign, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/expenses", label: "Expenses", icon: DollarSign, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/budget", label: "Budget", icon: Wallet, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/library", label: "Library", icon: Library, roles: ["super-admin", "domain-admin", "staff", "student", "faculty"] },
-//   { href: "/mess", label: "Mess & Meals", icon: Calendar, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/transport", label: "Transport", icon: Bus, roles: ["super-admin", "domain-admin", "student", "faculty", "staff"] },
-//   { href: "/admissions", label: "Admissions", icon: UserPlus, roles: ["super-admin", "domain-admin", "student"] },
-//   { href: "/security", label: "Security Desk", icon: Shield, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/grievances", label: "Grievances", icon: AlertOctagon, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/incidents", label: "Maintenance Desk", icon: Wrench, roles: ["super-admin", "domain-admin", "staff", "faculty", "student"] },
-//   { href: "/health-center", label: "Health Center", icon: Heart, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/clinical", label: "Clinical & Counseling", icon: Stethoscope, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/academics", label: "Academics Desk", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/transcripts", label: "Transcripts", icon: FileText, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/curriculum", label: "Curriculum", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/syllabus", label: "Syllabus", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/enrollment", label: "Enrollment", icon: UserPlus, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/study-materials", label: "Study Materials", icon: FileText, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/academic-calendar", label: "Academic Calendar", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/leave", label: "Leave Management", icon: UserCheck, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/notices", label: "Notices", icon: Megaphone, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/alumni", label: "Alumni", icon: UsersRound, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/chat", label: "Messaging", icon: MessageSquare, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/parents", label: "Parent Portal", icon: User, roles: ["super-admin", "domain-admin"] },
-//   { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/timetable", label: "Timetable", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/scholarships", label: "Scholarships", icon: GraduationCap, roles: ["super-admin", "domain-admin", "staff", "student"] },
-//   { href: "/accreditation", label: "Accreditation", icon: Shield, roles: ["super-admin", "domain-admin"] },
-//   { href: "/research", label: "Research", icon: Beaker, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/skill-lab", label: "Skill Lab", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-//   { href: "/logbook", label: "Logbook", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-//   { href: "/opd", label: "OPD", icon: Stethoscope, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/ipd", label: "IPD", icon: Bed, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/laboratory", label: "Laboratory", icon: Beaker, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/pharmacy", label: "Pharmacy", icon: Pill, roles: ["super-admin", "domain-admin", "staff"] },
-//   { href: "/staff", label: "Staff Profile", icon: User, roles: ["staff"] },
-// ];
-// ——— End original flat nav items ———
-
-const ALL_SECTIONS: NavSection[] = [
-  {
-    label: "Overview",
-    icon: LayoutDashboard,
-    items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/profile", label: "My Profile", icon: User, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-    ],
-  },
-  {
-    label: "Academics",
-    icon: BookOpen,
-    items: [
-      { href: "/semesters", label: "Semesters", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/faculties", label: "Faculty Directory", icon: GraduationCap, roles: ["super-admin", "domain-admin", "faculty"] },
-      { href: "/courses", label: "Course Catalog", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/departments", label: "Departments", icon: Building2, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/attendance", label: "Attendance", icon: UserCheck, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/exams", label: "Exams & Grades", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/timetable", label: "Timetable", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/academic-calendar", label: "Academic Calendar", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/academics", label: "Academics Desk", icon: Calendar, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/transcripts", label: "Transcripts", icon: FileText, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/curriculum", label: "Curriculum", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/syllabus", label: "Syllabus", icon: BookOpen, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/research", label: "Research", icon: Beaker, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/accreditation", label: "Accreditation", icon: Shield, roles: ["super-admin", "domain-admin"] },
-    ],
-  },
-  {
-    label: "Students",
-    icon: Users,
-    items: [
-      { href: "/students", label: "Student Directory", icon: Users, roles: ["super-admin", "domain-admin", "faculty", "staff"] },
-      { href: "/students/register", label: "Student Onboarding", icon: UserPlus, roles: ["super-admin", "domain-admin"] },
-      { href: "/admissions", label: "Admissions", icon: UserPlus, roles: ["super-admin", "domain-admin", "student"] },
-      { href: "/enrollment", label: "Enrollment", icon: UserPlus, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/scholarships", label: "Scholarships", icon: GraduationCap, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/leave", label: "Leave Management", icon: UserCheck, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-    ],
-  },
-  {
-    label: "Clinical",
-    icon: Stethoscope,
-    items: [
-      { href: "/health-center", label: "Health Center", icon: Heart, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/clinical", label: "Clinical & Counseling", icon: Stethoscope, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/opd", label: "OPD", icon: Stethoscope, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/ipd", label: "IPD", icon: Bed, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/laboratory", label: "Laboratory", icon: Beaker, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/pharmacy", label: "Pharmacy", icon: Pill, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/logbook", label: "Logbook", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/skill-lab", label: "Skill Lab", icon: ClipboardList, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-    ],
-  },
-  {
-    label: "Finance",
-    icon: DollarSign,
-    items: [
-      { href: "/fees", label: "Fees & Ledger", icon: CreditCard, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/receipts", label: "Receipts", icon: Receipt, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/payroll", label: "Payroll", icon: DollarSign, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/expenses", label: "Expenses", icon: DollarSign, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/budget", label: "Budget", icon: Wallet, roles: ["super-admin", "domain-admin", "staff"] },
-    ],
-  },
-  {
-    label: "Campus Life",
-    icon: Home,
-    items: [
-      { href: "/rooms", label: "Dorms & Rooms", icon: Home, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/mess", label: "Mess & Meals", icon: Calendar, roles: ["super-admin", "domain-admin", "staff", "student"] },
-      { href: "/transport", label: "Transport", icon: Bus, roles: ["super-admin", "domain-admin", "student", "faculty", "staff"] },
-      { href: "/library", label: "Library", icon: Library, roles: ["super-admin", "domain-admin", "staff", "student", "faculty"] },
-      { href: "/study-materials", label: "Study Materials", icon: FileText, roles: ["super-admin", "domain-admin", "faculty", "student"] },
-      { href: "/security", label: "Security Desk", icon: Shield, roles: ["super-admin", "domain-admin", "staff"] },
-      { href: "/grievances", label: "Grievances", icon: AlertOctagon, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/incidents", label: "Maintenance Desk", icon: Wrench, roles: ["super-admin", "domain-admin", "staff", "faculty", "student"] },
-      { href: "/notices", label: "Notices", icon: Megaphone, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/alumni", label: "Alumni", icon: UsersRound, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-      { href: "/parents", label: "Parent Portal", icon: User, roles: ["super-admin", "domain-admin"] },
-    ],
-  },
-];
-
-const adminNavItems: NavItem[] = [
-  { href: "/users", label: "User Management", icon: Users, roles: ["super-admin", "domain-admin"] },
-  { href: "/audit", label: "Audit Trail", icon: Shield, roles: ["super-admin", "domain-admin"] },
-  { href: "/activity-log", label: "Activity Log", icon: Bell, roles: ["super-admin", "domain-admin"] },
-  { href: "/reports", label: "Reports", icon: FileText, roles: ["super-admin", "domain-admin", "staff"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["super-admin", "domain-admin", "faculty", "student", "staff"] },
-];
-
-function NavItemLink({ item, pathname, onClick }: { item: NavItem; pathname: string; onClick: () => void }) {
-  const isActive = pathname === item.href ||
-    (item.href !== "/" && pathname.startsWith(item.href));
+function NavItemLink({
+  item,
+  pathname,
+  onClick,
+  collapsed = false,
+}: {
+  item: NavItem;
+  pathname: string;
+  onClick?: () => void;
+  collapsed?: boolean;
+}) {
+  const isActive = isActivePath(pathname, item.href);
   const Icon = item.icon;
-
   return (
-    <Link key={item.href} href={item.href} onClick={onClick} className="block relative group">
-      <motion.div
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative z-10 ${
-          isActive ? "text-white" : "hover:text-white hover:bg-slate-800/50"
-        }`}
-        whileTap={{ scale: 0.98 }}
-      >
-        <Icon size={18} className={isActive ? "text-[#2563EB]" : "text-slate-400"} />
-
-        <span className="truncate font-sans">
-          {item.label}
-        </span>
-
-        {isActive && (
-          <motion.div
-            layoutId={`sidebar-accent-${item.href}`}
-            className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#2563EB] rounded-r"
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          />
-        )}
-      </motion.div>
-
+    <Link
+      href={item.href}
+      onClick={onClick}
+      aria-current={isActive ? "page" : undefined}
+      className={`relative flex items-center gap-3 rounded-md text-[13px] font-medium transition-colors ${
+        collapsed ? "justify-center w-10 h-10 mx-auto" : "px-2.5 py-2"
+      } ${isActive ? INK.active : `${INK.text} ${INK.hover}`}`}
+      title={collapsed ? item.label : undefined}
+    >
+      <Icon size={17} className={`shrink-0 ${isActive ? INK.accent : "text-slate-500"}`} aria-hidden="true" />
+      {!collapsed && <span className="truncate">{item.label}</span>}
       {isActive && (
-        <motion.div
-          layoutId={`sidebar-bg-${item.href}`}
-          className="absolute inset-0 bg-[#2563EB]/10 rounded-lg -z-0"
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        <motion.span
+          layoutId="sidebar-active-bar"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r bg-blue-400"
+          transition={{ type: "spring", stiffness: 400, damping: 32 }}
         />
       )}
     </Link>
@@ -247,174 +65,251 @@ function SectionGroup({
   section,
   pathname,
   onClick,
-  userRole,
+  initiallyOpen = false,
 }: {
   section: NavSection;
   pathname: string;
   onClick: () => void;
-  userRole?: UserRole;
+  initiallyOpen?: boolean;
 }) {
-  const filtered = section.items.filter(
-    (item) => userRole && item.roles.includes(userRole),
-  );
-
-  if (filtered.length === 0) return null;
-
-  const hasActiveChild = filtered.some(
-    (item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)),
-  );
-
-  const [isOpen, setIsOpen] = useState(hasActiveChild);
-
-  // Auto-expand if child becomes active
-  React.useEffect(() => {
-    if (hasActiveChild && !isOpen) setIsOpen(true);
-  }, [hasActiveChild]);
+  const hasActiveChild = section.items.some((item) => isActivePath(pathname, item.href));
+  const [isOpen, setIsOpen] = useState(initiallyOpen || hasActiveChild);
+  // Auto-expand when a child becomes active (adjust-state-on-prop-change).
+  const [prevActive, setPrevActive] = useState(hasActiveChild);
+  if (hasActiveChild !== prevActive) {
+    setPrevActive(hasActiveChild);
+    if (hasActiveChild) setIsOpen(true);
+  }
 
   const Icon = section.icon;
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        aria-expanded={isOpen}
+        className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${INK.textDim} ${INK.hover}`}
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <Icon size={13} className="shrink-0" aria-hidden="true" />
+          <span className="truncate">{section.label}</span>
+          <span className="text-[9px] font-normal text-slate-600 tabular-nums">{section.items.length}</span>
+        </span>
+        <motion.span animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.18 }} className="shrink-0">
+          <ChevronDown size={13} aria-hidden="true" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-0.5 py-0.5">
+              {section.items.map((item) => (
+                <NavItemLink key={item.href} item={item} pathname={pathname} onClick={onClick} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** Collapsed rail: section icon button that opens a flyout with the items. */
+function RailFlyout({ section, pathname }: { section: NavSection; pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const Icon = section.icon;
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const hasActive = section.items.some((item) => isActivePath(pathname, item.href));
 
   return (
-    <div className="mb-1">
+    <div ref={ref} className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors cursor-pointer group"
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={`${section.label} menu`}
+        title={section.label}
+        className={`relative w-10 h-10 mx-auto flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+          hasActive ? INK.active : `${INK.text} ${INK.hover}`
+        }`}
       >
-        <div className="flex items-center gap-2">
-          <Icon size={14} className="text-slate-500" />
-          <span>{section.label}</span>
-          <span className="text-[9px] font-normal text-slate-600 ml-0.5">{filtered.length}</span>
-        </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 0 : -90 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={14} />
-        </motion.div>
+        <Icon size={18} className={hasActive ? INK.accent : "text-slate-500"} aria-hidden="true" />
       </button>
-
-      <motion.div
-        initial={false}
-        animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="overflow-hidden space-y-0.5"
-      >
-        {filtered.map((item) => (
-          <NavItemLink key={item.href} item={item} pathname={pathname} onClick={onClick} />
-        ))}
-      </motion.div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-full top-0 ml-2 w-56 rounded-lg bg-slate-900 border border-slate-800 shadow-lg p-1.5 z-40"
+          >
+            <p className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{section.label}</p>
+            {section.items.map((item) => (
+              <NavItemLink key={item.href} item={item} pathname={pathname} onClick={() => setOpen(false)} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { isMobileMenuOpen, setMobileMenuOpen } = useLayoutStore();
+  const { isMobileMenuOpen, setMobileMenuOpen, isSidebarCollapsed, toggleSidebar } = useLayoutStore();
   const user = useAuthStore((s) => s.user);
+  const userRole: UserRole | null = user?.role ?? null;
 
-  const [isAdminOpen, setAdminOpen] = useState(true);
-
-  const userRole = user?.role;
-
-  const filteredAdmin = adminNavItems.filter(
-    (item) => userRole && item.roles.includes(userRole),
-  );
-
-  const adminHasVisible = filteredAdmin.length > 0;
-
-  const handleNavClick = () => {
-    setMobileMenuOpen(false);
-  };
+  const sections = filterSectionsByRole(NAV_SECTIONS, userRole);
+  const footerItems = FOOTER_NAV.filter((item) => userRole && item.roles.includes(userRole));
+  const handleNavClick = useCallback(() => setMobileMenuOpen(false), [setMobileMenuOpen]);
 
   const sidebarContent = (
     <>
-      <div className="flex items-center h-16 border-b border-slate-800 overflow-hidden px-4">
-        <div className="flex items-center gap-3 min-w-max">
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg shrink-0">
-            E
-          </div>
-          <span className="font-semibold text-white tracking-wide text-sm font-sans whitespace-nowrap">
-            EDU-ERP
-          </span>
+      {/* Brand */}
+      <div className={`flex items-center h-14 border-b border-slate-800 overflow-hidden ${isSidebarCollapsed ? "justify-center px-0" : "px-4 gap-2.5"}`}>
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shrink-0">
+          <GraduationCap size={17} aria-hidden="true" />
         </div>
-        <motion.button
-          onClick={() => setMobileMenuOpen(false)}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.15 }}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors cursor-pointer"
-          aria-label="Close menu"
-        >
-          <ChevronLeft size={16} />
-        </motion.button>
+        {!isSidebarCollapsed && (
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-white tracking-wide leading-4">EDU-ERP</p>
+            <p className="text-[9px] text-slate-500 leading-3">Medical College Suite</p>
+          </div>
+        )}
       </div>
 
-      <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden px-2">
-        <div className="space-y-0.5">
-          {ALL_SECTIONS.map((section) => (
-            <SectionGroup
-              key={section.label}
-              section={section}
-              pathname={pathname}
-              onClick={handleNavClick}
-              userRole={userRole}
-            />
-          ))}
-        </div>
-
-        {adminHasVisible && (
-          <>
-            <div className="px-3 py-1.5 mt-2">
-              <button
-                onClick={() => setAdminOpen(!isAdminOpen)}
-                className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-slate-500" />
-                  <span>Administration</span>
-                </div>
-                <motion.div
-                  animate={{ rotate: isAdminOpen ? 0 : -90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown size={14} />
-                </motion.div>
-              </button>
-            </div>
-
-            <motion.div
-              initial={false}
-              animate={{ height: isAdminOpen ? "auto" : 0, opacity: isAdminOpen ? 1 : 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="overflow-hidden space-y-0.5"
-            >
-              {filteredAdmin.map((item) => (
-                <NavItemLink key={item.href} item={item} pathname={pathname} onClick={handleNavClick} />
-              ))}
-            </motion.div>
-          </>
+      {/* Navigation */}
+      <nav aria-label="Primary" className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1.5">
+        {isSidebarCollapsed ? (
+          <div className="space-y-1">
+            {sections.map((section) => (
+              <RailFlyout key={section.label} section={section} pathname={pathname} />
+            ))}
+            {footerItems.length > 0 && (
+              <div className="border-t border-slate-800/70 pt-1.5 mt-1.5">
+                {footerItems.map((item) => (
+                  <NavItemLink key={item.href} item={item} pathname={pathname} onClick={handleNavClick} collapsed />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {sections.map((section) => (
+              <SectionGroup
+                key={section.label}
+                section={section}
+                pathname={pathname}
+                onClick={handleNavClick}
+                initiallyOpen={section.items.some((item) => isActivePath(pathname, item.href))}
+              />
+            ))}
+            {footerItems.length > 0 && (
+              <div className="border-t border-slate-800/70 pt-1.5 mt-1.5">
+                {footerItems.map((item) => (
+                  <NavItemLink key={item.href} item={item} pathname={pathname} onClick={handleNavClick} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </nav>
+
+      {/* Footer: collapse toggle (desktop) + mobile close */}
+      <div className={`border-t border-slate-800 p-2 ${isSidebarCollapsed ? "flex justify-center" : ""}`}>
+        {isSidebarCollapsed ? (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="w-10 h-10 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-colors cursor-pointer"
+          >
+            <PanelLeftOpen size={17} aria-hidden="true" />
+          </button>
+        ) : (
+          <div className="flex items-center justify-between px-1.5">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex items-center gap-2 text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors cursor-pointer py-1"
+            >
+              <PanelLeftClose size={14} aria-hidden="true" />
+              Collapse
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+              className="lg:hidden p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 
   return (
     <>
+      {/* Mobile overlay */}
       {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30"
-          onClick={() => setMobileMenuOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
       )}
 
+      {/* Desktop sidebar */}
       <motion.aside
         initial={false}
-        animate={{ x: isMobileMenuOpen ? 0 : "-100%" }}
-        transition={{ type: "spring", stiffness: 220, damping: 26 }}
-        className="fixed left-0 top-0 flex flex-col h-screen w-64 bg-[#0F172A] text-slate-400 border-r border-slate-800 select-none z-40"
+        animate={{ x: 0 }}
+        className={`hidden lg:flex flex-col h-full shrink-0 ${INK.bg} ${INK.border} border-r select-none z-30 transition-[width] duration-200 ease-in-out ${
+          isSidebarCollapsed ? "w-16" : "w-60"
+        }`}
       >
         {sidebarContent}
       </motion.aside>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.aside
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 260, damping: 30 }}
+            className={`fixed left-0 top-0 bottom-0 w-64 z-50 flex flex-col lg:hidden ${INK.bg} ${INK.border} border-r`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+          >
+            {sidebarContent}
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </>
   );
 }

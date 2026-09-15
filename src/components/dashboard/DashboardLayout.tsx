@@ -54,31 +54,44 @@ export default function DashboardLayout({
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const onPaletteEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+      setCommandOpen(detail?.open ?? true);
+    };
+    window.addEventListener("eduerp:command-palette", onPaletteEvent);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("eduerp:command-palette", onPaletteEvent);
+    };
   }, [handleKeyDown]);
 
+  const pathname = usePathname();
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#faf8ff] transition-colors">
+    <div className="flex h-dvh w-full overflow-hidden bg-background transition-colors">
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
       <QuickActions />
       <ActivityFeed open={isActivityFeedOpen} onClose={() => setActivityFeedOpen(false)} />
       <ShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ToastContainer />
       <ToastListener />
-        <Sidebar />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-4 focus:py-2 focus:bg-[#2563EB] focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-40 focus:px-3 focus:py-2 focus:bg-primary focus:text-on-primary focus:rounded-md focus:text-xs focus:font-semibold"
+        >
           Skip to main content
         </a>
         <Navbar />
         <DemoModeBanner />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+        <main id="main-content" className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 relative">
           <motion.div
-            key={usePathname()}
-            initial={reduced ? { opacity: 1 } : { opacity: 0, y: 8 }}
+            key={pathname}
+            initial={reduced ? { opacity: 1 } : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduced ? 0 : 0.25, ease: "easeOut" }}
+            transition={{ duration: reduced ? 0 : 0.22, ease: "easeOut" }}
           >
             {children}
           </motion.div>

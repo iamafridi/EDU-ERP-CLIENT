@@ -1,8 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Search, ChevronLeft, ChevronRight, SlidersHorizontal, Settings, Save, Trash2, Check, Columns3, FileSpreadsheet } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  ChevronUp,
+  ChevronDown,
+  SlidersHorizontal,
+  Save,
+  Trash2,
+  Check,
+  Columns3,
+  FileSpreadsheet,
+  X,
+} from "lucide-react";
 import * as XLSX from "xlsx";
+import { Button, IconButton } from "./Button";
+import { EmptyState, ErrorState, Spinner } from "./Feedback";
 
 export interface Column<T> {
   header: string;
@@ -10,7 +26,17 @@ export interface Column<T> {
   className?: string;
   id?: string;
   hideable?: boolean;
+  /** Disable sorting for this column (sortable by default when accessor is a key). */
+  sortable?: boolean;
+  /** Extract a comparable value for sorting when accessor renders nodes. */
+  sortValue?: (row: T) => string | number;
+  /** Hide this column by default (user can re-enable via the column menu). */
+  defaultHidden?: boolean;
+  /** Hide this column below lg screens even if selected (priority columns). */
+  priority?: "high" | "medium" | "low";
 }
+
+type SortState = { columnId: string; direction: "asc" | "desc" } | null;
 
 interface DataTableProps<T> {
   data: T[];
@@ -19,12 +45,35 @@ interface DataTableProps<T> {
   searchField?: keyof T;
   filterComponent?: React.ReactNode;
   tableId?: string;
+  /** Show skeleton rows instead of the table body. */
+  loading?: boolean;
+  /** Show a page-level error state with retry. */
+  error?: boolean;
+  onRetry?: () => void;
+  /** Enable row selection with a bulk-actions bar. */
+  selectable?: boolean;
+  /** Stable key per row for selection/export. Defaults to index. */
+  rowKey?: (row: T) => string;
+  /** Rendered in the bulk bar when rows are selected (buttons etc). */
+  bulkActions?: (selectedRows: T[], clear: () => void) => React.ReactNode;
+  /** Row click handler (adds pointer affordance). */
+  onRowClick?: (row: T) => void;
+  /** Rows per page. Default 10. */
+  pageSize?: number;
+  /** Compact row height for operational surfaces. Default "comfortable". */
+  density?: "comfortable" | "compact";
+  /** Empty-state copy when there is no data at all. */
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: React.ReactNode;
 }
 
 function loadSavedFilters(tableId: string): Record<string, string> {
   try {
     return JSON.parse(localStorage.getItem(`dt-filters-${tableId}`) || "{}");
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 function saveFiltersToStorage(tableId: string, filters: Record<string, string>) {
@@ -34,11 +83,22 @@ function saveFiltersToStorage(tableId: string, filters: Record<string, string>) 
 function loadColumnState(tableId: string): string[] | null {
   try {
     return JSON.parse(localStorage.getItem(`dt-columns-${tableId}`) || "null");
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function saveColumnState(tableId: string, visible: string[]) {
   localStorage.setItem(`dt-columns-${tableId}`, JSON.stringify(visible));
+}
+
+function cellText<T>(col: Column<T>, row: T): string | number {
+  if (col.sortValue) return col.sortValue(row);
+  if (typeof col.accessor === "function") return "";
+  const v = row[col.accessor];
+  if (typeof v === "number") return v;
+  if (typeof v === "string") return v.toLowerCase();
+  return "";
 }
 
 export default function DataTable<T>({
@@ -48,9 +108,23 @@ export default function DataTable<T>({
   searchField,
   filterComponent,
   tableId,
+  loading = false,
+  error = false,
+  onRetry,
+  selectable = false,
+  rowKey,
+  bulkActions,
+  onRowClick,
+  pageSize = 10,
+  density = "comfortable",
+  emptyTitle = "Nothing here yet",
+  emptyDescription,
+  emptyAction,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sort, setSort] = useState<SortState>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
@@ -60,20 +134,23 @@ export default function DataTable<T>({
   const columnMenuRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
 
-  const itemsPerPage = 8;
+  const columnIds = useMemo(() => columns.map((c) => c.id || c.header), [columns]);
 
-  const columnIds = columns.map((c) => c.id || c.header);
-
-  useEffect(() => {
-    if (tableId) {
-      setSavedFilters(loadSavedFilters(tableId));
-      const saved = loadColumnState(tableId);
-      if (saved) setVisibleColumns(saved);
-      else setVisibleColumns(columnIds);
-    } else {
-      setVisibleColumns(columnIds);
-    }
-  }, [tableId, columnIds.join(",")]);
+  // Load persisted filters/columns after hydration via the adjust-during-render
+  // pattern (no setState inside effects). Re-runs when tableId or columns change.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const loadKey = `${tableId ?? ""}|${columnIds.join(",")}`;
+  const [prevLoadKey, setPrevLoadKey] = useState<string | null>(null);
+  if (mounted && prevLoadKey !== loadKey) {
+    setPrevLoadKey(loadKey);
+    setSavedFilters(tableId ? loadSavedFilters(tableId) : {});
+    const saved = tableId ? loadColumnState(tableId) : null;
+    setVisibleColumns(saved ?? columnIds);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -84,41 +161,107 @@ export default function DataTable<T>({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleColumn = useCallback((colId: string) => {
-    setVisibleColumns((prev) => {
-      const next = prev.includes(colId) ? prev.filter((id) => id !== colId) : [...prev, colId];
-      if (tableId) saveColumnState(tableId, next);
-      return next;
-    });
-  }, [tableId]);
+  // Page is clamped to totalPages below, so no reset effect is needed.
 
-  const visibleCols = columns.filter((c) => {
-    const id = c.id || c.header;
-    return visibleColumns.includes(id);
-  });
-
-  const filteredData = data.filter((item) => {
-    if (!searchTerm || !searchField) return true;
-    const value = item[searchField];
-    if (typeof value === "string") return value.toLowerCase().includes(searchTerm.toLowerCase());
-    if (typeof value === "number") return value.toString().includes(searchTerm);
-    return true;
-  });
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+  const toggleColumn = useCallback(
+    (colId: string) => {
+      setVisibleColumns((prev) => {
+        const next = prev.includes(colId) ? prev.filter((id) => id !== colId) : [...prev, colId];
+        if (tableId) saveColumnState(tableId, next);
+        return next;
+      });
+    },
+    [tableId],
   );
 
-  const startRange = (currentPage - 1) * itemsPerPage + 1;
-  const endRange = Math.min(currentPage * itemsPerPage, filteredData.length);
+  const visibleCols = columns.filter((c) => visibleColumns.includes(c.id || c.header));
 
-  const applySavedFilter = useCallback((name: string) => {
-    setSearchTerm(savedFilters[name] || "");
-    setCurrentPage(1);
-    setShowSaveMenu(false);
-  }, [savedFilters]);
+  const filteredData = useMemo(() => {
+    let rows = data;
+    if (searchTerm && searchField) {
+      const q = searchTerm.toLowerCase();
+      rows = rows.filter((item) => {
+        const value = item[searchField];
+        if (typeof value === "string") return value.toLowerCase().includes(q);
+        if (typeof value === "number") return value.toString().includes(q);
+        return true;
+      });
+    }
+    if (sort) {
+      const col = columns.find((c) => (c.id || c.header) === sort.columnId);
+      if (col) {
+        const dir = sort.direction === "asc" ? 1 : -1;
+        rows = [...rows].sort((a, b) => {
+          const av = cellText(col, a);
+          const bv = cellText(col, b);
+          if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+          return String(av).localeCompare(String(bv)) * dir;
+        });
+      }
+    }
+    return rows;
+  }, [data, searchTerm, searchField, sort, columns]);
+
+  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedData = filteredData.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const startRange = (safePage - 1) * pageSize + 1;
+  const endRange = Math.min(safePage * pageSize, filteredData.length);
+
+  const keyFor = useCallback(
+    (row: T, idx: number) => (rowKey ? rowKey(row) : String(idx)),
+    [rowKey],
+  );
+
+  const toggleRow = useCallback(
+    (key: string) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const allPageKeys = paginatedData.map((r, i) => keyFor(r, i));
+  const allSelected = allPageKeys.length > 0 && allPageKeys.every((k) => selected.has(k));
+  function toggleAllPage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) allPageKeys.forEach((k) => next.delete(k));
+      else allPageKeys.forEach((k) => next.add(k));
+      return next;
+    });
+  }
+
+  const selectedRows = data.filter((r, i) => selected.has(keyFor(r, i)));
+
+  const handleSort = useCallback(
+    (col: Column<T>) => {
+      const id = col.id || col.header;
+      const canSort = col.sortable !== false && (col.sortValue || typeof col.accessor !== "function");
+      if (!canSort) return;
+      setSort((prev) => {
+        if (prev?.columnId === id) {
+          if (prev.direction === "asc") return { columnId: id, direction: "desc" };
+          return null;
+        }
+        return { columnId: id, direction: "asc" };
+      });
+    },
+    [],
+  );
+
+  const applySavedFilter = useCallback(
+    (name: string) => {
+      setSearchTerm(savedFilters[name] || "");
+      setCurrentPage(1);
+      setShowSaveMenu(false);
+    },
+    [savedFilters],
+  );
 
   const saveCurrentFilter = useCallback(() => {
     if (!filterName.trim() || !tableId) return;
@@ -129,100 +272,118 @@ export default function DataTable<T>({
     setShowSaveMenu(false);
   }, [filterName, searchTerm, savedFilters, tableId]);
 
-  const deleteSavedFilter = useCallback((name: string) => {
-    if (!tableId) return;
-    const updated = { ...savedFilters };
-    delete updated[name];
-    setSavedFilters(updated);
-    saveFiltersToStorage(tableId, updated);
-  }, [savedFilters, tableId]);
+  const deleteSavedFilter = useCallback(
+    (name: string) => {
+      if (!tableId) return;
+      const updated = { ...savedFilters };
+      delete updated[name];
+      setSavedFilters(updated);
+      saveFiltersToStorage(tableId, updated);
+    },
+    [savedFilters, tableId],
+  );
 
   const exportToExcel = useCallback(() => {
-    const exportData = data.map((row) => {
+    const exportData = filteredData.map((row) => {
       const obj: Record<string, unknown> = {};
       visibleCols.forEach((col) => {
         obj[col.header] = typeof col.accessor === "function" ? "" : row[col.accessor];
       });
       return obj;
     });
-
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data");
     XLSX.writeFile(wb, `export-${tableId || "data"}-${new Date().toISOString().split("T")[0]}.xlsx`);
-  }, [data, visibleCols, tableId]);
+  }, [filteredData, visibleCols, tableId]);
 
   const hideableCols = columns.filter((c) => c.hideable !== false);
+  const rowHeight = density === "compact" ? "h-9" : "h-12";
 
   return (
-    <div className="bg-[#ffffff] border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm flex flex-col h-full transition-colors">
-      <div className="p-4 border-b border-[#e1e2ed] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50/50">
-        <div className="relative w-full sm:flex-1 sm:max-w-sm">
+    <div className="bg-surface border border-border rounded-lg shadow-sm flex flex-col h-full overflow-hidden">
+      {/* Toolbar */}
+      <div className="p-3 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface-muted/40">
+        <div className="relative w-full sm:flex-1 sm:max-w-xs">
           <input
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full h-10 pl-10 pr-4 bg-white border border-[#c3c6d7] rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/10 focus:border-[#2563EB] transition-all font-sans"
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            aria-label={searchPlaceholder}
+            className="w-full h-9 pl-9 pr-8 bg-surface border border-border-strong rounded-md text-[13px] text-text placeholder:text-text-subtle focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
           />
-          <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle" aria-hidden="true" />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-subtle hover:text-text cursor-pointer"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={exportToExcel}
-            className="h-10 px-3 rounded-lg border border-[#c3c6d7] bg-white text-emerald-600 hover:bg-emerald-50 text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer"
-          >
-            <FileSpreadsheet size={14} />
+          <Button variant="outline" size="sm" onClick={exportToExcel} leftIcon={<FileSpreadsheet size={13} aria-hidden="true" />}>
             Export
-          </button>
+          </Button>
 
           {tableId && (
             <>
               <div className="relative" ref={saveMenuRef}>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowSaveMenu(!showSaveMenu)}
-                  className="h-10 px-3 rounded-lg border border-[#c3c6d7] bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer"
+                  aria-expanded={showSaveMenu}
+                  leftIcon={<Save size={13} aria-hidden="true" />}
                 >
-                  <Save size={14} />
                   Saved
-                </button>
+                </Button>
                 {showSaveMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[#e1e2ed] rounded-xl shadow-lg z-20 p-2">
-                    <div className="flex items-center gap-2 px-2 py-1.5">
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-surface-raised border border-border rounded-lg shadow-md z-20 p-1.5">
+                    <div className="flex items-center gap-1.5 px-1.5 py-1">
                       <input
                         type="text"
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
                         placeholder="Filter name..."
-                        className="flex-1 h-8 px-2 bg-slate-50 border border-[#e1e2ed] rounded text-xs outline-none focus:border-[#2563EB]"
-                        onKeyDown={(e) => { if (e.key === "Enter") saveCurrentFilter(); }}
+                        aria-label="Filter name"
+                        className="flex-1 h-7 px-2 bg-surface-muted border border-border rounded text-xs outline-none focus:border-primary"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveCurrentFilter();
+                        }}
                       />
-                      <button
-                        onClick={saveCurrentFilter}
-                        disabled={!filterName.trim()}
-                        className="w-7 h-7 rounded flex items-center justify-center bg-[#2563EB] text-white hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors cursor-pointer"
-                      >
-                        <Check size={12} />
-                      </button>
+                      <IconButton label="Save filter" size="sm" variant="primary" onClick={saveCurrentFilter} disabled={!filterName.trim()}>
+                        <Check size={12} aria-hidden="true" />
+                      </IconButton>
                     </div>
-                    <div className="border-t border-[#e1e2ed] mt-1 pt-1 max-h-40 overflow-y-auto">
+                    <div className="border-t border-border mt-1 pt-1 max-h-40 overflow-y-auto">
                       {Object.keys(savedFilters).length === 0 && (
-                        <div className="px-2 py-3 text-[10px] text-slate-400 text-center">No saved filters</div>
+                        <div className="px-2 py-2.5 text-[11px] text-text-subtle text-center">No saved filters</div>
                       )}
                       {Object.keys(savedFilters).map((name) => (
-                        <div key={name} className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-50 group">
+                        <div key={name} className="flex items-center justify-between px-1.5 py-1 rounded-md hover:bg-surface-muted group">
                           <button
+                            type="button"
                             onClick={() => applySavedFilter(name)}
-                            className="flex-1 text-left text-xs text-slate-600"
+                            className="flex-1 text-left text-xs text-text-muted hover:text-text cursor-pointer"
                           >
                             {name}
                           </button>
                           <button
+                            type="button"
                             onClick={() => deleteSavedFilter(name)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                            aria-label={`Delete saved filter ${name}`}
+                            className="w-6 h-6 rounded flex items-center justify-center text-text-subtle hover:text-danger opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={12} aria-hidden="true" />
                           </button>
                         </div>
                       ))}
@@ -232,36 +393,35 @@ export default function DataTable<T>({
               </div>
 
               <div className="relative" ref={columnMenuRef}>
-                <button
+                <Button
+                  variant={showColumnMenu ? "secondary" : "outline"}
+                  size="sm"
                   onClick={() => setShowColumnMenu(!showColumnMenu)}
-                  className={`h-10 px-3 rounded-lg border text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                    showColumnMenu
-                      ? "bg-[#2563EB]/10 border-[#2563EB] text-[#2563EB]"
-                      : "border-[#c3c6d7] bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                  aria-expanded={showColumnMenu}
+                  leftIcon={<Columns3 size={13} aria-hidden="true" />}
                 >
-                  <Columns3 size={14} />
                   Columns
-                </button>
+                </Button>
                 {showColumnMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-[#e1e2ed] rounded-xl shadow-lg z-20 p-2">
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-surface-raised border border-border rounded-lg shadow-md z-20 p-1.5">
                     {hideableCols.map((col) => {
                       const id = col.id || col.header;
                       const isVisible = visibleColumns.includes(id);
                       return (
                         <button
+                          type="button"
                           key={id}
                           onClick={() => toggleColumn(id)}
-                          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-left transition-colors cursor-pointer"
+                          role="menuitemcheckbox"
+                          aria-checked={isVisible}
+                          className="w-full flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-surface-muted text-left transition-colors cursor-pointer"
                         >
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                            isVisible ? "bg-[#2563EB] border-[#2563EB]" : "border-slate-300"
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                            isVisible ? "bg-primary border-primary" : "border-border-strong"
                           }`}>
-                            {isVisible && <Check size={10} className="text-white" />}
-                          </div>
-                          <span className="text-xs text-slate-600">
-                            {col.header}
+                            {isVisible && <Check size={11} className="text-on-primary" aria-hidden="true" />}
                           </span>
+                          <span className="text-xs text-text-muted">{col.header}</span>
                         </button>
                       );
                     })}
@@ -272,107 +432,201 @@ export default function DataTable<T>({
           )}
 
           {filterComponent && (
-            <button
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-10 px-4 rounded-lg border text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                showFilters
-                  ? "bg-[#2563EB]/10 border-[#2563EB] text-[#2563EB]"
-                  : "bg-white border-[#c3c6d7] text-slate-600 hover:bg-slate-50"
-              }`}
+              aria-expanded={showFilters}
+              leftIcon={<SlidersHorizontal size={13} aria-hidden="true" />}
             >
-              <SlidersHorizontal size={16} />
               Filters
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
+      {/* Filter panel */}
       {showFilters && filterComponent && (
-        <div className="p-4 bg-slate-50 border-b border-[#e1e2ed] animate-slideDown font-sans">
-          {filterComponent}
+        <div className="p-4 bg-surface-muted/40 border-b border-border">{filterComponent}</div>
+      )}
+
+      {/* Bulk actions bar */}
+      {selectable && selected.size > 0 && (
+        <div className="px-3 py-2 border-b border-border bg-primary-soft flex items-center justify-between gap-3 flex-wrap" aria-live="polite">
+          <span className="text-xs font-medium text-primary tabular-nums">
+            {selected.size} selected
+          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {bulkActions?.(selectedRows, () => setSelected(new Set()))}
+            <IconButton label="Clear selection" size="sm" onClick={() => setSelected(new Set())}>
+              <X size={14} aria-hidden="true" />
+            </IconButton>
+          </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-x-auto min-h-[300px]">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="bg-slate-50/80 border-b border-[#e1e2ed]">
-              {visibleCols.map((col, idx) => (
-                <th
-                  key={idx}
-                  className={`h-11 px-6 text-xs font-semibold text-[#434655] uppercase tracking-wider font-sans select-none ${col.className || ""}`}
-                >
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedData.length > 0 ? (
-              paginatedData.map((row, rowIdx) => (
-                <tr
-                  key={rowIdx}
-                  className="h-12 border-b border-[#e1e2ed]/80 hover:bg-slate-50/40 transition-colors"
-                >
-                  {visibleCols.map((col, colIdx) => {
-                    let cellContent;
-                    if (typeof col.accessor === "function") {
-                      cellContent = col.accessor(row);
-                    } else {
-                      cellContent = row[col.accessor] as React.ReactNode;
-                    }
-                    return (
-                      <td
-                        key={colIdx}
-                        className={`px-6 text-sm text-slate-700 font-sans ${col.className || ""}`}
-                      >
-                        {cellContent}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={visibleCols.length}
-                  className="px-6 py-12 text-center text-sm text-slate-400 font-sans"
-                >
-                  No records match your filters.
-                </td>
+      {/* Table */}
+      <div className="flex-1 overflow-x-auto min-h-0">
+        {error ? (
+          <ErrorState onRetry={onRetry} className="py-16" />
+        ) : loading ? (
+          <div className="p-4 space-y-2.5" aria-busy="true" aria-label="Loading data">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                {visibleCols.slice(0, 6).map((_, j) => (
+                  <div
+                    key={j}
+                    className="h-4 flex-1 rounded bg-surface-muted animate-pulse"
+                    style={{ animationDelay: `${j * 60}ms` }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <table className="w-full border-collapse text-left">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-surface-muted border-b border-border">
+                {selectable && (
+                  <th scope="col" className="h-10 px-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAllPage}
+                      aria-label="Select all rows on this page"
+                      className="w-4 h-4 rounded border-border-strong accent-[var(--primary)] cursor-pointer"
+                    />
+                  </th>
+                )}
+                {visibleCols.map((col, idx) => {
+                  const id = col.id || col.header;
+                  const canSort = col.sortable !== false && (col.sortValue || typeof col.accessor !== "function");
+                  const isSorted = sort?.columnId === id;
+                  const SortIcon = isSorted ? (sort!.direction === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+                  return (
+                    <th
+                      key={idx}
+                      scope="col"
+                      aria-sort={isSorted ? (sort!.direction === "asc" ? "ascending" : "descending") : undefined}
+                      className={`h-10 px-4 text-[11px] font-semibold text-text-muted uppercase tracking-wide select-none ${col.className || ""}`}
+                    >
+                      {canSort ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSort(col)}
+                          className="inline-flex items-center gap-1 hover:text-text transition-colors cursor-pointer"
+                        >
+                          {col.header}
+                          <SortIcon size={12} className={isSorted ? "text-primary" : "text-text-subtle"} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        col.header
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedData.length > 0 ? (
+                paginatedData.map((row, rowIdx) => {
+                  const key = keyFor(row, rowIdx);
+                  const isSelected = selected.has(key);
+                  return (
+                    <tr
+                      key={key}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
+                      className={`${rowHeight} border-b border-border/70 last:border-0 transition-colors ${
+                        isSelected ? "bg-primary-soft/50" : "hover:bg-surface-muted/50"
+                      } ${onRowClick ? "cursor-pointer" : ""}`}
+                    >
+                      {selectable && (
+                        <td className="px-4" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleRow(key)}
+                            aria-label={`Select row ${rowIdx + 1}`}
+                            className="w-4 h-4 rounded border-border-strong accent-[var(--primary)] cursor-pointer"
+                          />
+                        </td>
+                      )}
+                      {visibleCols.map((col, colIdx) => {
+                        const cellContent =
+                          typeof col.accessor === "function"
+                            ? col.accessor(row)
+                            : (row[col.accessor] as React.ReactNode);
+                        return (
+                          <td key={colIdx} className={`px-4 text-[13px] text-text ${col.className || ""}`}>
+                            {cellContent}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={visibleCols.length + (selectable ? 1 : 0)} className="p-0">
+                    {data.length === 0 ? (
+                      <EmptyState
+                        title={emptyTitle}
+                        description={emptyDescription}
+                        action={emptyAction}
+                      />
+                    ) : (
+                      <EmptyState
+                        variant="filter"
+                        title="No matching records"
+                        description="Try adjusting your search or clearing the filters."
+                        action={
+                          searchTerm ? (
+                            <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
+                              Clear search
+                            </Button>
+                          ) : undefined
+                        }
+                      />
+                    )}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      <div className="p-4 border-t border-[#e1e2ed] flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50 font-sans">
-        <span className="text-xs text-slate-400">
-          Showing <strong className="text-slate-600">{filteredData.length > 0 ? startRange : 0}</strong> to{" "}
-          <strong className="text-slate-600">{endRange}</strong> of{" "}
-          <strong className="text-slate-600">{filteredData.length}</strong> entries
+      {/* Pagination */}
+      <div className="px-3 py-2.5 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 bg-surface-muted/40">
+        <span className="text-xs text-text-muted tabular-nums">
+          {filteredData.length > 0 ? `${startRange}-${endRange}` : "0"} of {filteredData.length}
         </span>
-
-        <div className="flex items-center gap-2">
-          <button
+        <div className="flex items-center gap-1.5">
+          <IconButton
+            label="Previous page"
+            size="sm"
+            variant="outline"
+            disabled={safePage === 1}
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="w-8 h-8 rounded-lg border border-[#c3c6d7] bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-xs font-semibold text-slate-600">
-            Page {currentPage} of {totalPages}
+            <ChevronLeft size={15} aria-hidden="true" />
+          </IconButton>
+          <span className="text-xs font-medium text-text-muted tabular-nums min-w-20 text-center">
+            Page {safePage} of {totalPages}
           </span>
-          <button
+          <IconButton
+            label="Next page"
+            size="sm"
+            variant="outline"
+            disabled={safePage === totalPages}
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="w-8 h-8 rounded-lg border border-[#c3c6d7] bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            <ChevronRight size={16} />
-          </button>
+            <ChevronRight size={15} aria-hidden="true" />
+          </IconButton>
         </div>
       </div>
     </div>
   );
 }
+
+export { Spinner };
