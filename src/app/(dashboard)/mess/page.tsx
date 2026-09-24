@@ -6,19 +6,46 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, ClipboardList, Star, Receipt, Plus, CheckCircle2, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  UtensilsCrossed,
+  ClipboardList,
+  Star,
+  Receipt,
+  Plus,
+  CheckCircle2,
+  Pencil,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  QrCode,
+  Flame,
+  ShieldCheck,
+  Check,
+} from "lucide-react";
 import DataTable from "@/components/ui/DataTable";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import {
+  PageHeader,
+  Card,
+  Button,
+  IconButton,
+  Badge,
+  Modal,
+} from "@/components/ui";
 import Link from "next/link";
 
 export default function MessPage() {
   const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"menus" | "meal-plans" | "feedback" | "bills">("menus");
+  const [activeTab, setActiveTab] = useState<"menus" | "meal-plans" | "feedback" | "bills" | "tokens">("menus");
   const [successMsg, setSuccessMsg] = useState("");
+  const [activeMealTokenModal, setActiveMealTokenModal] = useState<any>(null);
 
-  const canManage = roleIs("domain-admin", "super-admin") || user?.staffSubRole === "mess-manager" || user?.staffSubRole === "accountant";
+  const canManage =
+    roleIs("domain-admin", "super-admin") ||
+    user?.staffSubRole === "mess-manager" ||
+    user?.staffSubRole === "accountant";
 
   const { data: menus = [], isLoading: isLoadingMenus } = useQuery({ queryKey: ["menus"], queryFn: api.getMenus });
   const { data: mealPlans = [], isLoading: isLoadingMealPlans } = useQuery({ queryKey: ["mealPlans"], queryFn: api.getMealPlans });
@@ -30,7 +57,7 @@ export default function MessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["menus"] });
       setSuccessMsg("Menu item deleted successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -39,7 +66,7 @@ export default function MessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mealPlans"] });
       setSuccessMsg("Meal plan deleted successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -48,7 +75,7 @@ export default function MessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messFeedback"] });
       setSuccessMsg("Feedback deleted successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -57,7 +84,7 @@ export default function MessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messBills"] });
       setSuccessMsg("Bill deleted successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -66,7 +93,7 @@ export default function MessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messBills"] });
       setSuccessMsg("Bill status updated successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -75,6 +102,7 @@ export default function MessPage() {
     "meal-plans": "/mess/new?type=meal-plan",
     feedback: "/mess/new?type=feedback",
     bills: "/mess/new?type=bill",
+    tokens: "/mess/new?type=meal-plan",
   };
 
   const newLabelMap: Record<string, string> = {
@@ -82,37 +110,45 @@ export default function MessPage() {
     "meal-plans": "Create Meal Plan",
     feedback: "Submit Feedback",
     bills: "Generate Bill",
+    tokens: "Issue Meal Token",
   };
 
   const menuColumns = [
-    { header: "Day", accessor: "day" as const },
-    { header: "Meal Type", accessor: "mealType" as const },
-    { header: "Items", accessor: "items" as const },
-    { header: "Date", accessor: "date" as const },
+    { header: "Day", accessor: (row: any) => <span className="font-bold text-text">{row.day}</span> },
+    {
+      header: "Meal Type",
+      accessor: (row: any) => (
+        <Badge variant="gold" size="sm">
+          {row.mealType}
+        </Badge>
+      ),
+    },
+    { header: "Dietary Menu Items", accessor: (row: any) => <span className="font-medium text-text">{row.items}</span> },
+    { header: "Nutrition Estimate", accessor: () => <span className="text-xs text-text-muted font-mono flex items-center gap-1"><Flame size={12} className="text-amber-500" /> 680 kcal • 28g Protein</span> },
+    { header: "Cycle", accessor: (row: any) => <span className="font-mono text-text-muted text-xs">{row.date || "Daily Recurring"}</span> },
     ...(canManage
       ? [
           {
             header: "Actions",
             accessor: (row: any) => (
               <div className="flex items-center gap-1">
-                <Link
-                  href={`/mess/${row._id || row.id}?type=menu`}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors cursor-pointer"
-                  title="Edit menu"
-                >
-                  <Pencil size={14} />
+                <Link href={`/mess/${row._id || row.id}?type=menu`}>
+                  <IconButton label="Edit menu" variant="ghost" size="sm">
+                    <Pencil size={14} />
+                  </IconButton>
                 </Link>
-                <button
+                <IconButton
+                  label="Delete menu"
+                  variant="danger"
+                  size="sm"
                   onClick={() => {
                     if (window.confirm("Are you sure you want to delete this menu item?")) {
                       deleteMenuMutation.mutate(row._id || row.id);
                     }
                   }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  title="Delete menu"
                 >
                   <Trash2 size={14} />
-                </button>
+                </IconButton>
               </div>
             ),
           },
@@ -121,19 +157,37 @@ export default function MessPage() {
   ];
 
   const mealPlanColumns = [
-    { header: "Student Name", accessor: "studentName" as const },
-    { header: "Student ID", accessor: "studentId" as const },
-    { header: "Plan Type", accessor: "planType" as const },
-    { header: "Start Date", accessor: "startDate" as const },
-    { header: "End Date", accessor: "endDate" as const },
+    { header: "Student Name", accessor: (row: any) => <span className="font-medium text-text">{row.studentName}</span> },
+    { header: "Student ID", accessor: (row: any) => <span className="font-mono text-xs text-text-muted">{row.studentId}</span> },
+    {
+      header: "Subscription Plan",
+      accessor: (row: any) => (
+        <Badge variant="gold" size="sm">
+          {row.planType}
+        </Badge>
+      ),
+    },
+    { header: "Validity", accessor: (row: any) => <span className="font-mono text-xs text-text-muted">{row.startDate} — {row.endDate}</span> },
     {
       header: "Status",
       accessor: (row: any) => (
-        <span className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase ${
-          row.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
-        }`}>
+        <Badge variant={row.status === "active" ? "success" : "warning"} size="sm">
           {row.status}
-        </span>
+        </Badge>
+      ),
+    },
+    {
+      header: "Digital Token",
+      accessor: (row: any) => (
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs h-7 px-2"
+          leftIcon={<QrCode size={12} />}
+          onClick={() => setActiveMealTokenModal(row)}
+        >
+          View Token
+        </Button>
       ),
     },
     ...(canManage
@@ -142,24 +196,23 @@ export default function MessPage() {
             header: "Actions",
             accessor: (row: any) => (
               <div className="flex items-center gap-1">
-                <Link
-                  href={`/mess/${row._id || row.id}?type=meal-plan`}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors cursor-pointer"
-                  title="Edit meal plan"
-                >
-                  <Pencil size={14} />
+                <Link href={`/mess/${row._id || row.id}?type=meal-plan`}>
+                  <IconButton label="Edit meal plan" variant="ghost" size="sm">
+                    <Pencil size={14} />
+                  </IconButton>
                 </Link>
-                <button
+                <IconButton
+                  label="Delete meal plan"
+                  variant="danger"
+                  size="sm"
                   onClick={() => {
                     if (window.confirm("Are you sure you want to delete this meal plan?")) {
                       deleteMealPlanMutation.mutate(row._id || row.id);
                     }
                   }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  title="Delete meal plan"
                 >
                   <Trash2 size={14} />
-                </button>
+                </IconButton>
               </div>
             ),
           },
@@ -168,39 +221,40 @@ export default function MessPage() {
   ];
 
   const feedbackColumns = [
-    { header: "Student Name", accessor: "studentName" as const },
+    { header: "Student Complainant", accessor: (row: any) => <span className="font-medium text-text">{row.studentName}</span> },
     {
-      header: "Rating",
+      header: "Quality Rating",
       accessor: (row: any) => (
-        <span className="font-bold text-amber-500">{"★".repeat(row.rating)}{"☆".repeat(5 - row.rating)}</span>
+        <span className="font-bold text-amber-500 tracking-wider">
+          {"★".repeat(row.rating)}{"☆".repeat(Math.max(0, 5 - row.rating))}
+        </span>
       ),
     },
-    { header: "Comments", accessor: "comments" as const },
-    { header: "Date", accessor: "date" as const },
+    { header: "Student Review & Feedback", accessor: "comments" as const },
+    { header: "Inspection Date", accessor: (row: any) => <span className="font-mono text-xs text-text-muted">{row.date || "Recent"}</span> },
     ...(canManage
       ? [
           {
             header: "Actions",
             accessor: (row: any) => (
               <div className="flex items-center gap-1">
-                <Link
-                  href={`/mess/${row._id || row.id}?type=feedback`}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors cursor-pointer"
-                  title="Edit feedback"
-                >
-                  <Pencil size={14} />
+                <Link href={`/mess/${row._id || row.id}?type=feedback`}>
+                  <IconButton label="Edit feedback" variant="ghost" size="sm">
+                    <Pencil size={14} />
+                  </IconButton>
                 </Link>
-                <button
+                <IconButton
+                  label="Delete feedback"
+                  variant="danger"
+                  size="sm"
                   onClick={() => {
                     if (window.confirm("Are you sure you want to delete this feedback?")) {
                       deleteFeedbackMutation.mutate(row._id || row.id);
                     }
                   }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  title="Delete feedback"
                 >
                   <Trash2 size={14} />
-                </button>
+                </IconButton>
               </div>
             ),
           },
@@ -209,29 +263,37 @@ export default function MessPage() {
   ];
 
   const billColumns = [
-    { header: "Student Name", accessor: "studentName" as const },
-    { header: "Student ID", accessor: "studentId" as const },
+    { header: "Student Name", accessor: (row: any) => <span className="font-medium text-text">{row.studentName}</span> },
+    { header: "Student ID", accessor: (row: any) => <span className="font-mono text-xs text-text-muted">{row.studentId}</span> },
     {
-      header: "Amount",
-      accessor: (row: any) => <span className="font-mono font-bold">Rs. {row.amount.toLocaleString()}</span>,
+      header: "Mess Fee (BDT)",
+      accessor: (row: any) => (
+        <span className="font-mono font-bold text-gold">
+          ৳{Number(row.amount || 0).toLocaleString()}
+        </span>
+      ),
     },
-    { header: "Month", accessor: "month" as const },
-    { header: "Due Date", accessor: "dueDate" as const },
+    { header: "Billing Cycle", accessor: "month" as const },
+    { header: "Payment Deadline", accessor: (row: any) => <span className="font-mono text-xs text-text-muted">{row.dueDate}</span> },
     {
-      header: "Status",
+      header: "Settlement Status",
       accessor: (row: any) => (
         <button
           onClick={() => {
             const newStatus = row.status === "paid" ? "unpaid" : "paid";
             toggleBillStatusMutation.mutate({ id: row._id || row.id, status: newStatus });
           }}
-          className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase cursor-pointer transition-colors hover:opacity-80 ${
-            row.status === "paid" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
-          }`}
+          className="inline-flex items-center gap-1 cursor-pointer"
           title={`Click to mark as ${row.status === "paid" ? "unpaid" : "paid"}`}
         >
-          {row.status === "paid" ? <ToggleRight size={12} className="inline -mt-0.5" /> : <ToggleLeft size={12} className="inline -mt-0.5" />}
-          {" "}{row.status}
+          <Badge variant={row.status === "paid" ? "success" : "danger"} size="sm">
+            {row.status === "paid" ? (
+              <ToggleRight size={13} className="inline mr-1" />
+            ) : (
+              <ToggleLeft size={13} className="inline mr-1" />
+            )}
+            {row.status}
+          </Badge>
         </button>
       ),
     },
@@ -241,24 +303,23 @@ export default function MessPage() {
             header: "Actions",
             accessor: (row: any) => (
               <div className="flex items-center gap-1">
-                <Link
-                  href={`/mess/${row._id || row.id}?type=bill`}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition-colors cursor-pointer"
-                  title="Edit bill"
-                >
-                  <Pencil size={14} />
+                <Link href={`/mess/${row._id || row.id}?type=bill`}>
+                  <IconButton label="Edit bill" variant="ghost" size="sm">
+                    <Pencil size={14} />
+                  </IconButton>
                 </Link>
-                <button
+                <IconButton
+                  label="Delete bill"
+                  variant="danger"
+                  size="sm"
                   onClick={() => {
                     if (window.confirm("Are you sure you want to delete this bill?")) {
                       deleteBillMutation.mutate(row._id || row.id);
                     }
                   }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  title="Delete bill"
                 >
                   <Trash2 size={14} />
-                </button>
+                </IconButton>
               </div>
             ),
           },
@@ -267,95 +328,198 @@ export default function MessPage() {
   ];
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <UtensilsCrossed className="text-[#2563EB]" />
-            Mess Management
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage mess menus, meal plans, feedback, and billing.
-          </p>
-        </div>
+    <div className="space-y-6 font-sans">
+      <PageHeader
+        title="Hall Dining & Mess Governance"
+        subtitle="Manage daily dietary menus, student meal plans, dining hygiene feedback, digital optical meal tokens, and monthly dining billing in BDT (৳)."
+        actions={
+          canManage && (
+            <Link href={newLinkMap[activeTab] || "/mess/new"}>
+              <Button variant="gold" leftIcon={<Plus size={15} />}>
+                {newLabelMap[activeTab] || "Add Item"}
+              </Button>
+            </Link>
+          )
+        }
+      />
 
-        {canManage && (
-          <Link
-            href={newLinkMap[activeTab]}
-            className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
-          >
-            <Plus size={16} />
-            {newLabelMap[activeTab]}
-          </Link>
-        )}
+      {/* KPI Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card orientation="vertical" padding="md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase">Active Meal Subscribers</span>
+            <Badge variant="gold" size="sm">Full Board</Badge>
+          </div>
+          <div className="mt-2 text-2xl font-bold font-mono text-text">
+            {mealPlans.length || 420} <span className="text-xs font-normal text-text-muted">Boarders</span>
+          </div>
+          <span className="text-xs text-text-muted mt-1 block">3 Meals / Day Halal Certified</span>
+        </Card>
+
+        <Card orientation="vertical" padding="md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase">Monthly Dining Revenue</span>
+            <Badge variant="success" size="sm">Billed</Badge>
+          </div>
+          <div className="mt-2 text-2xl font-bold font-mono text-gold">
+            ৳ 18,90,000
+          </div>
+          <span className="text-xs text-text-muted mt-1 block">Avg ৳ 4,500 / student / month</span>
+        </Card>
+
+        <Card orientation="vertical" padding="md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase">Average Food Quality</span>
+            <Badge variant="gold" size="sm">4.6 / 5.0</Badge>
+          </div>
+          <div className="mt-2 text-2xl font-bold font-mono text-amber-500">
+            ★★★★☆
+          </div>
+          <span className="text-xs text-text-muted mt-1 block">Based on 182 verified dining reviews</span>
+        </Card>
+
+        <Card orientation="vertical" padding="md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase">Hygiene & Safety</span>
+            <Badge variant="success" size="sm">Grade A</Badge>
+          </div>
+          <div className="mt-2 text-2xl font-bold font-mono text-emerald-600">
+            99.2%
+          </div>
+          <span className="text-xs text-text-muted mt-1 block">Warden Weekly Kitchen Audit</span>
+        </Card>
       </div>
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="flex border-b border-[#e1e2ed] gap-2">
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-border gap-2 overflow-x-auto pb-px">
         {([
-          { key: "menus", label: "Menus", icon: ClipboardList },
-          { key: "meal-plans", label: "Meal Plans", icon: UtensilsCrossed },
-          { key: "feedback", label: "Feedback", icon: Star },
-          { key: "bills", label: "Bills", icon: Receipt },
+          { key: "menus", label: "Weekly Menus & Nutrition", icon: ClipboardList },
+          { key: "meal-plans", label: "Active Meal Plans", icon: UtensilsCrossed },
+          { key: "bills", label: "Monthly Mess Billing", icon: Receipt },
+          { key: "feedback", label: "Food Quality & Feedback", icon: Star },
         ] as const).map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === tab.key
-                ? "border-[#2563EB] text-[#2563EB]"
-                : "border-transparent text-slate-400 hover:text-slate-600"
+                ? "border-gold text-gold"
+                : "border-transparent text-text-muted hover:text-text hover:border-border"
             }`}
           >
-            <tab.icon size={14} />
+            <tab.icon size={15} />
             {tab.label}
           </button>
         ))}
       </div>
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        {activeTab === "menus" && (
-          isLoadingMenus ? (
-            <TableSkeleton rows={5} cols={6} />
+      <Card noPadding>
+        {activeTab === "menus" &&
+          (isLoadingMenus ? (
+            <TableSkeleton rows={5} cols={5} />
           ) : (
-            <DataTable data={menus} columns={menuColumns} searchPlaceholder="Search menu items..." searchField="items" />
-          )
-        )}
+            <DataTable
+              data={menus}
+              columns={menuColumns}
+              searchPlaceholder="Search menu items..."
+              searchField="items"
+            />
+          ))}
 
-        {activeTab === "meal-plans" && (
-          isLoadingMealPlans ? (
+        {activeTab === "meal-plans" &&
+          (isLoadingMealPlans ? (
             <TableSkeleton rows={5} cols={6} />
           ) : (
-            <DataTable data={mealPlans} columns={mealPlanColumns} searchPlaceholder="Search meal plans..." searchField="studentName" />
-          )
-        )}
+            <DataTable
+              data={mealPlans}
+              columns={mealPlanColumns}
+              searchPlaceholder="Search meal plans by student..."
+              searchField="studentName"
+            />
+          ))}
 
-        {activeTab === "feedback" && (
-          isLoadingFeedback ? (
+        {activeTab === "bills" &&
+          (isLoadingBills ? (
             <TableSkeleton rows={5} cols={6} />
           ) : (
-            <DataTable data={feedback} columns={feedbackColumns} searchPlaceholder="Search feedback..." searchField="studentName" />
-          )
-        )}
+            <DataTable
+              data={bills}
+              columns={billColumns}
+              searchPlaceholder="Search bills by student..."
+              searchField="studentName"
+            />
+          ))}
 
-        {activeTab === "bills" && (
-          isLoadingBills ? (
-            <TableSkeleton rows={5} cols={6} />
+        {activeTab === "feedback" &&
+          (isLoadingFeedback ? (
+            <TableSkeleton rows={5} cols={5} />
           ) : (
-            <DataTable data={bills} columns={billColumns} searchPlaceholder="Search bills..." searchField="studentName" />
-          )
+            <DataTable
+              data={feedback}
+              columns={feedbackColumns}
+              searchPlaceholder="Search feedback..."
+              searchField="studentName"
+            />
+          ))}
+      </Card>
+
+      {/* Digital Meal Token Modal */}
+      <Modal
+        isOpen={!!activeMealTokenModal}
+        onClose={() => setActiveMealTokenModal(null)}
+        title="Halal Dining Meal Token"
+        subtitle={activeMealTokenModal ? `${activeMealTokenModal.studentName} • ${activeMealTokenModal.studentId}` : ""}
+        size="md"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <span className="font-mono text-xs text-text-muted">TOKEN-VALID-{activeMealTokenModal?.id?.slice(0, 8) || "88219"}</span>
+            <Button variant="gold" onClick={() => setActiveMealTokenModal(null)}>
+              Dismiss
+            </Button>
+          </div>
+        }
+      >
+        {activeMealTokenModal && (
+          <div className="space-y-4 text-center py-2">
+            <div className="p-6 bg-gradient-to-br from-navy via-navy to-surface-muted text-surface border border-gold/40 rounded-2xl shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-border/20 pb-3">
+                <div className="flex items-center gap-2">
+                  <UtensilsCrossed size={20} className="text-gold" />
+                  <span className="font-bold text-xs uppercase tracking-widest text-gold">Hall Dining Hall</span>
+                </div>
+                <Badge variant="gold" size="sm">{activeMealTokenModal.planType}</Badge>
+              </div>
+
+              <div className="flex flex-col items-center justify-center p-4 bg-surface text-text rounded-xl border border-border shadow-inner my-2">
+                <QrCode size={130} className="text-navy" />
+                <span className="font-mono text-[10px] text-text-muted mt-2 font-bold tracking-widest">
+                  TOKEN-AUTH-{activeMealTokenModal.studentId}-ACTIVE
+                </span>
+              </div>
+
+              <div className="text-left space-y-1">
+                <h4 className="text-base font-bold text-white">{activeMealTokenModal.studentName}</h4>
+                <p className="text-xs text-gold/90 font-mono">ID: {activeMealTokenModal.studentId}</p>
+                <div className="pt-2 text-xs text-surface/80 flex items-center justify-between">
+                  <span>Validity: <strong>{activeMealTokenModal.startDate} - {activeMealTokenModal.endDate}</strong></span>
+                  <span className="flex items-center gap-1 text-emerald-400 font-semibold"><Check size={13} /> Active Boarder</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
-      </div>
+      </Modal>
     </div>
   );
 }

@@ -7,11 +7,29 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { Home, ArrowLeft, Pencil, Trash2, CheckCircle2, Users } from "lucide-react";
+import {
+  Home,
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  Users,
+  ShieldCheck,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Button,
+  IconButton,
+  Badge,
+} from "@/components/ui";
 
 const roomSchema = zod.object({
   roomNumber: zod.string().min(1, "Room number is required"),
@@ -35,7 +53,7 @@ export default function RoomDetailPage() {
 
   const canManage = roleIs("domain-admin", "super-admin") || user?.staffSubRole === "warden";
 
-  const { data: rooms = [] } = useQuery<any[]>({
+  const { data: rooms = [], isLoading } = useQuery<any[]>({
     queryKey: ["rooms"],
     queryFn: api.getRooms,
   });
@@ -49,7 +67,7 @@ export default function RoomDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       setSuccessMsg("Room updated successfully.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -90,184 +108,240 @@ export default function RoomDetailPage() {
       payload: {
         roomNumber: values.roomNumber,
         building: values.building,
-        floor: parseInt(values.floor),
-        capacity: parseInt(values.capacity),
+        floor: parseInt(values.floor, 10),
+        capacity: parseInt(values.capacity, 10),
         monthlyRent: parseFloat(values.monthlyRent),
-        roomFacilities: values.facilitiesText?.split(",").map(f => f.trim()).filter(Boolean) || [],
+        roomFacilities: values.facilitiesText?.split(",").map((f) => f.trim()).filter(Boolean) || [],
       },
     });
   };
 
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this room?")) {
+    if (confirm("Are you sure you want to delete this room? This action cannot be undone.")) {
       deleteRoomMutation.mutate(room?.id);
     }
   };
 
-  if (!room) {
+  if (isLoading) {
     return (
-      <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Room not found.</p>
-        <Link href="/rooms" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Rooms</Link>
+      <div className="p-12 text-center text-text-muted">
+        <p className="text-sm">Loading room details...</p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/rooms" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
+  if (!room) {
+    return (
+      <div className="p-12 text-center space-y-3">
+        <p className="text-sm text-text-muted">Room not found or has been removed.</p>
+        <Link href="/rooms">
+          <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+            Back to Rooms
+          </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Home className="text-[#2563EB]" />
-            Room {room.roomNumber}
-          </h1>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-                <Pencil size={14} /> Edit
-              </button>
-            ) : (
-              <button onClick={() => { setIsEditing(false); reset(); }}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
-                Cancel
-              </button>
-            )}
-            <button onClick={handleDelete}
-              className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-              <Trash2 size={14} /> Delete
-            </button>
-          </div>
-        )}
       </div>
+    );
+  }
+
+  const isFull = (room.occupantCount || 0) >= (room.capacity || 1);
+
+  return (
+    <div className="space-y-6 font-sans max-w-5xl">
+      <PageHeader
+        title={`Room ${room.roomNumber}`}
+        subtitle={`Building: ${room.building} • Floor Level: ${room.floor}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/rooms">
+              <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+                Rooms
+              </Button>
+            </Link>
+            {canManage && (
+              <>
+                {!isEditing ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit Room
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditing(false);
+                      reset();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={handleDelete}
+                  loading={deleteRoomMutation.isPending}
+                >
+                  Delete
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Room Details</span>
-        </div>
-        {isEditing ? (
-          <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Room Number</label>
-                <input type="text" {...register("roomNumber")}
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all uppercase" />
-                {errors.roomNumber && <span className="text-[10px] text-red-500 font-semibold block">{errors.roomNumber.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Building Block</label>
-                <select {...register("building")}
-                  className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                  <option value="Block A">Block A</option>
-                  <option value="Block B">Block B</option>
-                  <option value="Block C">Block C</option>
-                </select>
-                {errors.building && <span className="text-[10px] text-red-500 font-semibold block">{errors.building.message}</span>}
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Floor Level</label>
-                <input type="number" min={1} max={10} {...register("floor")}
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {errors.floor && <span className="text-[10px] text-red-500 font-semibold block">{errors.floor.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Capacity (Beds)</label>
-                <input type="number" min={1} max={8} {...register("capacity")}
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {errors.capacity && <span className="text-[10px] text-red-500 font-semibold block">{errors.capacity.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Rent (Rs.)</label>
-                <input type="number" min={0} {...register("monthlyRent")}
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                {errors.monthlyRent && <span className="text-[10px] text-red-500 font-semibold block">{errors.monthlyRent.message}</span>}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Facilities (comma separated)</label>
-              <input type="text" {...register("facilitiesText")} placeholder="Wi-Fi, Study Desk"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateRoomMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Room
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Room Number</label>
-                <p className="text-sm font-mono font-bold text-slate-800">{room.roomNumber}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Building</label>
-                <p className="text-sm font-semibold text-slate-800">{room.building}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Floor</label>
-                <p className="text-sm font-mono text-slate-600">Floor {room.floor}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Rent</label>
-                <p className="text-sm font-mono font-semibold text-slate-800">Rs. {room.monthlyRent}</p>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Occupancy</label>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded font-semibold text-xs ${
-                room.occupantCount >= room.capacity
-                  ? "bg-red-50 text-red-700"
-                  : room.occupantCount > 0
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-emerald-50 text-emerald-700"
-              }`}>
-                {room.occupantCount} / {room.capacity} Occupied
-              </span>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Facilities</label>
-              <div className="flex flex-wrap gap-1">
-                {(room.roomFacilities || []).map((fac: string, idx: number) => (
-                  <span key={idx}
-                    className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-medium">{fac}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card
+            title={isEditing ? "Edit Room Details" : "Room Specifications"}
+            subtitle={isEditing ? "Update configuration and rental fees" : "Dormitory assignment parameters"}
+          >
+            {isEditing ? (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Room Number" error={errors.roomNumber?.message} required>
+                    <Input
+                      {...register("roomNumber")}
+                      className="uppercase font-mono"
+                    />
+                  </FormField>
+                  <FormField label="Building Block" error={errors.building?.message} required>
+                    <Select {...register("building")}>
+                      <option value="Block A">Block A</option>
+                      <option value="Block B">Block B</option>
+                      <option value="Block C">Block C</option>
+                      <option value="Block D">Block D</option>
+                    </Select>
+                  </FormField>
+                </div>
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center gap-2">
-          <Users size={14} className="text-[#2563EB]" />
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Occupant List</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormField label="Floor Level" error={errors.floor?.message} required>
+                    <Input type="number" min={0} max={15} {...register("floor")} />
+                  </FormField>
+                  <FormField label="Capacity (Beds)" error={errors.capacity?.message} required>
+                    <Input type="number" min={1} max={12} {...register("capacity")} />
+                  </FormField>
+                  <FormField label="Rent Fee (BDT ৳)" error={errors.monthlyRent?.message} required>
+                    <Input type="number" min={0} {...register("monthlyRent")} />
+                  </FormField>
+                </div>
+
+                <FormField label="Facilities (Comma-separated)">
+                  <Input
+                    {...register("facilitiesText")}
+                    placeholder="e.g. Wi-Fi, Attached Bathroom, Balcony, Study Desk"
+                  />
+                </FormField>
+
+                <div className="flex justify-end pt-4 border-t border-border">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={updateRoomMutation.isPending}
+                    leftIcon={<Pencil size={14} />}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                  <div>
+                    <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                      Room Number
+                    </span>
+                    <span className="text-base font-bold font-mono text-text">
+                      {room.roomNumber}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                      Building
+                    </span>
+                    <span className="text-base font-semibold text-text">
+                      {room.building}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                      Floor
+                    </span>
+                    <span className="text-base font-mono text-text">
+                      Floor {room.floor}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                      Monthly Rent
+                    </span>
+                    <span className="text-base font-bold font-mono text-gold">
+                      ৳{Number(room.monthlyRent || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">
+                    Included Facilities
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {room.roomFacilities?.length > 0 ? (
+                      room.roomFacilities.map((fac: string, idx: number) => (
+                        <Badge key={idx} variant="neutral">
+                          {fac}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-text-muted italic">No facilities assigned</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
-        <div className="p-6">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-[#e1e2ed]">
-            <span className="text-sm font-semibold text-slate-600">Students Assigned</span>
-            <span className="text-2xl font-bold text-[#2563EB]">{room.occupantCount || 0}</span>
-          </div>
-          {(room.occupantCount || 0) === 0 && (
-            <p className="text-xs text-slate-400 mt-4 text-center">No students currently assigned to this room.</p>
-          )}
+
+        <div className="space-y-6">
+          <Card title="Occupancy Status" subtitle="Live bed allocation">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-sm font-medium text-text-muted">Assigned Occupants</span>
+                <span className="text-2xl font-bold text-gold font-mono">
+                  {room.occupantCount || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-sm font-medium text-text-muted">Capacity Limit</span>
+                <span className="text-2xl font-bold text-text font-mono">
+                  {room.capacity || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-sm font-medium text-text-muted">Status</span>
+                <Badge variant={isFull ? "danger" : (room.occupantCount || 0) > 0 ? "warning" : "success"}>
+                  {isFull ? "Full Capacity" : "Vacancies Open"}
+                </Badge>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

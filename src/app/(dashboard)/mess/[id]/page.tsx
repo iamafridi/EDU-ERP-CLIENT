@@ -7,11 +7,29 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, ArrowLeft, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import {
+  UtensilsCrossed,
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+  Badge,
+} from "@/components/ui";
 
 const menuSchema = zod.object({
   day: zod.string().min(2, "Day is required"),
@@ -60,20 +78,24 @@ export default function MessDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const canManage = roleIs("domain-admin", "super-admin") || user?.staffSubRole === "mess-manager" || user?.staffSubRole === "accountant";
+  const canManage =
+    roleIs("domain-admin", "super-admin") ||
+    user?.staffSubRole === "mess-manager" ||
+    user?.staffSubRole === "accountant";
 
-  const { data: menus = [] } = useQuery({ queryKey: ["menus"], queryFn: api.getMenus });
-  const { data: mealPlans = [] } = useQuery({ queryKey: ["mealPlans"], queryFn: api.getMealPlans });
-  const { data: feedbackData = [] } = useQuery({ queryKey: ["messFeedback"], queryFn: api.getMessFeedback });
-  const { data: bills = [] } = useQuery({ queryKey: ["messBills"], queryFn: api.getMessBills });
+  const { data: menus = [], isLoading: isLoadingMenus } = useQuery({ queryKey: ["menus"], queryFn: api.getMenus });
+  const { data: mealPlans = [], isLoading: isLoadingMealPlans } = useQuery({ queryKey: ["mealPlans"], queryFn: api.getMealPlans });
+  const { data: feedbackData = [], isLoading: isLoadingFeedback } = useQuery({ queryKey: ["messFeedback"], queryFn: api.getMessFeedback });
+  const { data: bills = [], isLoading: isLoadingBills } = useQuery({ queryKey: ["messBills"], queryFn: api.getMessBills });
 
-  const item = type === "menu"
-    ? menus.find((m: any) => (m._id || m.id) === params.id)
-    : type === "meal-plan"
-    ? mealPlans.find((p: any) => (p._id || p.id) === params.id)
-    : type === "feedback"
-    ? feedbackData.find((f: any) => (f._id || f.id) === params.id)
-    : bills.find((b: any) => (b._id || b.id) === params.id);
+  const item =
+    type === "menu"
+      ? menus.find((m: any) => (m._id || m.id) === params.id)
+      : type === "meal-plan"
+      ? mealPlans.find((p: any) => (p._id || p.id) === params.id)
+      : type === "feedback"
+      ? feedbackData.find((f: any) => (f._id || f.id) === params.id)
+      : bills.find((b: any) => (b._id || b.id) === params.id);
 
   const updateMenuMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => api.updateMenu(id, payload),
@@ -81,7 +103,7 @@ export default function MessDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["menus"] });
       setSuccessMsg("Menu item updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -91,7 +113,7 @@ export default function MessDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["mealPlans"] });
       setSuccessMsg("Meal plan updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -101,7 +123,7 @@ export default function MessDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["messBills"] });
       setSuccessMsg("Bill updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -110,28 +132,40 @@ export default function MessDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messBills"] });
       setSuccessMsg("Bill status updated.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
   const deleteMenuMutation = useMutation({
     mutationFn: api.deleteMenu,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["menus"] }); router.push("/mess"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menus"] });
+      router.push("/mess");
+    },
   });
 
   const deleteMealPlanMutation = useMutation({
     mutationFn: api.deleteMealPlan,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mealPlans"] }); router.push("/mess"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mealPlans"] });
+      router.push("/mess");
+    },
   });
 
   const deleteFeedbackMutation = useMutation({
     mutationFn: api.deleteMessFeedback,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["messFeedback"] }); router.push("/mess"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messFeedback"] });
+      router.push("/mess");
+    },
   });
 
   const deleteBillMutation = useMutation({
     mutationFn: api.deleteMessBill,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["messBills"] }); router.push("/mess"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messBills"] });
+      router.push("/mess");
+    },
   });
 
   const {
@@ -203,7 +237,8 @@ export default function MessDetailPage() {
   };
 
   const handleDelete = () => {
-    if (!item || !confirm("Delete this record?")) return;
+    if (!item) return;
+    if (!window.confirm("Are you sure you want to delete this record?")) return;
     const id = item._id || item.id;
     if (type === "menu") deleteMenuMutation.mutate(id);
     else if (type === "meal-plan") deleteMealPlanMutation.mutate(id);
@@ -211,251 +246,326 @@ export default function MessDetailPage() {
     else deleteBillMutation.mutate(id);
   };
 
-  const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const selectClass = "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const labelClass = "text-xs font-semibold text-slate-500";
-  const errorClass = "text-[10px] text-red-500 font-semibold block";
-  const detailLabelClass = "text-xs font-semibold text-slate-400 uppercase block mb-1";
+  const isPending =
+    updateMenuMutation.isPending ||
+    updateMealPlanMutation.isPending ||
+    updateBillMutation.isPending ||
+    deleteMenuMutation.isPending ||
+    deleteMealPlanMutation.isPending ||
+    deleteFeedbackMutation.isPending ||
+    deleteBillMutation.isPending;
 
-  const titleMap: Record<string, string> = {
-    menu: "Menu Item Details",
-    "meal-plan": "Meal Plan Details",
-    feedback: "Feedback Details",
-    bill: "Mess Bill Details",
-  };
-
-  if (!item) {
+  if (isLoadingMenus || isLoadingMealPlans || isLoadingFeedback || isLoadingBills) {
     return (
-      <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Record not found.</p>
-        <Link href="/mess" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Mess</Link>
+      <div className="p-12 text-center text-text-muted">
+        <p className="text-sm">Loading mess details...</p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/mess" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
+  if (!item) {
+    return (
+      <div className="p-12 text-center space-y-3">
+        <p className="text-sm text-text-muted">Record not found or has been removed.</p>
+        <Link href="/mess">
+          <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+            Back to Mess
+          </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <UtensilsCrossed className="text-[#2563EB]" />
-            {titleMap[type]}
-          </h1>
-        </div>
-        {canManage && type !== "feedback" && (
-          <div className="flex gap-2">
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-                <Pencil size={14} /> Edit
-              </button>
-            ) : (
-              <button onClick={() => { setIsEditing(false); if (type === "menu") resetMenu(); else if (type === "meal-plan") resetMealPlan(); else if (type === "bill") resetBill(); }}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
-                Cancel
-              </button>
-            )}
-            <button onClick={handleDelete} className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-              <Trash2 size={14} /> Delete
-            </button>
-          </div>
-        )}
       </div>
+    );
+  }
+
+  const typeLabels: Record<string, string> = {
+    menu: "Daily Menu",
+    "meal-plan": "Meal Plan Subscription",
+    feedback: "Dining Feedback",
+    bill: "Mess Billing Invoice",
+  };
+
+  return (
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title={typeLabels[type] || "Mess Entry Details"}
+        subtitle={`Viewing details for ${typeLabels[type]?.toLowerCase()}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/mess">
+              <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+                Mess Home
+              </Button>
+            </Link>
+            {canManage && type !== "feedback" && (
+              <>
+                {!isEditing ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </>
+            )}
+            {canManage && (
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={<Trash2 size={14} />}
+                onClick={handleDelete}
+                loading={isPending}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{titleMap[type]}</span>
-        </div>
+      {/* Content Card */}
+      <Card
+        title={isEditing ? `Edit ${typeLabels[type]}` : `${typeLabels[type]} Specifications`}
+        subtitle="Hostel dining parameters and student allocation"
+      >
+        {/* Menu View / Edit */}
+        {type === "menu" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitMenu(onSubmitMenu)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Day of Week" error={menuErrors.day?.message} required>
+                  <Select {...registerMenu("day")}>
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </Select>
+                </FormField>
+                <FormField label="Meal Type" error={menuErrors.mealType?.message} required>
+                  <Select {...registerMenu("mealType")}>
+                    {["Breakfast", "Lunch", "Dinner", "Snacks"].map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </Select>
+                </FormField>
+              </div>
 
-        {type === "menu" && isEditing && (
-          <form onSubmit={handleSubmitMenu(onSubmitMenu)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Day</label>
-                <select {...registerMenu("day")} className={selectClass}>
-                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
-                    <option key={d} value={d}>{d}</option>
+              <FormField label="Items Included" error={menuErrors.items?.message} required>
+                <Input {...registerMenu("items")} />
+              </FormField>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Menu
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Day</span>
+                  <span className="text-base font-bold text-text">{item.day}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Meal</span>
+                  <Badge variant="gold" size="sm">{item.mealType}</Badge>
+                </div>
+              </div>
+              <div className="p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Dishes</span>
+                <span className="text-sm font-medium text-text">{item.items}</span>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Meal Plan View / Edit */}
+        {type === "meal-plan" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitMealPlan(onSubmitMealPlan)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Student Name" error={mealPlanErrors.studentName?.message} required>
+                  <Input {...registerMealPlan("studentName")} />
+                </FormField>
+                <FormField label="Student ID" error={mealPlanErrors.studentId?.message} required>
+                  <Input {...registerMealPlan("studentId")} className="font-mono" />
+                </FormField>
+              </div>
+
+              <FormField label="Plan Type" error={mealPlanErrors.planType?.message} required>
+                <Select {...registerMealPlan("planType")}>
+                  {["Vegetarian", "Non-Vegetarian", "Vegan", "Diabetic"].map((t) => (
+                    <option key={t} value={t}>{t}</option>
                   ))}
-                </select>
+                </Select>
+              </FormField>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Start Date" error={mealPlanErrors.startDate?.message} required>
+                  <Input type="date" {...registerMealPlan("startDate")} className="font-mono" />
+                </FormField>
+                <FormField label="End Date" error={mealPlanErrors.endDate?.message} required>
+                  <Input type="date" {...registerMealPlan("endDate")} className="font-mono" />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Meal Type</label>
-                <select {...registerMenu("mealType")} className={selectClass}>
-                  {["Breakfast", "Lunch", "Dinner", "Snacks"].map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Plan
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Student</span>
+                  <span className="text-base font-bold text-text">{item.studentName}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Student ID</span>
+                  <span className="text-base font-mono text-text">{item.studentId}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Diet Plan</span>
+                  <Badge variant="neutral" size="sm">{item.planType}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Start Date</span>
+                  <span className="text-sm font-mono text-text">{item.startDate}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">End Date</span>
+                  <span className="text-sm font-mono text-text">{item.endDate}</span>
+                </div>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Items</label>
-              <input type="text" {...registerMenu("items")} className={inputClass} />
-              {menuErrors.items && <span className={errorClass}>{menuErrors.items.message}</span>}
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateMenuMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Menu
-              </button>
-            </div>
-          </form>
+          )
         )}
 
-        {type === "menu" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={detailLabelClass}>Day</label><p className="text-sm font-semibold text-slate-800">{item.day}</p></div>
-              <div><label className={detailLabelClass}>Meal Type</label><p className="text-sm font-semibold text-slate-800">{item.mealType}</p></div>
-              <div className="col-span-2"><label className={detailLabelClass}>Items</label><p className="text-sm text-slate-600">{item.items}</p></div>
-              {item.date && <div><label className={detailLabelClass}>Date</label><p className="text-sm font-mono text-slate-600">{item.date}</p></div>}
-            </div>
-          </div>
-        )}
-
-        {type === "meal-plan" && isEditing && (
-          <form onSubmit={handleSubmitMealPlan(onSubmitMealPlan)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Student Name</label>
-                <input type="text" {...registerMealPlan("studentName")} className={inputClass} />
-                {mealPlanErrors.studentName && <span className={errorClass}>{mealPlanErrors.studentName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Student ID</label>
-                <input type="text" {...registerMealPlan("studentId")} className={`${inputClass} font-mono`} />
-                {mealPlanErrors.studentId && <span className={errorClass}>{mealPlanErrors.studentId.message}</span>}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Plan Type</label>
-              <select {...registerMealPlan("planType")} className={selectClass}>
-                {["Vegetarian", "Non-Vegetarian", "Vegan", "Diabetic"].map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Start Date</label>
-                <input type="date" {...registerMealPlan("startDate")} className={`${inputClass} font-mono`} />
-                {mealPlanErrors.startDate && <span className={errorClass}>{mealPlanErrors.startDate.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>End Date</label>
-                <input type="date" {...registerMealPlan("endDate")} className={`${inputClass} font-mono`} />
-                {mealPlanErrors.endDate && <span className={errorClass}>{mealPlanErrors.endDate.message}</span>}
-              </div>
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateMealPlanMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Plan
-              </button>
-            </div>
-          </form>
-        )}
-
-        {type === "meal-plan" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={detailLabelClass}>Student Name</label><p className="text-sm font-semibold text-slate-800">{item.studentName}</p></div>
-              <div><label className={detailLabelClass}>Student ID</label><p className="text-sm font-mono text-slate-600">{item.studentId}</p></div>
-              <div><label className={detailLabelClass}>Plan Type</label><p className="text-sm text-slate-600">{item.planType}</p></div>
-              <div><label className={detailLabelClass}>Status</label>
-                <span className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase ${
-                  item.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
-                }`}>{item.status || "active"}</span>
-              </div>
-              <div><label className={detailLabelClass}>Start Date</label><p className="text-sm font-mono text-slate-600">{item.startDate}</p></div>
-              <div><label className={detailLabelClass}>End Date</label><p className="text-sm font-mono text-slate-600">{item.endDate}</p></div>
-            </div>
-          </div>
-        )}
-
+        {/* Feedback View */}
         {type === "feedback" && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={detailLabelClass}>Student Name</label><p className="text-sm font-semibold text-slate-800">{item.studentName}</p></div>
-              <div><label className={detailLabelClass}>Rating</label><p className="font-bold text-amber-500 text-lg">{"★".repeat(item.rating)}{"☆".repeat(5 - item.rating)}</p></div>
-              <div className="col-span-2"><label className={detailLabelClass}>Comments</label><p className="text-sm text-slate-600">{item.comments}</p></div>
-              {item.date && <div><label className={detailLabelClass}>Date</label><p className="text-sm font-mono text-slate-600">{item.date}</p></div>}
-            </div>
-          </div>
-        )}
-
-        {type === "bill" && isEditing && (
-          <form onSubmit={handleSubmitBill(onSubmitBill)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Student Name</label>
-                <input type="text" {...registerBill("studentName")} className={inputClass} />
-                {billErrors.studentName && <span className={errorClass}>{billErrors.studentName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Student ID</label>
-                <input type="text" {...registerBill("studentId")} className={`${inputClass} font-mono`} />
-                {billErrors.studentId && <span className={errorClass}>{billErrors.studentId.message}</span>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Amount (Rs.)</label>
-                <input type="number" {...registerBill("amount", { valueAsNumber: true })} className={`${inputClass} font-mono`} />
-                {billErrors.amount && <span className={errorClass}>{billErrors.amount.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Month</label>
-                <input type="text" {...registerBill("month")} className={inputClass} />
-                {billErrors.month && <span className={errorClass}>{billErrors.month.message}</span>}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Due Date</label>
-              <input type="date" {...registerBill("dueDate")} className={`${inputClass} font-mono`} />
-              {billErrors.dueDate && <span className={errorClass}>{billErrors.dueDate.message}</span>}
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateBillMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Bill
-              </button>
-            </div>
-          </form>
-        )}
-
-        {type === "bill" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={detailLabelClass}>Student Name</label><p className="text-sm font-semibold text-slate-800">{item.studentName}</p></div>
-              <div><label className={detailLabelClass}>Student ID</label><p className="text-sm font-mono text-slate-600">{item.studentId}</p></div>
-              <div><label className={detailLabelClass}>Amount</label><p className="text-sm font-mono font-bold text-slate-800">Rs. {item.amount?.toLocaleString()}</p></div>
-              <div><label className={detailLabelClass}>Month</label><p className="text-sm text-slate-600">{item.month}</p></div>
-              <div><label className={detailLabelClass}>Due Date</label><p className="text-sm font-mono text-slate-600">{item.dueDate}</p></div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
               <div>
-                <label className={detailLabelClass}>Status</label>
-                <button
-                  onClick={() => {
-                    const newStatus = item.status === "paid" ? "unpaid" : "paid";
-                    toggleBillStatusMutation.mutate({ id: item._id || item.id, status: newStatus });
-                  }}
-                  className={`px-2 py-0.5 border rounded text-[10px] font-bold uppercase cursor-pointer transition-colors hover:opacity-80 ${
-                    item.status === "paid" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
-                  }`}
-                >
-                  {item.status === "paid" ? "Paid" : "Unpaid"}
-                </button>
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Student</span>
+                <span className="text-base font-bold text-text">{item.studentName}</span>
               </div>
+              <div>
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Rating</span>
+                <span className="text-amber-500 font-bold text-lg">
+                  {"★".repeat(item.rating)}{"☆".repeat(Math.max(0, 5 - item.rating))}
+                </span>
+              </div>
+            </div>
+            <div className="p-4 bg-surface-muted rounded-xl border border-border">
+              <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Feedback Remarks</span>
+              <p className="text-sm text-text leading-relaxed">{item.comments}</p>
             </div>
           </div>
         )}
-      </div>
+
+        {/* Bill View / Edit */}
+        {type === "bill" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitBill(onSubmitBill)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Student Name" error={billErrors.studentName?.message} required>
+                  <Input {...registerBill("studentName")} />
+                </FormField>
+                <FormField label="Student ID" error={billErrors.studentId?.message} required>
+                  <Input {...registerBill("studentId")} className="font-mono" />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Amount (BDT ৳)" error={billErrors.amount?.message} required>
+                  <Input type="number" min={0} {...registerBill("amount", { valueAsNumber: true })} className="font-mono" />
+                </FormField>
+                <FormField label="Month" error={billErrors.month?.message} required>
+                  <Input {...registerBill("month")} />
+                </FormField>
+              </div>
+
+              <FormField label="Due Date" error={billErrors.dueDate?.message} required>
+                <Input type="date" {...registerBill("dueDate")} className="font-mono" />
+              </FormField>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Bill
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Student</span>
+                  <span className="text-base font-bold text-text">{item.studentName}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Student ID</span>
+                  <span className="text-base font-mono text-text">{item.studentId}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Total Amount</span>
+                  <span className="text-xl font-bold font-mono text-gold">
+                    ৳{Number(item.amount || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-surface-muted rounded-xl border border-border items-center">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Month</span>
+                  <span className="text-sm font-semibold text-text">{item.month}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Due Date</span>
+                  <span className="text-sm font-mono text-text">{item.dueDate}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Status</span>
+                  <button
+                    onClick={() => {
+                      const newStatus = item.status === "paid" ? "unpaid" : "paid";
+                      toggleBillStatusMutation.mutate({ id: item._id || item.id, status: newStatus });
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Badge variant={item.status === "paid" ? "success" : "danger"} size="sm">
+                      {item.status === "paid" ? <ToggleRight size={13} className="inline mr-1" /> : <ToggleLeft size={13} className="inline mr-1" />}
+                      {item.status}
+                    </Badge>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+      </Card>
     </div>
   );
 }

@@ -12,6 +12,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+} from "@/components/ui";
 
 const menuSchema = zod.object({
   day: zod.string().min(2, "Day is required"),
@@ -59,7 +68,10 @@ export default function NewMessEntryPage() {
   const [selectedType, setSelectedType] = useState<"menu" | "meal-plan" | "feedback" | "bill">(initialType);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const canManage = roleIs("domain-admin", "super-admin") || user?.staffSubRole === "mess-manager" || user?.staffSubRole === "accountant";
+  const canManage =
+    roleIs("domain-admin", "super-admin") ||
+    user?.staffSubRole === "mess-manager" ||
+    user?.staffSubRole === "accountant";
 
   if (!canManage) {
     router.push("/mess");
@@ -135,7 +147,7 @@ export default function NewMessEntryPage() {
     formState: { errors: billErrors },
   } = useForm<BillFormValues>({
     resolver: zodResolver(billSchema),
-    defaultValues: { studentName: "", studentId: "", amount: 0, month: "", dueDate: "" },
+    defaultValues: { studentName: "", studentId: "", amount: 3500, month: "", dueDate: "" },
   });
 
   const onSubmitMenu = (values: MenuFormValues) => createMenuMutation.mutate(values);
@@ -143,204 +155,240 @@ export default function NewMessEntryPage() {
   const onSubmitFeedback = (values: FeedbackFormValues) => createFeedbackMutation.mutate(values);
   const onSubmitBill = (values: BillFormValues) => createBillMutation.mutate(values);
 
-  const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const selectClass = "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const labelClass = "text-xs font-semibold text-slate-500";
-  const errorClass = "text-[10px] text-red-500 font-semibold block";
-
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/mess" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <UtensilsCrossed className="text-[#2563EB]" />
-            New Mess Entry
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Create a new menu item, meal plan, feedback, or bill.</p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title="New Mess Record"
+        subtitle="Create a new dining menu item, student meal subscription, review, or billing invoice."
+        actions={
+          <Link href="/mess">
+            <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+              Back to Mess
+            </Button>
+          </Link>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Entry Type</label>
-          <div className="flex gap-2 flex-wrap">
-            {([
-              { key: "menu" as const, label: "Menu" },
-              { key: "meal-plan" as const, label: "Meal Plan" },
-              { key: "feedback" as const, label: "Feedback" },
-              { key: "bill" as const, label: "Bill" },
-            ]).map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSelectedType(opt.key)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                  selectedType === opt.key
-                    ? "bg-[#2563EB] text-white"
-                    : "bg-white border border-[#c3c6d7] text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Entry Type Selector Tabs */}
+      <div className="flex gap-2 p-1.5 bg-surface-muted rounded-xl border border-border w-fit">
+        {([
+          { key: "menu" as const, label: "Daily Menu" },
+          { key: "meal-plan" as const, label: "Meal Plan" },
+          { key: "feedback" as const, label: "Feedback Entry" },
+          { key: "bill" as const, label: "Billing Invoice" },
+        ]).map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => setSelectedType(opt.key)}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedType === opt.key
+                ? "bg-surface text-gold shadow-sm border border-border"
+                : "text-text-muted hover:text-text"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
+      <Card
+        title={
+          selectedType === "menu"
+            ? "Create Daily Menu Entry"
+            : selectedType === "meal-plan"
+            ? "Enroll Student in Meal Plan"
+            : selectedType === "feedback"
+            ? "Dining Quality Feedback"
+            : "Generate Mess Billing Record (BDT ৳)"
+        }
+        subtitle="Fill in all the required institutional dining parameters"
+      >
         {selectedType === "menu" && (
-          <form onSubmit={handleSubmitMenu(onSubmitMenu)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Day</label>
-                <select {...registerMenu("day")} className={selectClass}>
+          <form onSubmit={handleSubmitMenu(onSubmitMenu)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Day of Week" error={menuErrors.day?.message} required>
+                <Select {...registerMenu("day")}>
                   {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Meal Type</label>
-                <select {...registerMenu("mealType")} className={selectClass}>
+                </Select>
+              </FormField>
+
+              <FormField label="Meal Type" error={menuErrors.mealType?.message} required>
+                <Select {...registerMenu("mealType")}>
                   {["Breakfast", "Lunch", "Dinner", "Snacks"].map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Menu Items</label>
-              <input type="text" {...registerMenu("items")} placeholder="e.g. Biryani, Raita, Salad" className={inputClass} />
-              {menuErrors.items && <span className={errorClass}>{menuErrors.items.message}</span>}
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/mess" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createMenuMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Add Menu Item
-              </button>
+
+            <FormField label="Menu Items (Comma-separated dishes)" error={menuErrors.items?.message} required>
+              <Input
+                {...registerMenu("items")}
+                placeholder="e.g. Steamed Rice, Chicken Roast, Daal Butter, Fresh Salad"
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/mess">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createMenuMutation.isPending}
+                leftIcon={<Plus size={14} />}
+              >
+                Add Menu Item
+              </Button>
             </div>
           </form>
         )}
 
         {selectedType === "meal-plan" && (
-          <form onSubmit={handleSubmitMealPlan(onSubmitMealPlan)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Student Name</label>
-                <input type="text" {...registerMealPlan("studentName")} placeholder="e.g. Ahmed Khan" className={inputClass} />
-                {mealPlanErrors.studentName && <span className={errorClass}>{mealPlanErrors.studentName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Student ID</label>
-                <input type="text" {...registerMealPlan("studentId")} placeholder="e.g. STU-001" className={`${inputClass} font-mono`} />
-                {mealPlanErrors.studentId && <span className={errorClass}>{mealPlanErrors.studentId.message}</span>}
-              </div>
+          <form onSubmit={handleSubmitMealPlan(onSubmitMealPlan)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Student Full Name" error={mealPlanErrors.studentName?.message} required>
+                <Input {...registerMealPlan("studentName")} placeholder="e.g. Rafiq Ahmed" />
+              </FormField>
+              <FormField label="Student ID" error={mealPlanErrors.studentId?.message} required>
+                <Input {...registerMealPlan("studentId")} placeholder="e.g. STU-2026-081" className="font-mono" />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Plan Type</label>
-              <select {...registerMealPlan("planType")} className={selectClass}>
+
+            <FormField label="Dietary Plan Type" error={mealPlanErrors.planType?.message} required>
+              <Select {...registerMealPlan("planType")}>
                 {["Vegetarian", "Non-Vegetarian", "Vegan", "Diabetic"].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
-              </select>
+              </Select>
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Subscription Start Date" error={mealPlanErrors.startDate?.message} required>
+                <Input type="date" {...registerMealPlan("startDate")} className="font-mono" />
+              </FormField>
+              <FormField label="Subscription End Date" error={mealPlanErrors.endDate?.message} required>
+                <Input type="date" {...registerMealPlan("endDate")} className="font-mono" />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Start Date</label>
-                <input type="date" {...registerMealPlan("startDate")} className={`${inputClass} font-mono`} />
-                {mealPlanErrors.startDate && <span className={errorClass}>{mealPlanErrors.startDate.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>End Date</label>
-                <input type="date" {...registerMealPlan("endDate")} className={`${inputClass} font-mono`} />
-                {mealPlanErrors.endDate && <span className={errorClass}>{mealPlanErrors.endDate.message}</span>}
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/mess" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createMealPlanMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Create Plan
-              </button>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/mess">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createMealPlanMutation.isPending}
+                leftIcon={<Plus size={14} />}
+              >
+                Create Plan
+              </Button>
             </div>
           </form>
         )}
 
         {selectedType === "feedback" && (
-          <form onSubmit={handleSubmitFeedback(onSubmitFeedback)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Student Name</label>
-                <input type="text" {...registerFeedback("studentName")} placeholder="e.g. Sara Malik" className={inputClass} />
-                {feedbackErrors.studentName && <span className={errorClass}>{feedbackErrors.studentName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Rating (1-5)</label>
-                <input type="number" min={1} max={5} {...registerFeedback("rating", { valueAsNumber: true })} placeholder="4" className={`${inputClass} font-mono`} />
-                {feedbackErrors.rating && <span className={errorClass}>{feedbackErrors.rating.message}</span>}
-              </div>
+          <form onSubmit={handleSubmitFeedback(onSubmitFeedback)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Student Full Name" error={feedbackErrors.studentName?.message} required>
+                <Input {...registerFeedback("studentName")} placeholder="e.g. Nusrat Jahan" />
+              </FormField>
+              <FormField label="Rating (1 to 5 Stars)" error={feedbackErrors.rating?.message} required>
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  {...registerFeedback("rating", { valueAsNumber: true })}
+                  className="font-mono"
+                />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Comments</label>
-              <textarea {...registerFeedback("comments")} placeholder="Share your feedback about the mess food..." className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-              {feedbackErrors.comments && <span className={errorClass}>{feedbackErrors.comments.message}</span>}
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/mess" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createFeedbackMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Submit Feedback
-              </button>
+
+            <FormField label="Comments & Dietary Suggestions" error={feedbackErrors.comments?.message} required>
+              <Textarea
+                {...registerFeedback("comments")}
+                placeholder="Share your dining experience, meal hygiene, and taste feedback..."
+                rows={4}
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/mess">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createFeedbackMutation.isPending}
+                leftIcon={<Plus size={14} />}
+              >
+                Submit Feedback
+              </Button>
             </div>
           </form>
         )}
 
         {selectedType === "bill" && (
-          <form onSubmit={handleSubmitBill(onSubmitBill)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Student Name</label>
-                <input type="text" {...registerBill("studentName")} placeholder="e.g. Ahmed Khan" className={inputClass} />
-                {billErrors.studentName && <span className={errorClass}>{billErrors.studentName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Student ID</label>
-                <input type="text" {...registerBill("studentId")} placeholder="e.g. STU-001" className={`${inputClass} font-mono`} />
-                {billErrors.studentId && <span className={errorClass}>{billErrors.studentId.message}</span>}
-              </div>
+          <form onSubmit={handleSubmitBill(onSubmitBill)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Student Full Name" error={billErrors.studentName?.message} required>
+                <Input {...registerBill("studentName")} placeholder="e.g. Tanvir Hossain" />
+              </FormField>
+              <FormField label="Student ID" error={billErrors.studentId?.message} required>
+                <Input {...registerBill("studentId")} placeholder="e.g. STU-2026-042" className="font-mono" />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Amount (Rs.)</label>
-                <input type="number" {...registerBill("amount", { valueAsNumber: true })} placeholder="2500" className={`${inputClass} font-mono`} />
-                {billErrors.amount && <span className={errorClass}>{billErrors.amount.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Month</label>
-                <input type="text" {...registerBill("month")} placeholder="e.g. July 2026" className={inputClass} />
-                {billErrors.month && <span className={errorClass}>{billErrors.month.message}</span>}
-              </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Billed Amount (BDT ৳)" error={billErrors.amount?.message} required>
+                <Input
+                  type="number"
+                  min={0}
+                  {...registerBill("amount", { valueAsNumber: true })}
+                  className="font-mono"
+                  placeholder="3500"
+                />
+              </FormField>
+              <FormField label="Billing Month & Year" error={billErrors.month?.message} required>
+                <Input {...registerBill("month")} placeholder="e.g. October 2026" />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Due Date</label>
-              <input type="date" {...registerBill("dueDate")} className={`${inputClass} font-mono`} />
-              {billErrors.dueDate && <span className={errorClass}>{billErrors.dueDate.message}</span>}
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/mess" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createBillMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Generate Bill
-              </button>
+
+            <FormField label="Payment Due Date" error={billErrors.dueDate?.message} required>
+              <Input type="date" {...registerBill("dueDate")} className="font-mono" />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/mess">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={createBillMutation.isPending}
+                leftIcon={<Plus size={14} />}
+              >
+                Generate Bill
+              </Button>
             </div>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
