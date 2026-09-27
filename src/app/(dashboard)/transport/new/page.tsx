@@ -7,11 +7,20 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { Bus, MapPin, DollarSign, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Bus, MapPin, DollarSign, CheckCircle2, ArrowLeft, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+} from "@/components/ui";
 
 const vehicleSchema = zod.object({
   vehicleNumber: zod.string().min(3, "Vehicle number is required"),
@@ -37,12 +46,15 @@ const feeSchema = zod.object({
 
 type CreateType = "vehicle" | "route" | "fee";
 
-type FormValues = zod.infer<typeof vehicleSchema> | zod.infer<typeof routeSchema> | zod.infer<typeof feeSchema>;
+type FormValues =
+  | zod.infer<typeof vehicleSchema>
+  | zod.infer<typeof routeSchema>
+  | zod.infer<typeof feeSchema>;
 
 const tabs = [
-  { key: "vehicle" as CreateType, label: "Vehicle", icon: Bus },
-  { key: "route" as CreateType, label: "Route", icon: MapPin },
-  { key: "fee" as CreateType, label: "Fee", icon: DollarSign },
+  { key: "vehicle" as CreateType, label: "Fleet Vehicle", icon: Bus },
+  { key: "route" as CreateType, label: "Transit Route", icon: MapPin },
+  { key: "fee" as CreateType, label: "Semester Fee (BDT ৳)", icon: DollarSign },
 ];
 
 export default function NewTransportPage() {
@@ -93,7 +105,7 @@ export default function NewTransportPage() {
     mutationFn: api.createTransportFee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transportFees"] });
-      setSuccessMsg("Transport fee created successfully.");
+      setSuccessMsg("Transport fee structure created successfully.");
       setTimeout(() => router.push("/transport"), 1500);
     },
   });
@@ -103,20 +115,22 @@ export default function NewTransportPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<any>({
     resolver: zodResolver(schema),
-    defaultValues: createType === "vehicle"
-      ? { vehicleNumber: "", type: "Bus", capacity: "50", driverName: "", status: "active" }
-      : createType === "route"
+    defaultValues:
+      createType === "vehicle"
+        ? { vehicleNumber: "", type: "Bus", capacity: "50", driverName: "", status: "active" }
+        : createType === "route"
         ? { routeName: "", vehicleNumber: "", stops: "", schedule: "" }
-        : { routeName: "", studentType: "Regular", amount: "5000", semester: "Fall 2026" },
+        : { routeName: "", studentType: "Regular", amount: "4500", semester: "Fall 2026" },
   });
 
   const onSubmit = (values: FormValues) => {
     if (createType === "vehicle") {
       const v = values as zod.infer<typeof vehicleSchema>;
-      createVehicleMutation.mutate({ ...v, capacity: parseInt(v.capacity) });
+      createVehicleMutation.mutate({ ...v, capacity: parseInt(v.capacity, 10) });
     } else if (createType === "route") {
       createRouteMutation.mutate(values);
     } else {
@@ -125,175 +139,192 @@ export default function NewTransportPage() {
     }
   };
 
-  const isPending = createVehicleMutation.isPending || createRouteMutation.isPending || createFeeMutation.isPending;
+  const isPending =
+    createVehicleMutation.isPending ||
+    createRouteMutation.isPending ||
+    createFeeMutation.isPending;
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/transport" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Bus className="text-[#2563EB]" />
-            Add New
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Create a new transport record.</p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title="Add Transit Record"
+        subtitle="Register campus shuttles, configure commuter routes, or set semester transport fee tariffs in BDT (৳)."
+        actions={
+          <Link href="/transport">
+            <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+              Back to Transit
+            </Button>
+          </Link>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="flex border-b border-[#e1e2ed]">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setCreateType(tab.key)}
-              className={`flex-1 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                createType === tab.key
-                  ? "border-[#2563EB] text-[#2563EB] bg-blue-50/30"
-                  : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <tab.icon size={14} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* Switcher Tabs */}
+      <div className="flex gap-2 p-1.5 bg-surface-muted rounded-xl border border-border w-fit">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setCreateType(tab.key);
+              reset();
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              createType === tab.key
+                ? "bg-surface text-gold shadow-sm border border-border"
+                : "text-text-muted hover:text-text"
+            }`}
+          >
+            <tab.icon size={14} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+      <Card
+        title={
+          createType === "vehicle"
+            ? "Register New Campus Vehicle"
+            : createType === "route"
+            ? "Create Bus Route & Stops"
+            : "Define Semester Transit Tariff (BDT ৳)"
+        }
+        subtitle="Institutional fleet operational parameters"
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {createType === "vehicle" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Vehicle Number</label>
-                  <input type="text" {...register("vehicleNumber")} placeholder="e.g. UP-14-AT-1234"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono uppercase" />
-                  {errors.vehicleNumber && <span className="text-[10px] text-red-500 font-semibold block">{(errors.vehicleNumber as any).message}</span>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Type</label>
-                  <select {...register("type")}
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                    <option value="Bus">Bus</option>
-                    <option value="Van">Van</option>
-                    <option value="Car">Car</option>
-                    <option value="Auto">Auto</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Vehicle Number" error={(errors.vehicleNumber as any)?.message} required>
+                  <Input
+                    {...register("vehicleNumber")}
+                    placeholder="e.g. DHAKA-METRO-GA-11-2233"
+                    className="font-mono uppercase"
+                  />
+                </FormField>
+                <FormField label="Vehicle Type" required>
+                  <Select {...register("type")}>
+                    <option value="Bus">Commuter Bus</option>
+                    <option value="Van">Microbus / Van</option>
+                    <option value="Car">Staff Car</option>
+                    <option value="Auto">Shuttle Auto</option>
+                  </Select>
+                </FormField>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Capacity (Seats)</label>
-                  <input type="number" {...register("capacity")} placeholder="50"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono" />
-                  {errors.capacity && <span className="text-[10px] text-red-500 font-semibold block">{(errors.capacity as any).message}</span>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Driver Name</label>
-                  <input type="text" {...register("driverName")} placeholder="e.g. Rajesh Kumar"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-                  {errors.driverName && <span className="text-[10px] text-red-500 font-semibold block">{(errors.driverName as any).message}</span>}
-                </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Passenger Capacity" error={(errors.capacity as any)?.message} required>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    {...register("capacity")}
+                    placeholder="50"
+                    className="font-mono"
+                  />
+                </FormField>
+                <FormField label="Driver Full Name" error={(errors.driverName as any)?.message} required>
+                  <Input {...register("driverName")} placeholder="e.g. Mofizul Islam" />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Status</label>
-                <select {...register("status")}
-                  className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                  <option value="active">Active</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="retired">Retired</option>
-                </select>
-              </div>
+
+              <FormField label="Initial Status" required>
+                <Select {...register("status")}>
+                  <option value="active">Active & Operational</option>
+                  <option value="maintenance">Under Maintenance</option>
+                  <option value="retired">Standby / Retired</option>
+                </Select>
+              </FormField>
             </>
           )}
 
           {createType === "route" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Route Name</label>
-                  <input type="text" {...register("routeName")} placeholder="e.g. Route A - North Campus"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-                  {errors.routeName && <span className="text-[10px] text-red-500 font-semibold block">{(errors.routeName as any).message}</span>}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Vehicle Number</label>
-                  <input type="text" {...register("vehicleNumber")} placeholder="e.g. UP-14-AT-1234"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono uppercase" />
-                  {errors.vehicleNumber && <span className="text-[10px] text-red-500 font-semibold block">{(errors.vehicleNumber as any).message}</span>}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Route Name" error={(errors.routeName as any)?.message} required>
+                  <Input {...register("routeName")} placeholder="e.g. Route A — Mirpur to Campus" />
+                </FormField>
+                <FormField label="Assigned Vehicle Number" error={(errors.vehicleNumber as any)?.message} required>
+                  <Input
+                    {...register("vehicleNumber")}
+                    placeholder="e.g. DHAKA-METRO-GA-11-2233"
+                    className="font-mono uppercase"
+                  />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Stops (comma separated)</label>
-                <textarea {...register("stops")} placeholder="e.g. Main Gate, Library, Admin Block"
-                  className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-                {errors.stops && <span className="text-[10px] text-red-500 font-semibold block">{(errors.stops as any).message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Schedule</label>
-                <input type="text" {...register("schedule")} placeholder="e.g. 07:30 AM - 08:30 AM"
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-                {errors.schedule && <span className="text-[10px] text-red-500 font-semibold block">{(errors.schedule as any).message}</span>}
-              </div>
+
+              <FormField label="Transit Stops (Comma-separated)" error={(errors.stops as any)?.message} required>
+                <Textarea
+                  {...register("stops")}
+                  placeholder="e.g. Mirpur 10, Kazipara, Farmgate, Shahbagh, Campus Gate 1"
+                  rows={3}
+                />
+              </FormField>
+
+              <FormField label="Schedule Timetable" error={(errors.schedule as any)?.message} required>
+                <Input {...register("schedule")} placeholder="e.g. 07:15 AM departure, 04:30 PM return" />
+              </FormField>
             </>
           )}
 
           {createType === "fee" && (
             <>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Route Name</label>
-                <input type="text" {...register("routeName")} placeholder="e.g. Route A - North Campus"
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-                {errors.routeName && <span className="text-[10px] text-red-500 font-semibold block">{(errors.routeName as any).message}</span>}
+              <FormField label="Route Name" error={(errors.routeName as any)?.message} required>
+                <Input {...register("routeName")} placeholder="e.g. Route A — Mirpur to Campus" />
+              </FormField>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Passenger Category" required>
+                  <Select {...register("studentType")}>
+                    <option value="Regular">Regular Student</option>
+                    <option value="Staff">Faculty / Staff</option>
+                    <option value="Guest">Guest / Intern</option>
+                  </Select>
+                </FormField>
+
+                <FormField label="Semester Fee (BDT ৳)" error={(errors.amount as any)?.message} required>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="50"
+                    {...register("amount")}
+                    placeholder="4500"
+                    className="font-mono"
+                  />
+                </FormField>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Student Type</label>
-                  <select {...register("studentType")}
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all">
-                    <option value="Regular">Regular</option>
-                    <option value="Staff">Staff</option>
-                    <option value="Guest">Guest</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Amount (Rs.)</label>
-                  <input type="number" {...register("amount")} placeholder="5000"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Semester</label>
-                <input type="text" {...register("semester")} placeholder="e.g. Fall 2026"
-                  className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all" />
-              </div>
+
+              <FormField label="Academic Semester" error={(errors.semester as any)?.message} required>
+                <Input {...register("semester")} placeholder="e.g. Fall 2026" />
+              </FormField>
             </>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-            <Link href="/transport"
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">
-              Cancel
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-border">
+            <Link href="/transport">
+              <Button variant="outline">Cancel</Button>
             </Link>
-            <button type="submit" disabled={isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-              {createType === "vehicle" ? <Bus size={14} /> : createType === "route" ? <MapPin size={14} /> : <DollarSign size={14} />}
-              {createType === "vehicle" ? "Register Vehicle" : createType === "route" ? "Create Route" : "Set Fee"}
-            </button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={isPending}
+              leftIcon={<Plus size={15} />}
+            >
+              Create Record
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
