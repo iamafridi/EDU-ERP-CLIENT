@@ -7,8 +7,23 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { Wrench, ArrowLeft, Trash2, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Wrench, ArrowLeft, Trash2, CheckCircle2, ShieldAlert, MapPin, Tag, UserCheck, Calendar } from "lucide-react";
 import Link from "next/link";
+import { PageHeader, Card, FormField, Input, Select, Textarea, Button, IconButton, Badge } from "@/components/ui";
+
+const severityTones: Record<string, "danger" | "warning" | "info" | "neutral"> = {
+  critical: "danger",
+  high: "warning",
+  medium: "info",
+  low: "neutral",
+};
+
+const statusTones: Record<string, "info" | "warning" | "success" | "neutral"> = {
+  reported: "info",
+  investigating: "warning",
+  resolved: "success",
+  closed: "neutral",
+};
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -76,191 +91,187 @@ export default function IncidentDetailPage() {
     }
   };
 
-  const severityColors: Record<string, string> = {
-    low: "bg-slate-100 text-slate-700 border-slate-200",
-    medium: "bg-blue-50 text-blue-700 border-blue-100",
-    high: "bg-amber-50 text-amber-700 border-amber-100",
-    critical: "bg-red-50 text-red-700 border-red-100 animate-pulse",
-  };
-
-  const statusColors: Record<string, string> = {
-    reported: "bg-purple-50 text-purple-700 border-purple-100",
-    investigating: "bg-sky-50 text-sky-700 border-sky-100",
-    resolved: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    closed: "bg-slate-100 text-slate-500 border-slate-200",
-  };
-
   if (isLoading) {
     return (
       <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Loading incident details...</p>
+        <p className="text-xs text-text-tertiary">Loading incident details...</p>
       </div>
     );
   }
 
   if (!incident) {
     return (
-      <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Incident not found.</p>
-        <Link href="/incidents" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Incidents</Link>
+      <div className="p-12 text-center space-y-3">
+        <p className="text-sm font-semibold text-text">Incident record not found.</p>
+        <Link href="/incidents">
+          <Button variant="outline" size="sm">
+            Back to Incidents
+          </Button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/incidents" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Wrench className="text-[#2563EB]" />
-            Incident Details
-          </h1>
-        </div>
-        {isStaff && (
-          <button
-            onClick={handleDelete}
-            className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Trash2 size={14} /> Delete
-          </button>
-        )}
-      </div>
+    <div className="space-y-6 font-sans max-w-5xl">
+      <PageHeader
+        title={`Incident: ${incident.title}`}
+        subtitle={`Reference #${incident.id} • Registered on ${incident.date}`}
+        badge="Estate Ticket"
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/incidents">
+              <Button variant="outline" size="sm" icon={<ArrowLeft size={16} />}>
+                Back to List
+              </Button>
+            </Link>
+            {isStaff && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleDelete}
+                icon={<Trash2 size={14} />}
+              >
+                Delete Ticket
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      {/* Incident Info */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Incident Information</span>
-          <span className="text-[10px] font-bold bg-[#2563EB]/10 text-[#2563EB] px-2 py-0.5 rounded uppercase font-mono">
-            {incident.id}
-          </span>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${statusColors[incident.status] || "bg-slate-50 text-slate-500"}`}>
-              Status: {incident.status}
-            </span>
-            <span className={`px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${severityColors[incident.severity] || "bg-slate-50 text-slate-500"}`}>
-              Severity: {incident.severity}
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">
-              Logged: {incident.date}
-            </span>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">{incident.title}</h3>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Description</label>
-            <p className="text-sm text-slate-600 leading-relaxed">{incident.description}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Location</label>
-              <p className="text-sm font-mono text-slate-700">{incident.location}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Incident Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card orientation="vertical" padding="lg" variant="default" className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={statusTones[incident.status] || "neutral"}>
+                  Status: {incident.status}
+                </Badge>
+                <Badge variant={severityTones[incident.severity] || "neutral"}>
+                  Severity: {incident.severity}
+                </Badge>
+              </div>
+              <span className="text-xs text-text-tertiary font-mono flex items-center gap-1">
+                <Calendar size={13} /> {incident.date}
+              </span>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Category</label>
-              <p className="text-sm text-slate-600">{incident.category || "\u2014"}</p>
-            </div>
-          </div>
 
-          {incident.technician && (
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Assigned Technician</label>
-              <p className="text-sm font-mono text-blue-700">{incident.technician}</p>
+              <h3 className="text-base font-bold text-text mb-2">Description</h3>
+              <p className="text-sm text-text-secondary leading-relaxed bg-surface-elevated/40 p-4 rounded-xl border border-border">
+                {incident.description}
+              </p>
             </div>
-          )}
 
-          {incident.resolution && (
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Resolution</label>
-              <div className="p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg text-xs">
-                <p className="text-slate-600">{incident.resolution}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 bg-surface-elevated/40 border border-border rounded-xl">
+                <span className="text-[11px] font-semibold text-text-tertiary uppercase flex items-center gap-1.5 mb-1">
+                  <MapPin size={12} className="text-gold" /> Facility Location
+                </span>
+                <p className="text-sm font-bold font-mono text-text">{incident.location}</p>
+              </div>
+              <div className="p-3.5 bg-surface-elevated/40 border border-border rounded-xl">
+                <span className="text-[11px] font-semibold text-text-tertiary uppercase flex items-center gap-1.5 mb-1">
+                  <Tag size={12} className="text-gold" /> Category
+                </span>
+                <p className="text-sm font-semibold text-text">{incident.category || "—"}</p>
               </div>
             </div>
+
+            {incident.technician && (
+              <div className="p-3.5 bg-info-bg/40 border border-info-border/60 rounded-xl">
+                <span className="text-[11px] font-semibold text-info-text uppercase flex items-center gap-1.5 mb-1">
+                  <UserCheck size={12} /> Assigned Technician
+                </span>
+                <p className="text-sm font-bold font-mono text-info-text">{incident.technician}</p>
+              </div>
+            )}
+
+            {incident.resolution && (
+              <div className="p-4 bg-emerald-50/60 border border-emerald-200/60 rounded-xl space-y-1">
+                <span className="text-xs font-bold text-emerald-800 block">Resolution Feedback:</span>
+                <p className="text-xs text-emerald-950 leading-relaxed">{incident.resolution}</p>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Admin Dispatch Form */}
+        <div className="lg:col-span-1">
+          {isStaff ? (
+            <Card orientation="vertical" padding="lg" variant="default" className="space-y-4">
+              <div className="border-b border-border/80 pb-3">
+                <h3 className="text-sm font-bold text-text flex items-center gap-2">
+                  <ShieldAlert size={16} className="text-gold" /> Dispatch & Update
+                </h3>
+                <p className="text-[11px] text-text-tertiary mt-0.5">Assign technician and update status</p>
+              </div>
+
+              <form onSubmit={handleStatusUpdate} className="space-y-4">
+                <FormField label="Dispatch Status">
+                  <Select
+                    value={statusVal}
+                    onChange={(e) => setStatusVal(e.target.value)}
+                  >
+                    <option value="reported">Reported</option>
+                    <option value="investigating">Investigating / Dispatched</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </Select>
+                </FormField>
+
+                <FormField label="Assigned Technician">
+                  <Input
+                    type="text"
+                    value={technicianVal}
+                    onChange={(e) => setTechnicianVal(e.target.value)}
+                    placeholder="e.g. John Doe (Plumbing)"
+                  />
+                </FormField>
+
+                <FormField label="Resolution Summary / Repair Log">
+                  <Textarea
+                    value={resolutionText}
+                    onChange={(e) => setResolutionText(e.target.value)}
+                    rows={4}
+                    placeholder="Log parts replaced, technician notes, or completion status..."
+                  />
+                </FormField>
+
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full"
+                    disabled={updateIncidentMutation.isPending}
+                    icon={<ShieldAlert size={14} />}
+                  >
+                    {updateIncidentMutation.isPending ? "Updating..." : "Commit Dispatch Changes"}
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          ) : (
+            <Card orientation="vertical" padding="md" variant="default" className="text-center py-8">
+              <ShieldAlert size={32} className="text-text-tertiary/40 mx-auto mb-2" />
+              <p className="text-xs text-text-tertiary">Only wardens and administrative staff can update maintenance tickets.</p>
+            </Card>
           )}
         </div>
       </div>
-
-      {/* Admin Dispatch Form */}
-      {isStaff && (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dispatch / Update</span>
-          </div>
-          <form onSubmit={handleStatusUpdate} className="p-6 space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Dispatch Status</label>
-              <select
-                value={statusVal}
-                onChange={(e) => setStatusVal(e.target.value)}
-                className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-              >
-                <option value="reported">Reported</option>
-                <option value="investigating">Investigating / Dispatched</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Assigned Technician</label>
-              <input
-                type="text"
-                value={technicianVal}
-                onChange={(e) => setTechnicianVal(e.target.value)}
-                placeholder="e.g. John Doe (Plumbing)"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Resolution Summary / Repair Log</label>
-              <textarea
-                value={resolutionText}
-                onChange={(e) => setResolutionText(e.target.value)}
-                placeholder="Log parts replaced, technician names, or completion status..."
-                className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link
-                href="/incidents"
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center"
-              >
-                Close
-              </Link>
-              <button
-                type="submit"
-                disabled={updateIncidentMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <ShieldAlert size={14} />
-                Commit Dispatch Changes
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }
+

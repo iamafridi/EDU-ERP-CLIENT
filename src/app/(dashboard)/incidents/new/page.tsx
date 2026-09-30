@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import { PageHeader, Card, FormField, Input, Select, Textarea, Button } from "@/components/ui";
 
 const incidentSchema = zod.object({
   title: zod.string().min(5, "Title must be at least 5 characters"),
@@ -68,109 +69,95 @@ export default function NewIncidentPage() {
   };
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/incidents" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Wrench className="text-[#2563EB]" />
-            Report Maintenance Incident
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Log a new facility issue or maintenance request.</p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans max-w-3xl">
+      <PageHeader
+        title="Report Maintenance Incident"
+        subtitle="Log a new facility issue, equipment malfunction, or infrastructure request"
+        badge="Estate Ticket"
+        actions={
+          <Link href="/incidents">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<ArrowLeft size={16} />}
+            >
+              Back to List
+            </Button>
+          </Link>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Issue Title</label>
-            <input
-              type="text"
+      <Card orientation="vertical" padding="lg" variant="default">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <FormField label="Issue Title" error={errors.title?.message} required>
+            <Input
               {...register("title")}
-              placeholder="Short description of the fault"
-              className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
+              placeholder="Short descriptive summary of the fault"
             />
-            {errors.title && <span className="text-[10px] text-red-500 font-semibold block">{errors.title.message}</span>}
-          </div>
+          </FormField>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Category</label>
-            <input
-              type="text"
+          <FormField label="Category" error={errors.category?.message} required>
+            <Input
               {...register("category")}
-              placeholder="e.g. Plumbing, Electrical, HVAC"
-              className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
+              placeholder="e.g. Plumbing, Electrical, HVAC, Furniture"
             />
-            {errors.category && <span className="text-[10px] text-red-500 font-semibold block">{errors.category.message}</span>}
-          </div>
+          </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Severity Level</label>
-              <select
-                {...register("severity")}
-                className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-              >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Severity Level" required>
+              <Select {...register("severity")}>
                 <option value="low">Low (Cosmetic/Convenience)</option>
                 <option value="medium">Medium (Standard Maintenance)</option>
-                <option value="high">High (Urgent cooling/plumbing)</option>
-                <option value="critical">Critical (Safety hazard / flooding)</option>
-              </select>
-            </div>
+                <option value="high">High (Urgent Cooling/Plumbing)</option>
+                <option value="critical">Critical (Safety Hazard / Flooding)</option>
+              </Select>
+            </FormField>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Facility Location</label>
-              <input
-                type="text"
+            <FormField label="Facility Location" error={errors.location?.message} required>
+              <Input
                 {...register("location")}
                 placeholder="e.g. Room B-204 Bathroom"
-                className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
               />
-              {errors.location && <span className="text-[10px] text-red-500 font-semibold block">{errors.location.message}</span>}
-            </div>
+            </FormField>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Detailed Description</label>
-            <textarea
+          <FormField label="Detailed Description" error={errors.description?.message} required>
+            <Textarea
               {...register("description")}
-              placeholder="Provide details about the issue to help technicians prepare..."
-              className="w-full h-32 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
+              rows={4}
+              placeholder="Provide exact details about the issue to help dispatch technicians..."
             />
-            {errors.description && <span className="text-[10px] text-red-500 font-semibold block">{errors.description.message}</span>}
-          </div>
+          </FormField>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-            <Link
-              href="/incidents"
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center"
-            >
-              Cancel
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Link href="/incidents">
+              <Button variant="outline">
+                Cancel
+              </Button>
             </Link>
-            <button
+            <Button
               type="submit"
+              variant="gold"
               disabled={createIncidentMutation.isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              icon={<Wrench size={14} />}
             >
-              <Wrench size={14} />
-              Log Ticket
-            </button>
+              {createIncidentMutation.isPending ? "Logging..." : "Log Ticket"}
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
+

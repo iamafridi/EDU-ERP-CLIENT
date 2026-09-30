@@ -7,11 +7,31 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { Shield, ArrowLeft, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import {
+  Shield,
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  UserCheck,
+  MapPin,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Checkbox,
+  Button,
+  Badge,
+} from "@/components/ui";
 
 const gateEntrySchema = zod.object({
   type: zod.enum(["student", "visitor", "vehicle"]),
@@ -54,17 +74,30 @@ export default function SecurityDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const isGuardOrAdmin = roleIs("domain-admin") || user?.staffSubRole === "warden" || user?.staffSubRole === "guard";
+  const isGuardOrAdmin =
+    roleIs("domain-admin", "super-admin") ||
+    user?.staffSubRole === "warden" ||
+    user?.staffSubRole === "guard";
 
-  const { data: gateEntries = [] } = useQuery({ queryKey: ["gateEntries"], queryFn: api.getGateEntries });
-  const { data: visitorLogs = [] } = useQuery({ queryKey: ["visitorLogs"], queryFn: api.getVisitorLogs });
-  const { data: patrolLogs = [] } = useQuery({ queryKey: ["patrolLogs"], queryFn: api.getPatrolLogs });
+  const { data: gateEntries = [], isLoading: isLoadingGate } = useQuery({
+    queryKey: ["gateEntries"],
+    queryFn: api.getGateEntries,
+  });
+  const { data: visitorLogs = [], isLoading: isLoadingVisitor } = useQuery({
+    queryKey: ["visitorLogs"],
+    queryFn: api.getVisitorLogs,
+  });
+  const { data: patrolLogs = [], isLoading: isLoadingPatrol } = useQuery({
+    queryKey: ["patrolLogs"],
+    queryFn: api.getPatrolLogs,
+  });
 
-  const item = type === "gate"
-    ? gateEntries.find((e: any) => e.id === params.id)
-    : type === "visitor"
-    ? visitorLogs.find((v: any) => v.id === params.id)
-    : patrolLogs.find((p: any) => p.id === params.id);
+  const item =
+    type === "gate"
+      ? gateEntries.find((e: any) => e.id === params.id)
+      : type === "visitor"
+      ? visitorLogs.find((v: any) => v.id === params.id)
+      : patrolLogs.find((p: any) => p.id === params.id);
 
   const updateGateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => api.updateGateEntry(id, payload),
@@ -72,7 +105,7 @@ export default function SecurityDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["gateEntries"] });
       setSuccessMsg("Gate entry updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -82,7 +115,7 @@ export default function SecurityDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["visitorLogs"] });
       setSuccessMsg("Visitor log updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -92,23 +125,32 @@ export default function SecurityDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["patrolLogs"] });
       setSuccessMsg("Patrol log updated.");
       setIsEditing(false);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
   const deleteGateMutation = useMutation({
     mutationFn: api.deleteGateEntry,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["gateEntries"] }); router.push("/security"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gateEntries"] });
+      router.push("/security");
+    },
   });
 
   const deleteVisitorMutation = useMutation({
     mutationFn: api.deleteVisitorLog,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["visitorLogs"] }); router.push("/security"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["visitorLogs"] });
+      router.push("/security");
+    },
   });
 
   const deletePatrolMutation = useMutation({
     mutationFn: api.deletePatrolLog,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["patrolLogs"] }); router.push("/security"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patrolLogs"] });
+      router.push("/security");
+    },
   });
 
   const {
@@ -179,291 +221,341 @@ export default function SecurityDetailPage() {
 
   const handleDelete = () => {
     if (!item) return;
-    if (!confirm("Delete this record?")) return;
+    if (!confirm("Are you sure you want to delete this record? This action cannot be undone.")) return;
     if (type === "gate") deleteGateMutation.mutate(item.id);
     else if (type === "visitor") deleteVisitorMutation.mutate(item.id);
     else deletePatrolMutation.mutate(item.id);
   };
 
-  const gateTypeWatch = watchGate?.("type");
+  const isPending =
+    updateGateMutation.isPending ||
+    updateVisitorMutation.isPending ||
+    updatePatrolMutation.isPending ||
+    deleteGateMutation.isPending ||
+    deleteVisitorMutation.isPending ||
+    deletePatrolMutation.isPending;
 
-  const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const selectClass = "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const labelClass = "text-xs font-semibold text-slate-500";
-  const errorClass = "text-[10px] text-red-500 font-semibold block";
-  const detailLabelClass = "text-xs font-semibold text-slate-400 uppercase block mb-1";
+  const isLate = watchGate?.("isLateEntry");
 
-  const titleMap: Record<string, string> = { gate: "Gate Entry Details", visitor: "Visitor Log Details", patrol: "Patrol Log Details" };
-
-  if (!item) {
+  if (isLoadingGate || isLoadingVisitor || isLoadingPatrol) {
     return (
-      <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Record not found.</p>
-        <Link href="/security" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Security</Link>
+      <div className="p-12 text-center text-text-muted">
+        <p className="text-sm">Loading security record...</p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/security" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
+  if (!item) {
+    return (
+      <div className="p-12 text-center space-y-3">
+        <p className="text-sm text-text-muted">Record not found or has been removed.</p>
+        <Link href="/security">
+          <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+            Back to Security
+          </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Shield className="text-[#2563EB]" />
-            {titleMap[type]}
-          </h1>
-        </div>
-        {isGuardOrAdmin && (
-          <div className="flex gap-2">
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-                <Pencil size={14} /> Edit
-              </button>
-            ) : (
-              <button onClick={() => { setIsEditing(false); if (type === "gate") resetGate(); else if (type === "visitor") resetVisitor(); else resetPatrol(); }}
-                className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors cursor-pointer">
-                Cancel
-              </button>
-            )}
-            <button onClick={handleDelete} className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
-              <Trash2 size={14} /> Delete
-            </button>
-          </div>
-        )}
       </div>
+    );
+  }
+
+  const titleMap: Record<string, string> = {
+    gate: "Gate Entry & Curfew Check",
+    visitor: "Visitor Pass Authorization",
+    patrol: "Patrol Activity Record",
+  };
+
+  return (
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title={titleMap[type] || "Security Log Details"}
+        subtitle={`Viewing ${type} verification record`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/security">
+              <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+                Security
+              </Button>
+            </Link>
+            {isGuardOrAdmin && (
+              <>
+                {!isEditing ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (type === "gate") resetGate();
+                      else if (type === "visitor") resetVisitor();
+                      else resetPatrol();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={handleDelete}
+                  loading={isPending}
+                >
+                  Delete
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{titleMap[type]}</span>
-        </div>
+      <Card
+        title={isEditing ? `Edit ${titleMap[type]}` : `${titleMap[type]} Specifications`}
+        subtitle="Security audit tracking and entry timestamps"
+      >
+        {/* Gate Form / View */}
+        {type === "gate" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitGate(onSubmitGate)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Entry Category" required>
+                  <Select {...registerGate("type")}>
+                    <option value="student">Student / Resident</option>
+                    <option value="visitor">Visitor / Guest</option>
+                    <option value="vehicle">Delivery / Service Vehicle</option>
+                  </Select>
+                </FormField>
+                <FormField label="Person Name" error={gateErrors.personName?.message} required>
+                  <Input {...registerGate("personName")} />
+                </FormField>
+              </div>
 
-        {type === "gate" && isEditing && (
-          <form onSubmit={handleSubmitGate(onSubmitGate)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Transit Category</label>
-                <select {...registerGate("type")} className={selectClass}>
-                  <option value="student">Student Curfew Gate</option>
-                  <option value="visitor">Unscheduled Visitor</option>
-                  <option value="vehicle">Utility/Service Vehicle</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Contact Phone">
+                  <Input {...registerGate("contactNo")} className="font-mono" />
+                </FormField>
+                <FormField label="Vehicle Number">
+                  <Input {...registerGate("vehicleNumber")} className="font-mono uppercase" />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Transit Name</label>
-                <input type="text" {...registerGate("personName")} className={inputClass} />
-                {gateErrors.personName && <span className={errorClass}>{gateErrors.personName.message}</span>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Contact Number</label>
-                <input type="text" {...registerGate("contactNo")} className={inputClass} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Vehicle Number</label>
-                <input type="text" {...registerGate("vehicleNumber")} className={`${inputClass} font-mono uppercase`} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Purpose</label>
-              <input type="text" {...registerGate("purpose")} className={inputClass} />
-              {gateErrors.purpose && <span className={errorClass}>{gateErrors.purpose.message}</span>}
-            </div>
-            {gateTypeWatch === "student" && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="isLateEntry" {...registerGate("isLateEntry")} className="w-4 h-4 rounded border-[#c3c6d7] text-[#2563EB] focus:ring-[#2563EB]/15 cursor-pointer" />
-                  <label htmlFor="isLateEntry" className="text-xs font-semibold text-slate-600 cursor-pointer select-none">Flag as Late/Curfew Entry</label>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-slate-500">Late Entry Reason</label>
-                  <input type="text" {...registerGate("lateEntryReason")} className={`${inputClass} h-9 text-xs`} />
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateGateMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Entry
-              </button>
-            </div>
-          </form>
-        )}
 
-        {type === "gate" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={detailLabelClass}>Type</label>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  item.type === "student" ? "bg-blue-50 text-blue-700" : item.type === "visitor" ? "bg-purple-50 text-purple-700" : "bg-amber-50 text-amber-700"
-                }`}>{item.type}</span>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Person Name</label>
-                <p className="text-sm font-semibold text-slate-800">{item.personName}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Contact</label>
-                <p className="text-sm font-mono text-slate-600">{item.contactNo || "N/A"}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Vehicle</label>
-                <p className="text-sm font-mono text-slate-600">{item.vehicleNumber || "N/A"}</p>
-              </div>
-              <div className="col-span-2">
-                <label className={detailLabelClass}>Purpose</label>
-                <p className="text-sm text-slate-600">{item.purpose}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Entry Time</label>
-                <p className="text-sm font-mono text-slate-600">{new Date(item.entryTime).toLocaleString()}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Curfew Flag</label>
-                {item.isLateEntry ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 text-red-700 font-bold px-2 py-0.5 border border-red-100 rounded">LATE: {item.lateEntryReason}</span>
-                ) : (
-                  <span className="text-[10px] text-emerald-600 font-semibold">On-time</span>
+              <FormField label="Purpose of Entry" error={gateErrors.purpose?.message} required>
+                <Input {...registerGate("purpose")} />
+              </FormField>
+
+              <div className="p-4 bg-surface-muted rounded-xl border border-border space-y-3">
+                <Checkbox
+                  label="Flag as Late Curfew Entry"
+                  description="Resident arrived past the designated dormitory curfew limit"
+                  {...registerGate("isLateEntry")}
+                />
+                {isLate && (
+                  <FormField label="Late Reason / Explanation" required>
+                    <Input {...registerGate("lateEntryReason")} />
+                  </FormField>
                 )}
               </div>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Entry
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Category</span>
+                  <Badge variant="neutral" size="sm">{item.type}</Badge>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Person</span>
+                  <span className="text-base font-bold text-text">{item.personName}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Contact</span>
+                  <span className="text-sm font-mono text-text">{item.contactNo || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Vehicle</span>
+                  <span className="text-sm font-mono font-bold text-text">{item.vehicleNumber || "Walk-in"}</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Purpose</span>
+                <p className="text-sm text-text font-medium">{item.purpose}</p>
+              </div>
+
+              <div className="p-4 bg-surface-muted rounded-xl border border-border flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Curfew Check</span>
+                  {item.isLateEntry ? (
+                    <Badge variant="danger" size="sm">
+                      <AlertTriangle size={12} className="inline mr-1" />
+                      Late: {item.lateEntryReason}
+                    </Badge>
+                  ) : (
+                    <Badge variant="success" size="sm">
+                      <UserCheck size={12} className="inline mr-1" />
+                      On-Time Check-in
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Timestamp</span>
+                  <span className="text-sm font-mono text-text-muted">{new Date(item.entryTime).toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          )
         )}
 
-        {type === "visitor" && isEditing && (
-          <form onSubmit={handleSubmitVisitor(onSubmitVisitor)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Visitor Name</label>
-                <input type="text" {...registerVisitor("visitorName")} className={inputClass} />
-                {visitorErrors.visitorName && <span className={errorClass}>{visitorErrors.visitorName.message}</span>}
+        {/* Visitor Form / View */}
+        {type === "visitor" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitVisitor(onSubmitVisitor)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Visitor Name" error={visitorErrors.visitorName?.message} required>
+                  <Input {...registerVisitor("visitorName")} />
+                </FormField>
+                <FormField label="Contact Phone" error={visitorErrors.contactNo?.message} required>
+                  <Input {...registerVisitor("contactNo")} className="font-mono" />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Contact Number</label>
-                <input type="text" {...registerVisitor("contactNo")} className={`${inputClass} font-mono`} />
-                {visitorErrors.contactNo && <span className={errorClass}>{visitorErrors.contactNo.message}</span>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Email Address">
+                  <Input type="email" {...registerVisitor("email")} />
+                </FormField>
+                <FormField label="Vehicle Number">
+                  <Input {...registerVisitor("vehicleNumber")} className="font-mono uppercase" />
+                </FormField>
+              </div>
+
+              <FormField label="Purpose of Visit" error={visitorErrors.purpose?.message} required>
+                <Textarea {...registerVisitor("purpose")} rows={3} />
+              </FormField>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Visitor
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Visitor</span>
+                  <span className="text-base font-bold text-text">{item.visitorName}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Contact</span>
+                  <span className="text-sm font-mono text-text">{item.contactNo}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Vehicle</span>
+                  <span className="text-sm font-mono font-bold text-text">{item.vehicleNumber || "Walk-in"}</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Purpose</span>
+                <p className="text-sm text-text font-medium">{item.purpose}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Entry Time</span>
+                  <span className="text-sm font-mono text-text">{new Date(item.entryTime).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Exit Time</span>
+                  <span className="text-sm font-mono text-text">
+                    {item.exitTime ? new Date(item.exitTime).toLocaleString() : "Currently Inside"}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Email (Optional)</label>
-                <input type="email" {...registerVisitor("email")} className={inputClass} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Vehicle Number (Optional)</label>
-                <input type="text" {...registerVisitor("vehicleNumber")} className={`${inputClass} font-mono uppercase`} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Purpose</label>
-              <textarea {...registerVisitor("purpose")} className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-              {visitorErrors.purpose && <span className={errorClass}>{visitorErrors.purpose.message}</span>}
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updateVisitorMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Visitor Log
-              </button>
-            </div>
-          </form>
+          )
         )}
 
-        {type === "visitor" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={detailLabelClass}>Visitor Name</label>
-                <p className="text-sm font-semibold text-slate-800">{item.visitorName}</p>
+        {/* Patrol Form / View */}
+        {type === "patrol" && (
+          isEditing ? (
+            <form onSubmit={handleSubmitPatrol(onSubmitPatrol)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Patrol Location / Sector" error={patrolErrors.location?.message} required>
+                  <Input {...registerPatrol("location")} />
+                </FormField>
+                <FormField label="Round Status" required>
+                  <Select {...registerPatrol("status")}>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                  </Select>
+                </FormField>
               </div>
-              <div>
-                <label className={detailLabelClass}>Contact</label>
-                <p className="text-sm font-mono text-slate-600">{item.contactNo}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Email</label>
-                <p className="text-sm text-slate-600">{item.email || "—"}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Vehicle</label>
-                <p className="text-sm font-mono text-slate-600">{item.vehicleNumber || "Walk-in"}</p>
-              </div>
-              <div className="col-span-2">
-                <label className={detailLabelClass}>Purpose</label>
-                <p className="text-sm text-slate-600">{item.purpose}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Entry Time</label>
-                <p className="text-sm font-mono text-slate-600">{new Date(item.entryTime).toLocaleString()}</p>
-              </div>
-              <div>
-                <label className={detailLabelClass}>Exit Time</label>
-                <p className="text-sm font-mono text-slate-600">{item.exitTime ? new Date(item.exitTime).toLocaleString() : "Still Inside"}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {type === "patrol" && isEditing && (
-          <form onSubmit={handleSubmitPatrol(onSubmitPatrol)} className="p-6 space-y-4">
-            <div className="space-y-1">
-              <label className={labelClass}>Location</label>
-              <input type="text" {...registerPatrol("location")} className={inputClass} />
-              {patrolErrors.location && <span className={errorClass}>{patrolErrors.location.message}</span>}
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Status</label>
-              <select {...registerPatrol("status")} className={selectClass}>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Notes (Optional)</label>
-              <textarea {...registerPatrol("notes")} className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-            </div>
-            <div className="flex justify-end pt-4 border-t border-[#e1e2ed]">
-              <button type="submit" disabled={updatePatrolMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Pencil size={14} /> Update Patrol Log
-              </button>
-            </div>
-          </form>
-        )}
+              <FormField label="Observations & Notes">
+                <Textarea {...registerPatrol("notes")} rows={4} />
+              </FormField>
 
-        {type === "patrol" && !isEditing && (
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className={detailLabelClass}>Location</label>
-                <p className="text-sm font-semibold text-slate-800">{item.location}</p>
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button type="submit" variant="primary" loading={isPending} leftIcon={<Pencil size={14} />}>
+                  Save Patrol Log
+                </Button>
               </div>
-              <div>
-                <label className={detailLabelClass}>Status</label>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  item.status === "active" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-slate-100 text-slate-600 border border-slate-200"
-                }`}>{item.status}</span>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Location</span>
+                  <span className="text-base font-bold text-text flex items-center gap-1.5">
+                    <MapPin size={14} className="text-gold" />
+                    {item.location}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Status</span>
+                  <Badge variant={item.status === "completed" ? "success" : "warning"} size="sm">
+                    {item.status}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">Timestamp</span>
+                  <span className="text-sm font-mono text-text-muted">{new Date(item.timestamp).toLocaleString()}</span>
+                </div>
               </div>
-              <div>
-                <label className={detailLabelClass}>Timestamp</label>
-                <p className="text-sm font-mono text-slate-600">{new Date(item.timestamp).toLocaleString()}</p>
-              </div>
-              <div className="col-span-2">
-                <label className={detailLabelClass}>Notes</label>
-                <p className="text-sm text-slate-600">{item.notes || "—"}</p>
+
+              <div className="p-4 bg-surface-muted rounded-xl border border-border">
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-1">Field Observations</span>
+                <p className="text-sm text-text leading-relaxed">{item.notes || "No incidents or remarks recorded."}</p>
               </div>
             </div>
-          </div>
+          )
         )}
-      </div>
+      </Card>
     </div>
   );
 }

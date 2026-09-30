@@ -12,6 +12,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Checkbox,
+  Button,
+} from "@/components/ui";
 
 const gateEntrySchema = zod.object({
   type: zod.enum(["student", "visitor", "vehicle"]),
@@ -46,14 +56,22 @@ type PatrolLogFormValues = zod.infer<typeof patrolLogSchema>;
 export default function NewSecurityEntryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialType = searchParams.get("type") === "visitor" ? "visitor" : searchParams.get("type") === "patrol" ? "patrol" : "gate";
+  const initialType =
+    searchParams.get("type") === "visitor"
+      ? "visitor"
+      : searchParams.get("type") === "patrol"
+      ? "patrol"
+      : "gate";
   const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<"gate" | "visitor" | "patrol">(initialType);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const isGuardOrAdmin = roleIs("domain-admin") || user?.staffSubRole === "warden" || user?.staffSubRole === "guard";
+  const isGuardOrAdmin =
+    roleIs("domain-admin", "super-admin") ||
+    user?.staffSubRole === "warden" ||
+    user?.staffSubRole === "guard";
 
   if (!isGuardOrAdmin) {
     router.push("/security");
@@ -133,6 +151,8 @@ export default function NewSecurityEntryPage() {
     },
   });
 
+  const isLate = watchGate("isLateEntry");
+
   const onSubmitGateEntry = (values: GateEntryFormValues) => {
     createGateEntryMutation.mutate({ ...values, entryTime: new Date().toISOString() });
   };
@@ -145,179 +165,197 @@ export default function NewSecurityEntryPage() {
     createPatrolLogMutation.mutate(values);
   };
 
-  const gateType = watchGate("type");
-
-  const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const selectClass = "w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const labelClass = "text-xs font-semibold text-slate-500";
-  const errorClass = "text-[10px] text-red-500 font-semibold block";
+  const isPending =
+    createGateEntryMutation.isPending ||
+    createVisitorLogMutation.isPending ||
+    createPatrolLogMutation.isPending;
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/security" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Shield className="text-[#2563EB]" />
-            New Security Entry
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Create a new gate entry, visitor pass, or patrol log.</p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title="Log Security Activity"
+        subtitle="Record perimeter gate check-ins, visitor day passes, or security rounds."
+        actions={
+          <Link href="/security">
+            <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+              Back to Security
+            </Button>
+          </Link>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Entry Type</label>
-          <div className="flex gap-2">
-            {([
-              { key: "gate" as const, label: "Gate Entry" },
-              { key: "visitor" as const, label: "Visitor Log" },
-              { key: "patrol" as const, label: "Patrol Log" },
-            ]).map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSelectedType(opt.key)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                  selectedType === opt.key
-                    ? "bg-[#2563EB] text-white"
-                    : "bg-white border border-[#c3c6d7] text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Switcher Tabs */}
+      <div className="flex gap-2 p-1.5 bg-surface-muted rounded-xl border border-border w-fit">
+        {([
+          { key: "gate" as const, label: "Gate & Curfew Check-in" },
+          { key: "visitor" as const, label: "Visitor Pass" },
+          { key: "patrol" as const, label: "Patrol Round" },
+        ]).map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => setSelectedType(opt.key)}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedType === opt.key
+                ? "bg-surface text-gold shadow-sm border border-border"
+                : "text-text-muted hover:text-text"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
+      <Card
+        title={
+          selectedType === "gate"
+            ? "Perimeter Gate Check-in"
+            : selectedType === "visitor"
+            ? "Visitor Authorization Pass"
+            : "Warden Patrol Audit Record"
+        }
+        subtitle="Security checkpoint verification parameters"
+      >
         {selectedType === "gate" && (
-          <form onSubmit={handleSubmitGate(onSubmitGateEntry)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Transit Category</label>
-                <select {...registerGate("type")} className={selectClass}>
-                  <option value="student">Student Curfew Gate</option>
-                  <option value="visitor">Unscheduled Visitor</option>
-                  <option value="vehicle">Utility/Service Vehicle</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Transit Name</label>
-                <input type="text" {...registerGate("personName")} placeholder="Individual / Driver name" className={inputClass} />
-                {gateErrors.personName && <span className={errorClass}>{gateErrors.personName.message}</span>}
-              </div>
+          <form onSubmit={handleSubmitGate(onSubmitGateEntry)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Entry Category" required>
+                <Select {...registerGate("type")}>
+                  <option value="student">Student / Resident</option>
+                  <option value="visitor">Visitor / Guest</option>
+                  <option value="vehicle">Delivery / Service Vehicle</option>
+                </Select>
+              </FormField>
+
+              <FormField label="Person Full Name" error={gateErrors.personName?.message} required>
+                <Input {...registerGate("personName")} placeholder="e.g. Shakib Al Hasan" />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Contact Number</label>
-                <input type="text" {...registerGate("contactNo")} placeholder="+92 300-0000000" className={inputClass} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Vehicle registration No (Optional)</label>
-                <input type="text" {...registerGate("vehicleNumber")} placeholder="e.g. LEA-1234" className={`${inputClass} font-mono uppercase`} />
-              </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Contact Phone Number" error={gateErrors.contactNo?.message}>
+                <Input {...registerGate("contactNo")} placeholder="e.g. +880 1711-223344" className="font-mono" />
+              </FormField>
+              <FormField label="Vehicle Plate Number (If applicable)">
+                <Input {...registerGate("vehicleNumber")} placeholder="e.g. DHA-GA-1234" className="font-mono uppercase" />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Purpose of entry</label>
-              <input type="text" {...registerGate("purpose")} placeholder="e.g. Returning from leave / food delivery dispatch" className={inputClass} />
-              {gateErrors.purpose && <span className={errorClass}>{gateErrors.purpose.message}</span>}
+
+            <FormField label="Purpose of Entry" error={gateErrors.purpose?.message} required>
+              <Input {...registerGate("purpose")} placeholder="e.g. Returning from clinical hospital duty" />
+            </FormField>
+
+            <div className="p-4 bg-surface-muted rounded-xl border border-border space-y-3">
+              <Checkbox
+                label="Flag as Late Curfew Entry"
+                description="Check if resident arrived past the 10:00 PM dormitory curfew limit"
+                {...registerGate("isLateEntry")}
+              />
+
+              {isLate && (
+                <FormField label="Late Reason / Explanation" required>
+                  <Input
+                    {...registerGate("lateEntryReason")}
+                    placeholder="e.g. Late emergency ward round approval from Department Head"
+                  />
+                </FormField>
+              )}
             </div>
-            {gateType === "student" && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="isLateEntry" {...registerGate("isLateEntry")} className="w-4 h-4 rounded border-[#c3c6d7] text-[#2563EB] focus:ring-[#2563EB]/15 cursor-pointer" />
-                  <label htmlFor="isLateEntry" className="text-xs font-semibold text-slate-600 cursor-pointer select-none">Flag as Late/Curfew Entry</label>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-slate-500">Late Entry Reason</label>
-                  <input type="text" {...registerGate("lateEntryReason")} placeholder="Reason for arriving after curfew hour..." className={`${inputClass} h-9 text-xs`} />
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/security" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createGateEntryMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Register Entry
-              </button>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/security">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button type="submit" variant="primary" loading={isPending} leftIcon={<Plus size={14} />}>
+                Record Check-in
+              </Button>
             </div>
           </form>
         )}
 
         {selectedType === "visitor" && (
-          <form onSubmit={handleSubmitVisitor(onSubmitVisitorPass)} className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Visitor Name</label>
-                <input type="text" {...registerVisitor("visitorName")} placeholder="Guest full name" className={inputClass} />
-                {visitorErrors.visitorName && <span className={errorClass}>{visitorErrors.visitorName.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Contact Number</label>
-                <input type="text" {...registerVisitor("contactNo")} placeholder="Mobile number" className={`${inputClass} font-mono`} />
-                {visitorErrors.contactNo && <span className={errorClass}>{visitorErrors.contactNo.message}</span>}
-              </div>
+          <form onSubmit={handleSubmitVisitor(onSubmitVisitorPass)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Visitor Full Name" error={visitorErrors.visitorName?.message} required>
+                <Input {...registerVisitor("visitorName")} placeholder="e.g. Dr. Kamal Hossain" />
+              </FormField>
+              <FormField label="Contact Number" error={visitorErrors.contactNo?.message} required>
+                <Input {...registerVisitor("contactNo")} placeholder="+880 1812-345678" className="font-mono" />
+              </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Email Address (Optional)</label>
-                <input type="email" {...registerVisitor("email")} placeholder="guest@email.com" className={inputClass} />
-                {visitorErrors.email && <span className={errorClass}>{visitorErrors.email.message}</span>}
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Vehicle Number (Optional)</label>
-                <input type="text" {...registerVisitor("vehicleNumber")} placeholder="e.g. LEA-5678" className={`${inputClass} font-mono uppercase`} />
-              </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Email Address (Optional)" error={visitorErrors.email?.message}>
+                <Input type="email" {...registerVisitor("email")} placeholder="kamal@example.com" />
+              </FormField>
+              <FormField label="Vehicle License Plate">
+                <Input {...registerVisitor("vehicleNumber")} placeholder="e.g. DHA-CHA-5566" className="font-mono uppercase" />
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Purpose of Visit</label>
-              <textarea {...registerVisitor("purpose")} placeholder="Details of the host visit, delivery, or meeting..." className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-              {visitorErrors.purpose && <span className={errorClass}>{visitorErrors.purpose.message}</span>}
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/security" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createVisitorLogMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Shield size={14} /> Issue QR Pass
-              </button>
+
+            <FormField label="Purpose of Campus Visit" error={visitorErrors.purpose?.message} required>
+              <Textarea
+                {...registerVisitor("purpose")}
+                placeholder="e.g. Visiting student in Hostel Block B, authorized by guardian"
+                rows={3}
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/security">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button type="submit" variant="primary" loading={isPending} leftIcon={<Plus size={14} />}>
+                Issue Visitor Pass
+              </Button>
             </div>
           </form>
         )}
 
         {selectedType === "patrol" && (
-          <form onSubmit={handleSubmitPatrol(onSubmitPatrolLog)} className="p-6 space-y-4">
-            <div className="space-y-1">
-              <label className={labelClass}>Location</label>
-              <input type="text" {...registerPatrol("location")} placeholder="e.g. North Wing, Block C, Main Gate" className={inputClass} />
-              {patrolErrors.location && <span className={errorClass}>{patrolErrors.location.message}</span>}
+          <form onSubmit={handleSubmitPatrol(onSubmitPatrolLog)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Patrol Sector / Zone" error={patrolErrors.location?.message} required>
+                <Input {...registerPatrol("location")} placeholder="e.g. Academic Block 2 - East Perimeter" />
+              </FormField>
+              <FormField label="Round Status" required>
+                <Select {...registerPatrol("status")}>
+                  <option value="active">Active Round In-Progress</option>
+                  <option value="completed">Completed & Verified</option>
+                </Select>
+              </FormField>
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Status</label>
-              <select {...registerPatrol("status")} className={selectClass}>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Notes (Optional)</label>
-              <textarea {...registerPatrol("notes")} placeholder="Any observations or remarks during the patrol..." className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <Link href="/security" className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center">Cancel</Link>
-              <button type="submit" disabled={createPatrolLogMutation.isPending} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                <Plus size={14} /> Log Patrol
-              </button>
+
+            <FormField label="Observations & Warden Notes">
+              <Textarea
+                {...registerPatrol("notes")}
+                placeholder="e.g. All fire escape doors secured, exterior lights functioning normally"
+                rows={4}
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Link href="/security">
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button type="submit" variant="primary" loading={isPending} leftIcon={<Plus size={14} />}>
+                Save Patrol Log
+              </Button>
             </div>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

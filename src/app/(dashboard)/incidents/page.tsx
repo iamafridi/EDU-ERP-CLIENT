@@ -6,9 +6,24 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { Wrench, Plus, CheckCircle2, AlertTriangle, Info, Trash2, Pencil } from "lucide-react";
+import { 
+  Wrench, 
+  Plus, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Info, 
+  Trash2, 
+  Pencil, 
+  MapPin, 
+  UserCheck, 
+  Calendar,
+  ShieldAlert,
+  Wrench as WrenchIcon
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
+import { PageHeader, Card, Button, IconButton, Badge } from "@/components/ui";
+import { ClinicalAuditPanel } from "@/components/clinical/ClinicalAuditPanel";
 
 const severityOrder: Record<string, number> = {
   critical: 0,
@@ -17,24 +32,25 @@ const severityOrder: Record<string, number> = {
   low: 3,
 };
 
-const severityColors: Record<string, string> = {
-  low: "bg-slate-100 text-slate-700 border-slate-200",
-  medium: "bg-blue-50 text-blue-700 border-blue-100",
-  high: "bg-amber-50 text-amber-700 border-amber-100",
-  critical: "bg-red-50 text-red-700 border-red-100 animate-pulse",
+const severityTones: Record<string, "danger" | "warning" | "info" | "neutral"> = {
+  critical: "danger",
+  high: "warning",
+  medium: "info",
+  low: "neutral",
 };
 
-const statusColors: Record<string, string> = {
-  reported: "bg-purple-50 text-purple-700 border-purple-100",
-  investigating: "bg-sky-50 text-sky-700 border-sky-100",
-  resolved: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  closed: "bg-slate-100 text-slate-500 border-slate-200",
+const statusTones: Record<string, "info" | "warning" | "success" | "neutral"> = {
+  reported: "info",
+  investigating: "warning",
+  resolved: "success",
+  closed: "neutral",
 };
 
 export default function MaintenanceIncidentsPage() {
   const { user } = useAuthStore();
   const { roleIs } = usePermission();
   const queryClient = useQueryClient();
+  const [incidentTab, setIncidentTab] = useState<"FACILITIES" | "CLINICAL_MM">("CLINICAL_MM");
   const [successMsg, setSuccessMsg] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -75,90 +91,115 @@ export default function MaintenanceIncidentsPage() {
 
   return (
     <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Wrench className="text-[#2563EB]" />
-            Maintenance & Dispatch Desk
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Log facility issues, dispatch technicians, and manage building infrastructure tickets.
-          </p>
-        </div>
+      <PageHeader
+        title="Clinical Governance, M&M & Facility Incident Center"
+        subtitle="Morbidity & Mortality (M&M) clinical root-cause audits, SAC-1 sentinel reviews, and campus infrastructure dispatch tickets."
+        badge="Safety & Clinical Governance"
+        actions={
+          <Link href="/incidents/new">
+            <Button
+              variant="gold"
+              icon={<Plus size={16} />}
+            >
+              Log Ticket / Incident
+            </Button>
+          </Link>
+        }
+      />
 
-        <Link
-          href="/incidents/new"
-          className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 self-start sm:self-auto shadow-sm shadow-blue-500/10"
+      {/* Main Tab Navigation */}
+      <div className="flex border-b border-border gap-2">
+        <Button
+          variant={incidentTab === "CLINICAL_MM" ? "gold" : "outline"}
+          size="sm"
+          onClick={() => setIncidentTab("CLINICAL_MM")}
         >
-          <Plus size={16} />
-          Log Maintenance Ticket
-        </Link>
+          <ShieldAlert size={14} className="inline mr-1" /> Hospital M&amp;M &amp; Sentinel Clinical Audits
+        </Button>
+        <Button
+          variant={incidentTab === "FACILITIES" ? "gold" : "outline"}
+          size="sm"
+          onClick={() => setIncidentTab("FACILITIES")}
+        >
+          <WrenchIcon size={14} className="inline mr-1" /> Campus Facilities &amp; Maintenance ({incidents.length})
+        </Button>
       </div>
+
+      {incidentTab === "CLINICAL_MM" && (
+        <ClinicalAuditPanel />
+      )}
+
+      {incidentTab === "FACILITIES" && (
+        <div className="space-y-6">
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Severity:</span>
-          <div className="flex gap-1">
-            {["all", "critical", "high", "medium", "low"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setSeverityFilter(s)}
-                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold capitalize transition-colors cursor-pointer border ${
-                  severityFilter === s
-                    ? "bg-[#2563EB] text-white border-[#2563EB]"
-                    : "bg-white text-slate-500 border-[#c3c6d7] hover:bg-slate-50"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status:</span>
-          <div className="flex gap-1">
-            {["all", "reported", "investigating", "resolved", "closed"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold capitalize transition-colors cursor-pointer border ${
-                  statusFilter === s
-                    ? "bg-[#2563EB] text-white border-[#2563EB]"
-                    : "bg-white text-slate-500 border-[#c3c6d7] hover:bg-slate-50"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Filter Toolbar */}
+      <Card orientation="vertical" padding="md" variant="default">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-text-tertiary">Severity:</span>
+              <div className="flex gap-1.5">
+                {["all", "critical", "high", "medium", "low"].map((s) => (
+                  <Button
+                    key={s}
+                    variant={severityFilter === s ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setSeverityFilter(s)}
+                    className="capitalize text-xs h-7 px-2.5"
+                  >
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-      {/* Main List Grid */}
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            All Incident & Dispatch Tickets
-          </span>
-          <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] text-[10px] font-bold">
-            {filteredIncidents.length} of {incidents.length} Tasks
+            <div className="h-4 w-px bg-border hidden sm:block" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-text-tertiary">Status:</span>
+              <div className="flex gap-1.5">
+                {["all", "reported", "investigating", "resolved", "closed"].map((s) => (
+                  <Button
+                    key={s}
+                    variant={statusFilter === s ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setStatusFilter(s)}
+                    className="capitalize text-xs h-7 px-2.5"
+                  >
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Badge variant="gold" size="sm">
+            {filteredIncidents.length} of {incidents.length} Tickets
+          </Badge>
+        </div>
+      </Card>
+
+      {/* Main List */}
+      <Card orientation="vertical" padding="none" variant="default" className="overflow-hidden">
+        <div className="p-4 border-b border-border/80 bg-surface-elevated/40 flex items-center justify-between">
+          <span className="text-xs font-bold text-text-tertiary uppercase tracking-wider">
+            All Incident & Dispatch Records
           </span>
         </div>
 
         {isLoading ? (
-          <div className="divide-y divide-[#e1e2ed]">
+          <div className="divide-y divide-border/60">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="p-5 space-y-3">
                 <div className="flex items-center gap-2">
@@ -174,78 +215,86 @@ export default function MaintenanceIncidentsPage() {
           </div>
         ) : filteredIncidents.length === 0 ? (
           <div className="p-12 text-center max-w-sm mx-auto space-y-3">
-            <Info size={48} className="text-slate-300 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-700">
+            <Info size={40} className="text-text-tertiary/40 mx-auto" />
+            <h3 className="text-sm font-bold text-text">
               {incidents.length === 0 ? "No Active Tickets" : "No Matching Tickets"}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-text-tertiary">
               {incidents.length === 0
                 ? "There are no active maintenance tickets logged at the moment."
                 : "No tickets match the selected filters. Try adjusting your criteria."}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#e1e2ed]">
+          <div className="divide-y divide-border/60">
             {filteredIncidents.map((inc: any) => {
               return (
-                <div key={inc.id} className="p-5 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-start justify-between gap-4">
-                  <div className="space-y-2 max-w-3xl">
+                <div key={inc.id} className="p-5 hover:bg-surface-elevated/30 transition-colors flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="space-y-2.5 max-w-3xl">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${statusColors[inc.status] || "bg-slate-50 text-slate-500"}`}>
+                      <Badge variant={statusTones[inc.status] || "neutral"} size="sm">
                         Status: {inc.status}
-                      </span>
-                      <span className={`px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${severityColors[inc.severity] || "bg-slate-50 text-slate-500"}`}>
+                      </Badge>
+                      <Badge variant={severityTones[inc.severity] || "neutral"} size="sm">
                         Severity: {inc.severity}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        Logged: {inc.date}
+                      </Badge>
+                      <span className="text-[11px] text-text-tertiary font-mono flex items-center gap-1 ml-1">
+                        <Calendar size={12} /> {inc.date}
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-text flex items-center gap-2">
                       {inc.title}
-                      {inc.severity === "critical" && <AlertTriangle size={16} className="text-red-500" />}
+                      {inc.severity === "critical" && (
+                        <AlertTriangle size={16} className="text-danger animate-pulse" />
+                      )}
                     </h3>
-                    <p className="text-xs text-slate-500 leading-relaxed">{inc.description}</p>
+                    <p className="text-xs text-text-secondary leading-relaxed">{inc.description}</p>
 
-                    <div className="text-[10px] font-semibold text-slate-500 bg-slate-100/70 border border-slate-200/50 px-2 py-1 rounded inline-block">
-                      Location: <strong className="text-slate-700 font-mono">{inc.location}</strong>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-elevated border border-border px-2.5 py-1 rounded-md inline-flex items-center gap-1.5">
+                        <MapPin size={12} className="text-gold" />
+                        <strong className="text-text font-mono">{inc.location}</strong>
+                      </span>
+
+                      {inc.technician && (
+                        <span className="text-[11px] font-semibold text-info-text bg-info-bg border border-info-border px-2.5 py-1 rounded-md inline-flex items-center gap-1.5">
+                          <UserCheck size={12} />
+                          Tech: <strong className="font-mono">{inc.technician}</strong>
+                        </span>
+                      )}
                     </div>
-
-                    {inc.technician && (
-                      <div className="text-[10px] font-semibold text-slate-500 bg-blue-50/70 border border-blue-100/50 px-2 py-1 rounded inline-block">
-                        Technician: <strong className="text-blue-700 font-mono">{inc.technician}</strong>
-                      </div>
-                    )}
 
                     {inc.resolution && (
-                      <div className="p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg text-xs space-y-1">
+                      <div className="p-3 bg-emerald-50/60 border border-emerald-200/60 rounded-xl text-xs space-y-1">
                         <span className="font-bold text-emerald-800 block">Resolution Feedback:</span>
-                        <p className="text-slate-600">{inc.resolution}</p>
+                        <p className="text-emerald-950">{inc.resolution}</p>
                       </div>
                     )}
                   </div>
 
                   <div className="shrink-0 self-start md:self-auto flex items-center gap-2">
-                    <Link
-                      href={`/incidents/${inc.id}`}
-                      className="h-8 px-3 border border-[#c3c6d7] hover:bg-slate-50 text-slate-600 font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5"
-                    >
-                      <Pencil size={12} />
-                      Dispatch / Edit
+                    <Link href={`/incidents/${inc.id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        icon={<Pencil size={12} />}
+                      >
+                        Dispatch / Edit
+                      </Button>
                     </Link>
                     {isStaff && (
-                      <button
+                      <IconButton
+                        variant="danger"
+                        size="sm"
+                        label="Delete incident ticket"
                         onClick={() => {
                           if (window.confirm("Delete this incident ticket permanently?")) {
                             deleteIncidentMutation.mutate(inc.id);
                           }
                         }}
-                        className="h-8 px-3 border border-red-200 hover:bg-red-50 text-red-600 font-bold rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Trash2 size={12} />
-                        Delete
-                      </button>
+                        icon={<Trash2 size={13} />}
+                      />
                     )}
                   </div>
                 </div>
@@ -253,7 +302,10 @@ export default function MaintenanceIncidentsPage() {
             })}
           </div>
         )}
-      </div>
+      </Card>
+        </div>
+      )}
     </div>
   );
 }
+
