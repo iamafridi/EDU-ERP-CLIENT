@@ -11,6 +11,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Checkbox,
+  Button,
+} from "@/components/ui";
 
 const grievanceFormSchema = zod.object({
   subject: zod.string().min(5, "Subject must be at least 5 characters"),
@@ -57,120 +67,94 @@ export default function NewGrievancePage() {
   };
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/grievances" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <AlertOctagon className="text-[#2563EB]" />
-            File New Grievance
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Submit a formal complaint or report an incident.</p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title="File New Grievance"
+        subtitle="Submit a formal institutional complaint, report harassment, or request hostel intervention."
+        actions={
+          <Link href="/grievances">
+            <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+              Back to Grievances
+            </Button>
+          </Link>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-lg">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Grievance Details</span>
-        </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Subject / Heading</label>
-            <input
-              type="text"
+      <Card
+        title="Incident & Complaint Report"
+        subtitle="All reports are treated with strict confidentiality in accordance with institutional policy"
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FormField label="Subject / Brief Summary" error={errors.subject?.message} required>
+            <Input
               {...register("subject")}
-              placeholder="Brief summary of the concern"
-              className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
+              placeholder="e.g. Broken water filter on 3rd floor Block B"
             />
-            {errors.subject && (
-              <span className="text-[10px] text-red-500 font-semibold block">{errors.subject.message}</span>
-            )}
+          </FormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Category" required>
+              <Select {...register("category")}>
+                <option value="hostel">Hostel & Accommodation</option>
+                <option value="academic">Academic & Curriculum</option>
+                <option value="ragging">Anti-Ragging / Bullying</option>
+                <option value="harassment">Harassment / Discrimination</option>
+                <option value="other">General Facilities / Other</option>
+              </Select>
+            </FormField>
+
+            <FormField label="Urgency Priority" required>
+              <Select {...register("priority")}>
+                <option value="low">Low (Standard review)</option>
+                <option value="medium">Medium (Requires attention)</option>
+                <option value="high">High (Priority escalation)</option>
+                <option value="urgent">Urgent (Safety emergency)</option>
+              </Select>
+            </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Category</label>
-              <select
-                {...register("category")}
-                className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-              >
-                <option value="hostel">Hostel Accommodation</option>
-                <option value="academic">Academic / Curriculum</option>
-                <option value="harassment">Harassment Alert</option>
-                <option value="ragging">Ragging Incident</option>
-                <option value="other">Other Concerns</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Priority</label>
-              <select
-                {...register("priority")}
-                className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isAnonymous"
-              {...register("isAnonymous")}
-              className="w-4 h-4 rounded border-[#c3c6d7] text-[#2563EB] focus:ring-[#2563EB]/15 cursor-pointer"
-            />
-            <label htmlFor="isAnonymous" className="text-xs font-semibold text-slate-500 cursor-pointer select-none">
-              File Anonymously
-            </label>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Detailed Description</label>
-            <textarea
+          <FormField label="Detailed Description & Evidence" error={errors.description?.message} required>
+            <Textarea
               {...register("description")}
-              placeholder="Provide full context, dates, and locations if applicable..."
-              className="w-full h-32 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
+              placeholder="Provide complete facts, dates, location, witnesses, or specific details to help the committee investigate..."
+              rows={5}
             />
-            {errors.description && (
-              <span className="text-[10px] text-red-500 font-semibold block">{errors.description.message}</span>
-            )}
+          </FormField>
+
+          <div className="p-4 bg-surface-muted rounded-xl border border-border">
+            <Checkbox
+              label="Submit Anonymously"
+              description="Hide your name and student ID from the public grievance records. Only the Chief Proctor will have access if formal inquiry is required."
+              {...register("isAnonymous")}
+            />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-            <Link
-              href="/grievances"
-              className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors inline-flex items-center"
-            >
-              Cancel
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+            <Link href="/grievances">
+              <Button variant="outline">Cancel</Button>
             </Link>
-            <button
+            <Button
               type="submit"
-              disabled={submitGrievanceMutation.isPending}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              variant="primary"
+              loading={submitGrievanceMutation.isPending}
+              leftIcon={<Send size={14} />}
             >
-              <Send size={14} />
-              Submit Report
-            </button>
+              Submit Grievance
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

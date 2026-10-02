@@ -7,8 +7,25 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion } from "framer-motion";
-import { AlertOctagon, ArrowLeft, CheckCircle2, Trash2, ShieldCheck } from "lucide-react";
+import {
+  AlertOctagon,
+  ArrowLeft,
+  CheckCircle2,
+  Trash2,
+  ShieldCheck,
+  Calendar,
+  User,
+} from "lucide-react";
 import Link from "next/link";
+import {
+  PageHeader,
+  Card,
+  FormField,
+  Select,
+  Textarea,
+  Button,
+  Badge,
+} from "@/components/ui";
 
 export default function GrievanceDetailPage() {
   const params = useParams();
@@ -20,9 +37,10 @@ export default function GrievanceDetailPage() {
   const [updateStatus, setUpdateStatus] = useState("");
   const [resolutionText, setResolutionText] = useState("");
 
-  const isAdmin = roleIs("domain-admin") || user?.staffSubRole === "warden";
+  const isAdmin =
+    roleIs("domain-admin", "super-admin") || user?.staffSubRole === "warden";
 
-  const { data: grievances = [] } = useQuery({
+  const { data: grievances = [], isLoading } = useQuery({
     queryKey: ["grievances"],
     queryFn: api.getGrievances,
   });
@@ -35,8 +53,8 @@ export default function GrievanceDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["grievances"] });
-      setSuccessMsg("Grievance status updated successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setSuccessMsg("Grievance status and resolution updated successfully.");
+      setTimeout(() => setSuccessMsg(""), 3500);
     },
   });
 
@@ -54,7 +72,7 @@ export default function GrievanceDetailPage() {
     updateGrievanceMutation.mutate({
       id: grievance.id,
       payload: {
-        status: updateStatus,
+        status: updateStatus || grievance.status,
         resolution: resolutionText || undefined,
       },
     });
@@ -66,143 +84,176 @@ export default function GrievanceDetailPage() {
     }
   };
 
-  if (!grievance) {
+  if (isLoading) {
     return (
-      <div className="p-12 text-center">
-        <p className="text-xs text-slate-400">Grievance not found.</p>
-        <Link href="/grievances" className="text-xs text-[#2563EB] hover:underline mt-2 inline-block">Back to Grievances</Link>
+      <div className="p-12 text-center text-text-muted">
+        <p className="text-sm">Loading grievance details...</p>
       </div>
     );
   }
 
-  const statusColors: Record<string, string> = {
-    submitted: "bg-blue-50 text-blue-700 border-blue-100",
-    "under-review": "bg-amber-50 text-amber-700 border-amber-100",
-    resolved: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    closed: "bg-slate-100 text-slate-600 border-slate-200"
+  if (!grievance) {
+    return (
+      <div className="p-12 text-center space-y-3">
+        <p className="text-sm text-text-muted">Grievance report not found or has been purged.</p>
+        <Link href="/grievances">
+          <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+            Back to Grievances
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const statusVariantMap: Record<string, "warning" | "primary" | "success" | "neutral"> = {
+    submitted: "primary",
+    "under-review": "warning",
+    resolved: "success",
+    closed: "neutral",
   };
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-4">
-        <Link href="/grievances" className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <AlertOctagon className="text-[#2563EB]" />
-            Grievance Details
-          </h1>
-        </div>
-        {isAdmin && (
-          <button onClick={handleDelete} disabled={deleteGrievanceMutation.isPending}
-            className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-            <Trash2 size={14} /> Delete
-          </button>
-        )}
-      </div>
+    <div className="space-y-6 font-sans max-w-4xl">
+      <PageHeader
+        title={grievance.subject}
+        subtitle={`Grievance Ref #${grievance.id?.substring(0, 8) || "REF"} • Filed by ${grievance.studentName || "Anonymous"}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/grievances">
+              <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={14} />}>
+                Grievances
+              </Button>
+            </Link>
+            {isAdmin && (
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={<Trash2 size={14} />}
+                onClick={handleDelete}
+                loading={deleteGrievanceMutation.isPending}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <CheckCircle2 size={18} className="text-emerald-600" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Complaint Information</span>
-        </div>
-        <div className="p-6 space-y-5">
+      {/* Complaint Report Card */}
+      <Card title="Grievance Record" subtitle="Submitted statement and metadata">
+        <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${statusColors[grievance.status] || "bg-slate-50 text-slate-500"}`}>
+            <Badge variant={statusVariantMap[grievance.status] || "neutral"}>
               {grievance.status}
-            </span>
-            <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 uppercase">
-              {grievance.category}
-            </span>
+            </Badge>
+            <Badge variant="neutral">
+              Category: {grievance.category}
+            </Badge>
             {grievance.priority && (
-              <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 uppercase">
-                {grievance.priority}
-              </span>
+              <Badge variant={grievance.priority === "urgent" || grievance.priority === "high" ? "danger" : "neutral"}>
+                Priority: {grievance.priority}
+              </Badge>
             )}
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Subject</label>
-            <p className="text-sm font-bold text-slate-800">{grievance.subject}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-surface-muted rounded-xl border border-border">
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Filed By</label>
-              <p className="text-sm font-semibold text-slate-700">{grievance.studentName || "Anonymous"}</p>
+              <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                Complainant
+              </span>
+              <span className="text-base font-bold text-text flex items-center gap-1.5 mt-0.5">
+                <User size={14} className="text-gold" />
+                {grievance.studentName || "Confidential Anonymous"}
+              </span>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Submitted</label>
-              <p className="text-sm font-mono text-slate-600">{grievance.date}</p>
+              <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                Submission Date
+              </span>
+              <span className="text-sm font-mono text-text flex items-center gap-1.5 mt-0.5">
+                <Calendar size={14} className="text-text-muted" />
+                {grievance.date || "Recent"}
+              </span>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase block mb-1">Description</label>
-            <p className="text-sm text-slate-600 leading-relaxed">{grievance.description}</p>
+            <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">
+              Incident Description
+            </h4>
+            <div className="p-4 bg-surface-muted rounded-xl border border-border">
+              <p className="text-sm text-text leading-relaxed whitespace-pre-line">
+                {grievance.description}
+              </p>
+            </div>
           </div>
 
           {grievance.resolution && (
-            <div className="p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg text-xs space-y-1">
-              <span className="font-bold text-emerald-800 block">Resolution Feedback:</span>
-              <p className="text-slate-600">{grievance.resolution}</p>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider mb-1.5">
+                Proctorial Resolution
+              </h4>
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs space-y-1">
+                <p className="text-text leading-relaxed font-medium">
+                  {grievance.resolution}
+                </p>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
+      {/* Proctor / Warden Action Form */}
       {isAdmin && (
-        <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-[#e1e2ed] bg-slate-50">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck size={16} /> Admin Action
-            </span>
-          </div>
-          <form onSubmit={handleUpdateStatus} className="p-6 space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Update Status</label>
-              <select
+        <Card
+          title="Administrative Action & Resolution"
+          subtitle="Update formal investigation status and provide committee notes to complainant"
+        >
+          <form onSubmit={handleUpdateStatus} className="space-y-4">
+            <FormField label="Investigation Status" required>
+              <Select
                 value={updateStatus || grievance.status}
                 onChange={(e) => setUpdateStatus(e.target.value)}
-                className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
               >
-                <option value="submitted">Submitted</option>
-                <option value="under-review">Under Review</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
+                <option value="submitted">Submitted (Under assessment)</option>
+                <option value="under-review">Under Active Review</option>
+                <option value="resolved">Resolved & Action Taken</option>
+                <option value="closed">Closed / Case Dismissed</option>
+              </Select>
+            </FormField>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Resolution Notes</label>
-              <textarea
-                value={resolutionText}
+            <FormField label="Resolution Notes & Committee Findings">
+              <Textarea
+                value={resolutionText || grievance.resolution || ""}
                 onChange={(e) => setResolutionText(e.target.value)}
-                placeholder="Outline what actions have been taken to address this grievance..."
-                className="w-full h-24 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
+                placeholder="Outline specific disciplinary or facility maintenance actions taken to resolve this concern..."
+                rows={4}
               />
-            </div>
+            </FormField>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-              <button
+            <div className="flex justify-end pt-4 border-t border-border">
+              <Button
                 type="submit"
-                disabled={updateGrievanceMutation.isPending}
-                className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                variant="primary"
+                loading={updateGrievanceMutation.isPending}
+                leftIcon={<ShieldCheck size={14} />}
               >
-                <ShieldCheck size={14} />
                 Commit Resolution
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
     </div>
   );
