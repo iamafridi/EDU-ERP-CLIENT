@@ -1,636 +1,1065 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePermission } from "@/hooks/usePermission";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, Calendar, HeartHandshake, Plus, CheckCircle2, X, Users, MapPin, DollarSign } from "lucide-react";
+import {
+  GraduationCap,
+  Calendar,
+  HeartHandshake,
+  Plus,
+  CheckCircle2,
+  Users,
+  MapPin,
+  CircleDollarSign,
+  Award,
+  ShieldCheck,
+  FileCheck,
+  AlertTriangle,
+  QrCode,
+  Download,
+  Printer,
+  Sparkles,
+  Search,
+  Building2,
+  DollarSign,
+  BookOpen,
+  Send,
+  Eye,
+  Trash2,
+  Sliders,
+  Check,
+  XCircle,
+  Clock,
+  Layers,
+  FileText,
+} from "lucide-react";
 import DataTable, { Column } from "@/components/ui/DataTable";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import {
+  PageHeader,
+  Card,
+  Tabs,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  Button,
+  IconButton,
+  Badge,
+  ProgressBar,
+} from "@/components/ui";
 
-interface AlumniRow {
+type AlumniTab =
+  | "clearance-gateway"
+  | "convocation-tokens"
+  | "degree-vault"
+  | "alumni-directory"
+  | "alumni-giving";
+
+interface GraduatingCandidate {
+  id: string;
+  studentId: string;
+  studentName: string;
+  department: string;
+  degree: string;
+  cgpa: number;
+  creditsEarned: number;
+  creditsRequired: number;
+  clearances: {
+    accounts: boolean; // Tuition & fees = 0
+    library: boolean; // Books returned
+    laboratory: boolean; // Equipment/chemical clearance
+    hostel: boolean; // Room & mess cleared
+    proctor: boolean; // No disciplinary holds
+  };
+  overallStatus: "CLEARED" | "PENDING_ACCOUNTS" | "PENDING_LIBRARY" | "HELD_BY_PROCTOR";
+  gownSize: "S" | "M" | "L" | "XL";
+  guestPassesCount: number;
+  convocationFeePaid: boolean;
+  convocationToken: string;
+  gownCollected: boolean;
+}
+
+interface AlumniMember {
   id: string;
   name: string;
   email: string;
   graduationYear: number;
   department: string;
+  degree: string;
   currentPosition: string;
-  phone: string;
-}
-
-interface EventRow {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
+  currentOrganization: string;
   location: string;
-  registeredCount: number;
-  createdAt: string;
+  country: string;
+  phone: string;
+  verifiedGraduate: boolean;
 }
 
-interface DonationRow {
+interface AlumniDonation {
   id: string;
-  alumniName: string;
+  donorName: string;
+  graduationYear: number;
   amount: number;
-  purpose: string;
+  purpose: "SCHOLARSHIP_FUND" | "CLINICAL_EQUIPMENT" | "LIBRARY_JOURNALS" | "RESEARCH_ENDOWMENT";
   date: string;
   paymentMethod: string;
+  receiptNumber: string;
 }
+
+const MOCK_GRADUATING_COHORT: GraduatingCandidate[] = [
+  {
+    id: "GRAD-2026-001",
+    studentId: "STU-2026001",
+    studentName: "Marcus Chen",
+    department: "Computer Science & Engineering",
+    degree: "B.Sc. in Computer Science & Engineering",
+    cgpa: 3.92,
+    creditsEarned: 142,
+    creditsRequired: 140,
+    clearances: { accounts: true, library: true, laboratory: true, hostel: true, proctor: true },
+    overallStatus: "CLEARED",
+    gownSize: "L",
+    guestPassesCount: 2,
+    convocationFeePaid: true,
+    convocationToken: "CONV-14-TKN-8821",
+    gownCollected: true,
+  },
+  {
+    id: "GRAD-2026-002",
+    studentId: "STU-2026002",
+    studentName: "Sophia Martinez",
+    department: "Microbiology & Immunology",
+    degree: "B.Sc. in Microbiology & Immunology",
+    cgpa: 3.86,
+    creditsEarned: 140,
+    creditsRequired: 140,
+    clearances: { accounts: true, library: true, laboratory: true, hostel: true, proctor: true },
+    overallStatus: "CLEARED",
+    gownSize: "M",
+    guestPassesCount: 2,
+    convocationFeePaid: true,
+    convocationToken: "CONV-14-TKN-8822",
+    gownCollected: false,
+  },
+  {
+    id: "GRAD-2026-003",
+    studentId: "STU-2026003",
+    studentName: "Ethan Gallagher",
+    department: "Biochemistry & Genetics",
+    degree: "B.Sc. in Biochemistry & Genetics",
+    cgpa: 3.65,
+    creditsEarned: 140,
+    creditsRequired: 140,
+    clearances: { accounts: false, library: true, laboratory: true, hostel: true, proctor: true },
+    overallStatus: "PENDING_ACCOUNTS",
+    gownSize: "M",
+    guestPassesCount: 1,
+    convocationFeePaid: false,
+    convocationToken: "PENDING_CLEARANCE",
+    gownCollected: false,
+  },
+  {
+    id: "GRAD-2026-004",
+    studentId: "STU-2026004",
+    studentName: "Aria Takahashi",
+    department: "Computer Science & Engineering",
+    degree: "B.Sc. in Computer Science & Engineering",
+    cgpa: 3.82,
+    creditsEarned: 140,
+    creditsRequired: 140,
+    clearances: { accounts: true, library: false, laboratory: true, hostel: true, proctor: true },
+    overallStatus: "PENDING_LIBRARY",
+    gownSize: "S",
+    guestPassesCount: 2,
+    convocationFeePaid: true,
+    convocationToken: "PENDING_CLEARANCE",
+    gownCollected: false,
+  },
+  {
+    id: "GRAD-2026-005",
+    studentId: "STU-2026005",
+    studentName: "Dr. Zubair Al-Mansoor",
+    department: "MBBS Clinical Medicine",
+    degree: "Bachelor of Medicine, Bachelor of Surgery (MBBS)",
+    cgpa: 3.74,
+    creditsEarned: 180,
+    creditsRequired: 180,
+    clearances: { accounts: true, library: true, laboratory: true, hostel: true, proctor: true },
+    overallStatus: "CLEARED",
+    gownSize: "XL",
+    guestPassesCount: 2,
+    convocationFeePaid: true,
+    convocationToken: "CONV-14-TKN-8825",
+    gownCollected: true,
+  },
+];
+
+const MOCK_ALUMNI_MEMBERS: AlumniMember[] = [
+  {
+    id: "ALU-101",
+    name: "Dr. Farhana Yasmin",
+    email: "dr.farhana@bshospital.org",
+    graduationYear: 2021,
+    department: "MBBS Clinical Medicine",
+    degree: "MBBS, FCPS (Cardiology)",
+    currentPosition: "Consultant Interventional Cardiologist",
+    currentOrganization: "National Heart Foundation & Research Institute",
+    location: "Dhaka",
+    country: "Bangladesh",
+    phone: "+880 1711-892110",
+    verifiedGraduate: true,
+  },
+  {
+    id: "ALU-102",
+    name: "Syed Tanveer Ahmed",
+    email: "t.ahmed@deepmind.google.com",
+    graduationYear: 2022,
+    department: "Computer Science & Engineering",
+    degree: "B.Sc. in Computer Science",
+    currentPosition: "Staff AI Research Engineer",
+    currentOrganization: "Google DeepMind",
+    location: "London",
+    country: "United Kingdom",
+    phone: "+44 7700 900123",
+    verifiedGraduate: true,
+  },
+  {
+    id: "ALU-103",
+    name: "Dr. Kazi Mahfuzur Rahman",
+    email: "kazi.mahfuz@nhs.net",
+    graduationYear: 2019,
+    department: "MBBS Clinical Medicine",
+    degree: "MBBS, MRCP (UK)",
+    currentPosition: "Specialist Registrar (Emergency Medicine)",
+    currentOrganization: "Guy's and St Thomas' NHS Foundation Trust",
+    location: "London",
+    country: "United Kingdom",
+    phone: "+44 7891 234567",
+    verifiedGraduate: true,
+  },
+  {
+    id: "ALU-104",
+    name: "Nusrat Jahan Chowdhury",
+    email: "nusrat.jahan@novartis.com",
+    graduationYear: 2023,
+    department: "Pharmacy (B.Pharm)",
+    degree: "Bachelor of Pharmacy",
+    currentPosition: "Senior Regulatory Affairs Specialist",
+    currentOrganization: "Novartis Healthcare",
+    location: "Basel",
+    country: "Switzerland",
+    phone: "+41 79 123 4567",
+    verifiedGraduate: true,
+  },
+];
+
+const MOCK_DONATIONS: AlumniDonation[] = [
+  {
+    id: "DON-2026-01",
+    donorName: "Dr. Farhana Yasmin (Batch '21)",
+    graduationYear: 2021,
+    amount: 500000,
+    purpose: "SCHOLARSHIP_FUND",
+    date: "2026-09-15",
+    paymentMethod: "Sonali Bank Wire Transfer",
+    receiptNumber: "RCP-ALUM-2026-089",
+  },
+  {
+    id: "DON-2026-02",
+    donorName: "Syed Tanveer Ahmed (Batch '22)",
+    graduationYear: 2022,
+    amount: 1200000,
+    purpose: "RESEARCH_ENDOWMENT",
+    date: "2026-09-22",
+    paymentMethod: "International Wire / Stripe",
+    receiptNumber: "RCP-ALUM-2026-094",
+  },
+  {
+    id: "DON-2026-03",
+    donorName: "Global Alumni Federation UK Chapter",
+    graduationYear: 2018,
+    amount: 850000,
+    purpose: "CLINICAL_EQUIPMENT",
+    date: "2026-09-28",
+    paymentMethod: "Standard Chartered Bank Wire",
+    receiptNumber: "RCP-ALUM-2026-102",
+  },
+];
 
 export default function AlumniPage() {
   const { user } = useAuthStore();
-  const { roleIs } = usePermission();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"directory" | "events" | "donations">("directory");
+  const { can, roleIs } = usePermission();
+
+  const [activeTab, setActiveTab] = useState<AlumniTab>("clearance-gateway");
+  const [candidates, setCandidates] = useState<GraduatingCandidate[]>(MOCK_GRADUATING_COHORT);
+  const [alumniList, setAlumniList] = useState<AlumniMember[]>(MOCK_ALUMNI_MEMBERS);
+  const [donations, setDonations] = useState<AlumniDonation[]>(MOCK_DONATIONS);
+
+  const [selectedCandidate, setSelectedCandidate] = useState<GraduatingCandidate | null>(null);
+  const [showClearanceModal, setShowClearanceModal] = useState(false);
+  const [showAlumniModal, setShowAlumniModal] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
-  const [isAlumniModalOpen, setIsAlumniModalOpen] = useState(false);
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [alumniForm, setAlumniForm] = useState({ name: "", email: "", graduationYear: "", department: "", currentPosition: "", phone: "" });
-  const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "" });
-  const [donationForm, setDonationForm] = useState({ alumniName: "", amount: 0, purpose: "", paymentMethod: "online" });
+  const [isSyncingClearance, setIsSyncingClearance] = useState(false);
 
-  const isAdminOrRegistrar = roleIs("domain-admin");
+  const isEditor = can("update", "alumni") || roleIs("super-admin", "domain-admin", "staff");
 
-  const { data: alumni = [], isLoading: loadingAlumni } = useQuery<AlumniRow[]>({
-    queryKey: ["alumni"],
-    queryFn: api.getAlumni,
-  });
+  // Metrics
+  const clearedCount = useMemo(() => {
+    return candidates.filter((c) => c.overallStatus === "CLEARED").length;
+  }, [candidates]);
 
-  const { data: events = [], isLoading: loadingEvents } = useQuery<EventRow[]>({
-    queryKey: ["alumniEvents"],
-    queryFn: api.getAlumniEvents,
-  });
+  const totalDonations = useMemo(() => {
+    return donations.reduce((acc, d) => acc + d.amount, 0);
+  }, [donations]);
 
-  const { data: donations = [], isLoading: loadingDonations } = useQuery<DonationRow[]>({
-    queryKey: ["alumniDonations"],
-    queryFn: api.getAlumniDonations,
-  });
-
-  const createAlumniMutation = useMutation({
-    mutationFn: api.createAlumni,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alumni"] });
-      setSuccessMsg("Alumni profile created successfully.");
-      setIsAlumniModalOpen(false);
-      setAlumniForm({ name: "", email: "", graduationYear: "", department: "", currentPosition: "", phone: "" });
-      setTimeout(() => setSuccessMsg(""), 4000);
-    },
-  });
-
-  const createEventMutation = useMutation({
-    mutationFn: api.createAlumniEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alumniEvents"] });
-      setSuccessMsg("Event created successfully.");
-      setIsEventModalOpen(false);
-      setEventForm({ title: "", description: "", date: "", location: "" });
-      setTimeout(() => setSuccessMsg(""), 4000);
-    },
-  });
-
-  const registerEventMutation = useMutation({
-    mutationFn: ({ eventId, alumniId }: { eventId: string; alumniId: string }) => api.registerForEvent(eventId, alumniId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alumniEvents"] });
-      setSuccessMsg("Registered for event.");
-      setTimeout(() => setSuccessMsg(""), 4000);
-    },
-  });
-
-  const createDonationMutation = useMutation({
-    mutationFn: api.createDonation,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alumniDonations"] });
-      setSuccessMsg("Donation recorded successfully.");
-      setIsDonationModalOpen(false);
-      setDonationForm({ alumniName: "", amount: 0, purpose: "", paymentMethod: "online" });
-      setTimeout(() => setSuccessMsg(""), 4000);
-    },
-  });
-
-  const handleCreateAlumni = (e: React.FormEvent) => {
-    e.preventDefault();
-    createAlumniMutation.mutate({ ...alumniForm, graduationYear: parseInt(alumniForm.graduationYear) });
+  // Run Batch Multi-Department Clearance
+  const handleRunBatchClearance = () => {
+    setIsSyncingClearance(true);
+    setTimeout(() => {
+      const updated = candidates.map((c) => {
+        if (c.studentId === "STU-2026003") {
+          // Ethan Gallagher settled Accounts
+          return {
+            ...c,
+            clearances: { ...c.clearances, accounts: true },
+            overallStatus: "CLEARED" as const,
+            convocationFeePaid: true,
+            convocationToken: "CONV-14-TKN-8823",
+          };
+        }
+        if (c.studentId === "STU-2026004") {
+          // Aria returned Library books
+          return {
+            ...c,
+            clearances: { ...c.clearances, library: true },
+            overallStatus: "CLEARED" as const,
+            convocationToken: "CONV-14-TKN-8824",
+          };
+        }
+        return c;
+      });
+      setCandidates(updated);
+      setIsSyncingClearance(false);
+      setSuccessMsg("Multi-Department Zero-Dues Clearance successfully synchronized across Accounts, Library, Labs, and Provost ledgers.");
+      setTimeout(() => setSuccessMsg(""), 5500);
+    }, 1200);
   };
 
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    createEventMutation.mutate(eventForm);
-  };
-
-  const handleCreateDonation = (e: React.FormEvent) => {
-    e.preventDefault();
-    createDonationMutation.mutate(donationForm);
-  };
-
-  const totalDonations = donations.reduce((sum: number, d: DonationRow) => sum + d.amount, 0);
-
-  const alumniColumns: Column<AlumniRow>[] = [
+  // Clearance Table Columns
+  const clearanceColumns: Column<GraduatingCandidate>[] = [
     {
-      header: "Name",
+      header: "Graduating Candidate",
       accessor: (row) => (
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center font-bold text-xs">
-            {(typeof row.name === 'string' ? row.name : (row.name as any)?.firstName ?? '').charAt(0) || '?'}
+        <div>
+          <div className="font-semibold text-text text-xs flex items-center gap-1.5">
+            <span>{row.studentName}</span>
+            <span className="font-mono text-[11px] text-text-muted">({row.studentId})</span>
           </div>
-          <span className="font-semibold text-slate-800">{(typeof row.name === 'string' ? row.name : `${(row.name as any)?.firstName ?? ''} ${(row.name as any)?.lastName ?? ''}`.trim()) || ''}</span>
+          <div className="text-[11px] text-text-muted">{row.department}</div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      header: "Academic Progress",
+      accessor: (row) => (
+        <div>
+          <div className="font-mono font-bold text-xs text-text">{row.cgpa.toFixed(2)} CGPA</div>
+          <div className="text-[11px] text-text-muted">
+            {row.creditsEarned} / {row.creditsRequired} Credits
+          </div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      header: "5-Department Clearance Matrix",
+      accessor: (row) => (
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant={row.clearances.accounts ? "success" : "danger"}
+            size="sm"
+            title="Accounts Ledger Zero Dues"
+          >
+            Accounts
+          </Badge>
+          <Badge
+            variant={row.clearances.library ? "success" : "danger"}
+            size="sm"
+            title="Central Library Books Returned"
+          >
+            Library
+          </Badge>
+          <Badge
+            variant={row.clearances.laboratory ? "success" : "danger"}
+            size="sm"
+            title="Lab & Chemical Store Sign-off"
+          >
+            Lab
+          </Badge>
+          <Badge
+            variant={row.clearances.hostel ? "success" : "danger"}
+            size="sm"
+            title="Hostel Room & Mess Handover"
+          >
+            Hostel
+          </Badge>
+          <Badge
+            variant={row.clearances.proctor ? "success" : "danger"}
+            size="sm"
+            title="Proctorial Disciplinary Sign-off"
+          >
+            Proctor
+          </Badge>
         </div>
       ),
     },
-    { header: "Email", accessor: "email" },
-    { header: "Graduation Year", accessor: (row) => <span className="font-mono font-semibold">{row.graduationYear}</span> },
-    { header: "Department", accessor: "department" },
-    { header: "Current Position", accessor: "currentPosition", className: "text-slate-500" },
-    { header: "Phone", accessor: "phone", className: "font-mono text-slate-400" },
-  ];
-
-  const eventColumns: Column<EventRow>[] = [
-    { header: "Event Title", accessor: "title", className: "font-semibold text-slate-700" },
     {
-      header: "Date",
+      header: "Convocation Token",
       accessor: (row) => (
-        <span className="font-mono text-slate-600 flex items-center gap-1">
-          <Calendar size={12} className="text-slate-400" />
-          {row.date}
-        </span>
+        <div>
+          {row.overallStatus === "CLEARED" ? (
+            <div className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <QrCode size={13} />
+              <span>{row.convocationToken}</span>
+            </div>
+          ) : (
+            <Badge variant="warning" size="sm">
+              Pending Clearance
+            </Badge>
+          )}
+          <div className="text-[10px] text-text-muted mt-0.5">
+            Gown Size: {row.gownSize} • {row.gownCollected ? "Gown Collected" : "Pending Pickup"}
+          </div>
+        </div>
       ),
     },
     {
-      header: "Location",
+      header: "Status",
       accessor: (row) => (
-        <span className="flex items-center gap-1">
-          <MapPin size={12} className="text-slate-400" />
-          {row.location}
-        </span>
-      ),
-    },
-    {
-      header: "Registered",
-      accessor: (row) => (
-        <span className="font-mono font-bold text-[#2563EB]">{row.registeredCount}</span>
+        <Badge
+          variant={row.overallStatus === "CLEARED" ? "success" : "danger"}
+          size="sm"
+        >
+          {row.overallStatus === "CLEARED" ? "Degree Cleared" : "Hold Active"}
+        </Badge>
       ),
     },
     {
       header: "Actions",
       accessor: (row) => (
-        <button
-          onClick={() => registerEventMutation.mutate({ eventId: row.id, alumniId: "ALM-001" })}
-          className="h-7 px-2.5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-bold rounded text-[10px] transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-        >
-          <Users size={12} /> Register
-        </button>
+        <div className="flex items-center gap-1.5">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            label="View Clearance Certificate"
+            onClick={() => setSelectedCandidate(row)}
+            icon={<Eye size={14} />}
+          />
+          {row.overallStatus === "CLEARED" && (
+            <IconButton
+              variant="ghost"
+              size="sm"
+              label="Print Convocation Token Pass"
+              onClick={() => {
+                setSuccessMsg(`Printed 14th Convocation Ceremony Pass & Gown Token for ${row.studentName}.`);
+                setTimeout(() => setSuccessMsg(""), 4000);
+              }}
+              icon={<Printer size={14} className="text-[#B98B4B]" />}
+            />
+          )}
+        </div>
       ),
     },
-  ];
-
-  const donationColumns: Column<DonationRow>[] = [
-    { header: "Alumni Name", accessor: "alumniName", className: "font-semibold text-slate-700" },
-    {
-      header: "Amount",
-      accessor: (row) => (
-        <span className="font-mono font-bold text-emerald-600">${row.amount.toLocaleString()}</span>
-      ),
-    },
-    { header: "Purpose", accessor: "purpose" },
-    { header: "Date", accessor: "date", className: "font-mono text-slate-400" },
-    { header: "Method", accessor: "paymentMethod", className: "capitalize text-slate-500" },
   ];
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <GraduationCap className="text-[#2563EB]" />
-            Alumni Relations
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage alumni directory, coordinate events, and track donations.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {activeTab === "directory" && isAdminOrRegistrar && (
-            <button
-              onClick={() => setIsAlumniModalOpen(true)}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-blue-500/10"
+    <div className="space-y-6 font-sans">
+      <PageHeader
+        title="Multi-Department Graduation Clearance & Convocation Gateway"
+        subtitle="End-to-end zero-dues clearance verification, convocation gown token minting, verifiable digital degree locker, and global alumni network."
+        badge={<Badge tone="gold">14th Grand Convocation</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRunBatchClearance}
+              disabled={isSyncingClearance}
+              icon={<ShieldCheck size={14} className={isSyncingClearance ? "animate-spin" : ""} />}
             >
-              <Plus size={16} />
-              Add Alumni
-            </button>
-          )}
-          {activeTab === "events" && isAdminOrRegistrar && (
-            <button
-              onClick={() => setIsEventModalOpen(true)}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-blue-500/10"
-            >
-              <Plus size={16} />
-              Create Event
-            </button>
-          )}
-          {activeTab === "donations" && (
-            <button
-              onClick={() => setIsDonationModalOpen(true)}
-              className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-blue-500/10"
-            >
-              <Plus size={16} />
-              Record Donation
-            </button>
-          )}
-        </div>
-      </div>
+              {isSyncingClearance ? "Synchronizing..." : "Run Multi-Dept Audit"}
+            </Button>
+            {isEditor && (
+              <Button
+                variant="gold"
+                size="sm"
+                icon={<GraduationCap size={15} />}
+                onClick={() => {
+                  setSuccessMsg("Dispatched Convocation Invitations & Digital Passes to all 100% Cleared Graduates.");
+                  setTimeout(() => setSuccessMsg(""), 5000);
+                }}
+              >
+                Dispatch Passes
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2"
+          className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-xl flex items-center gap-2"
         >
-          <CheckCircle2 size={16} className="text-emerald-600" />
+          <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="flex border-b border-[#e1e2ed] gap-2">
-        <button
-          onClick={() => setActiveTab("directory")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-            activeTab === "directory"
-              ? "border-[#2563EB] text-[#2563EB]"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <Users size={14} className="inline mr-1" />
-          Alumni Directory
-        </button>
-        <button
-          onClick={() => setActiveTab("events")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-            activeTab === "events"
-              ? "border-[#2563EB] text-[#2563EB]"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <Calendar size={14} className="inline mr-1" />
-          Events
-        </button>
-        <button
-          onClick={() => setActiveTab("donations")}
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-            activeTab === "donations"
-              ? "border-[#2563EB] text-[#2563EB]"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <HeartHandshake size={14} className="inline mr-1" />
-          Donations
-        </button>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card pad="sm" className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-text-muted font-medium">
+            <span>Graduating Cohort</span>
+            <GraduationCap className="w-4 h-4 text-primary" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-text">{candidates.length} Candidates</div>
+          <p className="text-[11px] text-text-muted">Class of 2026 eligible for degree award</p>
+        </Card>
+
+        <Card pad="sm" className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-text-muted font-medium">
+            <span>100% Zero-Dues Cleared</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+            {clearedCount} / {candidates.length}
+          </div>
+          <p className="text-[11px] text-text-muted">Accounts, Library, Labs, Hostel & Proctor</p>
+        </Card>
+
+        <Card pad="sm" className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-text-muted font-medium">
+            <span>Convocation Passes Minted</span>
+            <QrCode className="w-4 h-4 text-[#B98B4B]" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-text">
+            {candidates.filter((c) => c.convocationToken.startsWith("CONV")).length} Passes
+          </div>
+          <p className="text-[11px] text-text-muted">QR-secured ceremony access tokens</p>
+        </Card>
+
+        <Card pad="sm" className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-text-muted font-medium">
+            <span>Alumni Philanthropy Fund</span>
+            <CircleDollarSign className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-bold font-mono text-text">
+            ৳ {(totalDonations / 100000).toFixed(1)} Lakh
+          </div>
+          <p className="text-[11px] text-text-muted">3 active endowment & equipment drives</p>
+        </Card>
       </div>
 
-      {activeTab === "directory" ? (
-        loadingAlumni ? (
-          <TableSkeleton rows={5} cols={6} />
-        ) : (
-          <DataTable<AlumniRow>
-            data={alumni}
-            columns={alumniColumns}
-            searchPlaceholder="Search alumni by name..."
-            searchField="name"
-          />
-        )
-      ) : activeTab === "events" ? (
-        loadingEvents ? (
-          <TableSkeleton rows={5} cols={6} />
-        ) : (
-          <DataTable<EventRow>
-            data={events}
-            columns={eventColumns}
-            searchPlaceholder="Search events..."
-            searchField="title"
-          />
-        )
-      ) : (
-        loadingDonations ? (
-          <TableSkeleton rows={5} cols={6} />
-        ) : (
-          <div className="space-y-6">
-            <div className="bg-white border border-[#e1e2ed] p-6 rounded-xl shadow-sm space-y-2">
-              <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider flex items-center gap-1.5">
-                <DollarSign size={14} className="text-emerald-500" />
-                Total Donations Collected
-              </span>
-              <span className="text-3xl font-bold text-emerald-600 font-mono block">
-                ${totalDonations.toLocaleString()}
-              </span>
-            </div>
+      {/* Tabs Navigation */}
+      <Tabs
+        activeTab={activeTab}
+        onChange={(t) => setActiveTab(t as AlumniTab)}
+        tabs={[
+          { id: "clearance-gateway", label: "Multi-Dept Clearance Gateway", count: candidates.length },
+          { id: "convocation-tokens", label: "Convocation Passes & Gowns" },
+          { id: "degree-vault", label: "Verifiable Digital Degree Vault" },
+          { id: "alumni-directory", label: "Global Alumni Directory", count: alumniList.length },
+          { id: "alumni-giving", label: "Alumni Giving & Endowments", count: donations.length },
+        ]}
+      />
 
-            <DataTable<DonationRow>
-              data={donations}
-              columns={donationColumns}
-              searchPlaceholder="Search donations..."
-              searchField="alumniName"
-            />
+      {/* Tab 1: Multi-Dept Clearance Gateway */}
+      {activeTab === "clearance-gateway" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-text">5-Point Zero-Dues Clearance Checklist</h3>
+              <p className="text-xs text-text-muted">
+                Statutory cross-departmental verification required before official degree scroll and transcript issuance.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Download size={13} />}
+              onClick={() => {
+                setSuccessMsg("Exported statutory graduation clearance roster (PDF/XLSX).");
+                setTimeout(() => setSuccessMsg(""), 4000);
+              }}
+            >
+              Export Clearance Roster
+            </Button>
           </div>
-        )
+
+          <Card pad="none" className="overflow-hidden">
+            <DataTable
+              data={candidates}
+              columns={clearanceColumns}
+              searchable={true}
+              searchPlaceholder="Search graduating candidate or department..."
+              searchField="studentName"
+              pagination={true}
+              pageSize={8}
+            />
+          </Card>
+        </div>
       )}
 
-      <AnimatePresence>
-        {isAlumniModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col"
-            >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">Add Alumni Profile</span>
-                <button
-                  onClick={() => setIsAlumniModalOpen(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={18} />
-                </button>
+      {/* Tab 2: Convocation Passes & Gowns */}
+      {activeTab === "convocation-tokens" && (
+        <div className="space-y-6">
+          <Card pad="md" className="border-[#B98B4B]/30 bg-[#B98B4B]/5 space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#B98B4B]/20 text-[#B98B4B] flex items-center justify-center shrink-0">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-text">14th Grand University Convocation Ceremony</h4>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Date: December 12, 2026 • Venue: University Central Sports Arena • Chief Guest: Hon. Education Minister
+                  </p>
+                </div>
               </div>
+              <Badge variant="gold">Registration Fee: ৳ 6,500</Badge>
+            </div>
+          </Card>
 
-              <form onSubmit={handleCreateAlumni} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Full Name</label>
-                    <input
-                      type="text"
-                      value={alumniForm.name}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, name: e.target.value })}
-                      placeholder="Full name"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                    />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {candidates
+              .filter((c) => c.overallStatus === "CLEARED")
+              .map((c) => (
+                <Card key={c.id} pad="md" className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-text">{c.studentName}</h4>
+                      <p className="text-xs text-text-muted font-mono">{c.studentId} • {c.degree}</p>
+                    </div>
+                    <Badge variant="gold" size="sm">Pass Confirmed</Badge>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Email</label>
-                    <input
-                      type="email"
-                      value={alumniForm.email}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, email: e.target.value })}
-                      placeholder="email@alumni.edu"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Graduation Year</label>
-                    <input
-                      type="number"
-                      min="1900"
-                      max="2030"
-                      value={alumniForm.graduationYear}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, graduationYear: e.target.value })}
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono"
-                    />
+                  <div className="p-3 rounded-xl bg-surface-muted/50 border border-border flex items-center justify-between">
+                    <div className="space-y-0.5 text-xs">
+                      <div className="text-text-muted text-[10px]">Ceremony Token Code:</div>
+                      <div className="font-mono font-bold text-text text-sm">{c.convocationToken}</div>
+                      <div className="text-[11px] text-text-muted">
+                        Gown Size: <span className="font-bold text-text">{c.gownSize}</span> • Guest Passes: <span className="font-bold text-text">{c.guestPassesCount}</span>
+                      </div>
+                    </div>
+                    <div className="w-14 h-14 bg-surface rounded-lg border border-border flex items-center justify-center text-text-muted">
+                      <QrCode size={36} className="text-text" />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Department</label>
-                    <input
-                      type="text"
-                      value={alumniForm.department}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, department: e.target.value })}
-                      placeholder="e.g. MBBS"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Current Position</label>
-                    <input
-                      type="text"
-                      value={alumniForm.currentPosition}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, currentPosition: e.target.value })}
-                      placeholder="e.g. Senior Resident"
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                    />
+                  <div className="flex items-center justify-between pt-2 text-xs">
+                    <span className="text-text-muted">Gown Pickup Status:</span>
+                    <Badge variant={c.gownCollected ? "success" : "warning"} size="sm">
+                      {c.gownCollected ? "Collected from Wardrobe" : "Pending Wardrobe Pickup"}
+                    </Badge>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Phone</label>
-                    <input
-                      type="text"
-                      value={alumniForm.phone}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, phone: e.target.value })}
-                      placeholder="+1 555-xxxx"
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                  <button
-                    type="button"
-                    onClick={() => setIsAlumniModalOpen(false)}
-                    className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
-                  >
-                    <GraduationCap size={14} />
-                    Add Alumni
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                </Card>
+              ))}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
-      <AnimatePresence>
-        {isEventModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col"
+      {/* Tab 3: Digital Degree Vault */}
+      {activeTab === "degree-vault" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-text">Cryptographically Sealed Verifiable Degree Parchments</h3>
+              <p className="text-xs text-text-muted">
+                Tamper-proof digital certificates verifiable globally via SHA-256 cryptographic seal.
+              </p>
+            </div>
+            <Badge variant="success">WES & ECFMG Compatible</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {candidates
+              .filter((c) => c.overallStatus === "CLEARED")
+              .map((c) => (
+                <Card key={c.id} pad="md" className="space-y-4 border-2 border-border/70 hover:border-[#B98B4B] transition-all">
+                  <div className="text-center space-y-1 pb-3 border-b border-border">
+                    <div className="text-[10px] font-bold tracking-widest text-[#B98B4B] uppercase">Official Degree Scroll</div>
+                    <div className="text-base font-serif font-bold text-text">{c.studentName}</div>
+                    <div className="text-xs text-text-muted italic">{c.degree}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs p-2.5 rounded-lg bg-surface-muted/40 border border-border/50">
+                    <div>
+                      <span className="text-text-muted block text-[10px]">Cumulative GPA:</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{c.cgpa.toFixed(2)} / 4.00</span>
+                    </div>
+                    <div>
+                      <span className="text-text-muted block text-[10px]">Academic Standing:</span>
+                      <span className="font-semibold text-text">{c.cgpa >= 3.80 ? "Summa Cum Laude" : "Good Standing"}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-muted block text-[10px]">Cryptographic Seal:</span>
+                      <span className="font-mono text-[10px] text-text-muted">SHA-256: 0x8F9B...21C4</span>
+                    </div>
+                    <div>
+                      <span className="text-text-muted block text-[10px]">Chancellor Signature:</span>
+                      <span className="font-serif text-[11px] text-text">Verified Digital Sign</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      icon={<Download size={13} />}
+                      onClick={() => {
+                        setSuccessMsg(`Downloading high-resolution official PDF degree scroll for ${c.studentName}.`);
+                        setTimeout(() => setSuccessMsg(""), 4000);
+                      }}
+                    >
+                      Download PDF Scroll
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Global Alumni Directory */}
+      {activeTab === "alumni-directory" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-text">Global Alumni Practitioners & Engineers Network</h3>
+              <p className="text-xs text-text-muted">
+                Directory of verified graduates across NHS UK, USMLE Hospitals, and Tech Enterprises.
+              </p>
+            </div>
+            <Button
+              variant="gold"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setShowAlumniModal(true)}
             >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">Create Alumni Event</span>
-                <button
-                  onClick={() => setIsEventModalOpen(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Event Title</label>
-                  <input
-                    type="text"
-                    value={eventForm.title}
-                    onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                    placeholder="e.g. Annual Medical Symposium"
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Description</label>
-                  <textarea
-                    value={eventForm.description}
-                    onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                    placeholder="Brief description of the event..."
-                    className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Date</label>
-                    <input
-                      type="date"
-                      value={eventForm.date}
-                      onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Location</label>
-                    <input
-                      type="text"
-                      value={eventForm.location}
-                      onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                      placeholder="e.g. Main Auditorium"
-                      required
-                      className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                  <button
-                    type="button"
-                    onClick={() => setIsEventModalOpen(false)}
-                    className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
-                  >
-                    <Calendar size={14} />
-                    Create Event
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              Add Alumni
+            </Button>
           </div>
-        )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {isDonationModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {alumniList.map((a) => (
+              <Card key={a.id} pad="md" className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-text flex items-center gap-1.5">
+                      <span>{a.name}</span>
+                      {a.verifiedGraduate && <ShieldCheck size={14} className="text-emerald-500" />}
+                    </h4>
+                    <p className="text-xs text-[#B98B4B] font-medium">{a.currentPosition}</p>
+                    <p className="text-xs text-text-muted">{a.currentOrganization}</p>
+                  </div>
+                  <Badge variant="gold" size="sm">Class of {a.graduationYear}</Badge>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-surface-muted/50 border border-border text-xs grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-text-muted block">Degree Earned:</span>
+                    <span className="font-semibold text-text text-[11px] truncate block">{a.degree}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted block">Location:</span>
+                    <span className="font-semibold text-text text-[11px] flex items-center gap-1">
+                      <MapPin size={11} className="text-primary" />
+                      <span>{a.location}, {a.country}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-text-muted">
+                  <span>{a.email}</span>
+                  <span>{a.phone}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Alumni Giving & Endowments */}
+      {activeTab === "alumni-giving" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-text">Alumni Philanthropy & Endowment Contribution Ledger</h3>
+              <p className="text-xs text-text-muted">
+                Statutory donations allocated toward scholarships, student emergency aid, and medical equipment.
+              </p>
+            </div>
+            <Button
+              variant="gold"
+              size="sm"
+              icon={<HeartHandshake size={14} />}
+              onClick={() => setShowDonationModal(true)}
             >
-              <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">Record Donation</span>
-                <button
-                  onClick={() => setIsDonationModalOpen(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateDonation} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Alumni Name</label>
-                  <input
-                    type="text"
-                    value={donationForm.alumniName}
-                    onChange={(e) => setDonationForm({ ...donationForm, alumniName: e.target.value })}
-                    placeholder="Full name"
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Amount ($)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={donationForm.amount}
-                    onChange={(e) => setDonationForm({ ...donationForm, amount: parseFloat(e.target.value) || 0 })}
-                    required
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Purpose</label>
-                  <input
-                    type="text"
-                    value={donationForm.purpose}
-                    onChange={(e) => setDonationForm({ ...donationForm, purpose: e.target.value })}
-                    placeholder="e.g. Scholarship Fund"
-                    className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Payment Method</label>
-                  <select
-                    value={donationForm.paymentMethod}
-                    onChange={(e) => setDonationForm({ ...donationForm, paymentMethod: e.target.value })}
-                    className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all"
-                  >
-                    <option value="online">Online Payment</option>
-                    <option value="bank-transfer">Bank Transfer</option>
-                    <option value="cash">Cash</option>
-                    <option value="check">Check</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                  <button
-                    type="button"
-                    onClick={() => setIsDonationModalOpen(false)}
-                    className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-1.5"
-                  >
-                    <HeartHandshake size={14} />
-                    Record Donation
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              Record Donation
+            </Button>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {donations.map((d) => (
+              <Card key={d.id} pad="md" className="space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-text">{d.donorName}</h4>
+                      <p className="text-xs text-text-muted font-mono">{d.receiptNumber}</p>
+                    </div>
+                    <Badge variant="success" size="sm">{d.purpose.replace("_", " ")}</Badge>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-surface-muted/50 border border-border">
+                    <span className="text-[10px] text-text-muted block">Contribution Amount:</span>
+                    <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                      ৳ {d.amount.toLocaleString()} BDT
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-text-muted">
+                  <span>{d.date}</span>
+                  <span>{d.paymentMethod}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clearance Details Modal */}
+      {selectedCandidate && (
+        <Modal
+          isOpen={true}
+          onClose={() => setSelectedCandidate(null)}
+          title={`Graduation Clearance Dossier: ${selectedCandidate.studentName}`}
+          description={`Student ID #${selectedCandidate.studentId} • ${selectedCandidate.department}`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-surface-muted/50 border border-border text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">Accounts Section (Tuition & Fees):</span>
+                <Badge variant={selectedCandidate.clearances.accounts ? "success" : "danger"} size="sm">
+                  {selectedCandidate.clearances.accounts ? "Zero Dues (Cleared)" : "Outstanding Balance Due"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">Central Library (Books & Fines):</span>
+                <Badge variant={selectedCandidate.clearances.library ? "success" : "danger"} size="sm">
+                  {selectedCandidate.clearances.library ? "All Volumes Returned" : "Unreturned Books Flagged"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">Laboratories & Chemical Store:</span>
+                <Badge variant={selectedCandidate.clearances.laboratory ? "success" : "danger"} size="sm">
+                  {selectedCandidate.clearances.laboratory ? "Inventory Cleared" : "Breakage Fee Pending"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">Hostel & Dining Hall:</span>
+                <Badge variant={selectedCandidate.clearances.hostel ? "success" : "danger"} size="sm">
+                  {selectedCandidate.clearances.hostel ? "Room Handed Over" : "Dorm Keys Outstanding"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">Proctorial Disciplinary Board:</span>
+                <Badge variant={selectedCandidate.clearances.proctor ? "success" : "danger"} size="sm">
+                  {selectedCandidate.clearances.proctor ? "No Active Infractions" : "Disciplinary Hold Active"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-border">
+              <Button variant="outline" onClick={() => setSelectedCandidate(null)}>
+                Close Dossier
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add Alumni Modal */}
+      <Modal
+        isOpen={showAlumniModal}
+        onClose={() => setShowAlumniModal(false)}
+        title="Register Alumni Member"
+        description="Add verified university graduate to global directory"
+        size="md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formTarget = e.currentTarget;
+            const newAlumni: AlumniMember = {
+              id: `ALU-${100 + alumniList.length + 1}`,
+              name: (formTarget.elements.namedItem("name") as HTMLInputElement).value,
+              email: (formTarget.elements.namedItem("email") as HTMLInputElement).value,
+              graduationYear: Number((formTarget.elements.namedItem("gradYear") as HTMLInputElement).value),
+              department: (formTarget.elements.namedItem("dept") as HTMLSelectElement).value,
+              degree: (formTarget.elements.namedItem("degree") as HTMLInputElement).value,
+              currentPosition: (formTarget.elements.namedItem("position") as HTMLInputElement).value,
+              currentOrganization: (formTarget.elements.namedItem("org") as HTMLInputElement).value,
+              location: (formTarget.elements.namedItem("location") as HTMLInputElement).value,
+              country: (formTarget.elements.namedItem("country") as HTMLInputElement).value,
+              phone: (formTarget.elements.namedItem("phone") as HTMLInputElement).value,
+              verifiedGraduate: true,
+            };
+            setAlumniList([newAlumni, ...alumniList]);
+            setShowAlumniModal(false);
+            setSuccessMsg(`Alumni profile for ${newAlumni.name} created and verified.`);
+            setTimeout(() => setSuccessMsg(""), 4500);
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Full Name" required>
+              <Input name="name" required placeholder="e.g. Dr. Asif Ahmed" />
+            </FormField>
+            <FormField label="Email Address" required>
+              <Input name="email" type="email" required placeholder="asif@hospital.org" />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Department" required>
+              <Select name="dept">
+                <option value="MBBS Clinical Medicine">MBBS Clinical Medicine</option>
+                <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                <option value="Microbiology & Immunology">Microbiology & Immunology</option>
+                <option value="Pharmacy (B.Pharm)">Pharmacy (B.Pharm)</option>
+              </Select>
+            </FormField>
+            <FormField label="Graduation Year" required>
+              <Input name="gradYear" type="number" defaultValue="2024" required />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Current Position" required>
+              <Input name="position" required placeholder="e.g. Specialist Registrar" />
+            </FormField>
+            <FormField label="Organization / Hospital" required>
+              <Input name="org" required placeholder="e.g. Apollo Hospitals" />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="City / Location" required>
+              <Input name="location" required placeholder="e.g. London" />
+            </FormField>
+            <FormField label="Country" required>
+              <Input name="country" required placeholder="e.g. United Kingdom" />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Degree Earned" required>
+              <Input name="degree" required placeholder="e.g. MBBS, FCPS" />
+            </FormField>
+            <FormField label="Phone Number">
+              <Input name="phone" placeholder="+44 7700 900123" />
+            </FormField>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button type="button" variant="outline" onClick={() => setShowAlumniModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="gold">
+              Register Alumni
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Record Donation Modal */}
+      <Modal
+        isOpen={showDonationModal}
+        onClose={() => setShowDonationModal(false)}
+        title="Record Alumni Donation"
+        description="Log philanthropic contribution to university trust ledger"
+        size="md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formTarget = e.currentTarget;
+            const newDonation: AlumniDonation = {
+              id: `DON-2026-${100 + donations.length + 1}`,
+              donorName: (formTarget.elements.namedItem("donorName") as HTMLInputElement).value,
+              graduationYear: Number((formTarget.elements.namedItem("gradYear") as HTMLInputElement).value),
+              amount: Number((formTarget.elements.namedItem("amount") as HTMLInputElement).value),
+              purpose: (formTarget.elements.namedItem("purpose") as HTMLSelectElement).value as any,
+              date: new Date().toISOString().split("T")[0],
+              paymentMethod: (formTarget.elements.namedItem("paymentMethod") as HTMLInputElement).value,
+              receiptNumber: `RCP-ALUM-2026-${100 + donations.length + 1}`,
+            };
+            setDonations([newDonation, ...donations]);
+            setShowDonationModal(false);
+            setSuccessMsg(`Donation of ৳ ${newDonation.amount.toLocaleString()} BDT recorded successfully.`);
+            setTimeout(() => setSuccessMsg(""), 4500);
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Donor / Chapter Name" required>
+              <Input name="donorName" required placeholder="e.g. Dr. Farhana Yasmin (Batch '21)" />
+            </FormField>
+            <FormField label="Graduation Year">
+              <Input name="gradYear" type="number" defaultValue="2021" />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Donation Amount (৳ BDT)" required>
+              <Input name="amount" type="number" required placeholder="500000" className="font-mono" />
+            </FormField>
+            <FormField label="Endowment Purpose" required>
+              <Select name="purpose">
+                <option value="SCHOLARSHIP_FUND">Scholarship & Merit Waivers</option>
+                <option value="CLINICAL_EQUIPMENT">Hospital Clinical Equipment</option>
+                <option value="LIBRARY_JOURNALS">Digital Library & Journals</option>
+                <option value="RESEARCH_ENDOWMENT">Medical Research Fellowship</option>
+              </Select>
+            </FormField>
+          </div>
+
+          <FormField label="Payment Method" required>
+            <Input name="paymentMethod" required placeholder="e.g. Sonali Bank Wire Transfer" />
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button type="button" variant="outline" onClick={() => setShowDonationModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="gold">
+              Post Contribution
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

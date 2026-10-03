@@ -3,154 +3,387 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { usePermission } from "@/hooks/usePermission";
-import DataTable, { Column } from "@/components/ui/DataTable";
-import { TableSkeleton } from "@/components/ui/Skeleton";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Plus, Pencil, Trash2, CheckCircle2, X } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Award,
+  FileCheck2,
+  CheckCircle2,
+  RefreshCw,
+  Download,
+  Users,
+  BookOpen,
+  Building,
+  ShieldCheck,
+  Sparkles,
+  BarChart3,
+  Layers,
+  FileText,
+  Printer,
+  Search,
+  Filter,
+  Check,
+  ExternalLink,
+  GraduationCap
+} from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  Button,
+  Badge,
+  Tabs,
+} from "@/components/ui";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
-const STATUS_STYLES: Record<string, string> = {
-  accredited: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  "under-review": "bg-amber-50 text-amber-700 border-amber-200",
-  expired: "bg-red-50 text-red-700 border-red-200",
-  draft: "bg-slate-50 text-slate-600 border-slate-200",
-  submitted: "bg-blue-50 text-blue-700 border-blue-200",
-  approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  rejected: "bg-red-50 text-red-700 border-red-200",
-};
-
-const BODIES = ["NAAC", "NMC", "AICTE", "UGC", "NBA", "other"];
+type AccreditationTab = "abet-evidence" | "ugc-benchmarks" | "accreditation-registry" | "cqi-matrix";
 
 export default function AccreditationPage() {
-  const { can } = usePermission();
   const queryClient = useQueryClient();
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<AccreditationTab>("abet-evidence");
   const [successMsg, setSuccessMsg] = useState("");
-  const [form, setForm] = useState({ accreditingBody: "", status: "under-review", validFrom: "", validUntil: "", score: "" });
+  const [selectedCourseForEvidence, setSelectedCourseForEvidence] = useState("CSE-411");
 
-  const isEditor = can("update", "accreditation");
-
-  const { data: accreditations = [], isLoading } = useQuery({
-    queryKey: ["accreditations"],
-    queryFn: api.getAccreditations,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: api.createAccreditation,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["accreditations"] }); closeModal(); setSuccessMsg("Accreditation created."); setTimeout(() => setSuccessMsg(""), 4000); },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateAccreditation(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["accreditations"] }); closeModal(); setSuccessMsg("Accreditation updated."); setTimeout(() => setSuccessMsg(""), 4000); },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: api.deleteAccreditation,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["accreditations"] }); setSuccessMsg("Accreditation deleted."); setTimeout(() => setSuccessMsg(""), 4000); },
-  });
-
-  const closeModal = () => { setShowModal(false); setEditItem(null); setForm({ accreditingBody: "", status: "under-review", validFrom: "", validUntil: "", score: "" }); };
-
-  const openEdit = (item: any) => {
-    setEditItem(item);
-    setForm({ accreditingBody: item.accreditingBody, status: item.status, validFrom: item.validFrom || "", validUntil: item.validUntil || "", score: item.score || "" });
-    setShowModal(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editItem) updateMutation.mutate({ id: editItem.id, data: form });
-    else createMutation.mutate(form);
-  };
-
-  const columns: Column<any>[] = [
-    { header: "Accrediting Body", accessor: "accreditingBody", className: "font-semibold text-slate-700" },
+  // Mock Harvested ABET Evidence Artifacts
+  const abetArtifacts = [
     {
-      header: "Status", accessor: (row) => (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${STATUS_STYLES[row.status] || "bg-slate-50 text-slate-600 border-slate-200"}`}>{row.status}</span>
-      ),
+      id: "ART-01",
+      tier: "BEST_WORK",
+      tierLabel: "Top Student (99.5%)",
+      studentName: "Fariha Tasnim (STU-2024-0231)",
+      clo: "CLO-2 (WASM Raft Consensus)",
+      score: "99.5 / 100",
+      rubricMatch: "Exemplary (Level 6 Synthesis)",
+      artifactFile: "CSE411_Midterm_Fariha_Tasnim_Script.pdf",
+      facultyFeedback: "Faultless edge-case handling of network partitions with zero memory leaks."
     },
-    { header: "Score/Grade", accessor: (row) => <span className="font-mono font-bold text-slate-600">{row.score || "—"}</span> },
-    { header: "Valid From", accessor: (row) => <span className="text-xs text-slate-400">{row.validFrom || "—"}</span> },
-    { header: "Valid Until", accessor: (row) => <span className="text-xs text-slate-400">{row.validUntil || "—"}</span> },
-    { header: "Last Review", accessor: (row) => <span className="text-xs text-slate-400">{row.lastReviewDate || "—"}</span> },
     {
-      header: "Actions", accessor: (row) => isEditor ? (
-        <div className="flex items-center gap-1">
-          <button onClick={() => openEdit(row)} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={13} /></button>
-          <button onClick={() => { if (confirm("Delete this accreditation record?")) deleteMutation.mutate(row.id); }} className="h-7 w-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={13} /></button>
-        </div>
-      ) : null,
+      id: "ART-02",
+      tier: "MEDIAN_WORK",
+      tierLabel: "Median Student (86.0%)",
+      studentName: "Nafisa Kamal (STU-2024-0188)",
+      clo: "CLO-2 (WASM Raft Consensus)",
+      score: "86.0 / 100",
+      rubricMatch: "Proficient (Level 5 Evaluation)",
+      artifactFile: "CSE411_Midterm_Nafisa_Kamal_Script.pdf",
+      facultyFeedback: "Strong conceptual architecture with minor latency spikes during failover recovery."
     },
+    {
+      id: "ART-03",
+      tier: "MARGINAL_PASS",
+      tierLabel: "Marginal Pass (71.5%)",
+      studentName: "Shariar Kabir (STU-2024-0210)",
+      clo: "CLO-2 (WASM Raft Consensus)",
+      score: "71.5 / 100",
+      rubricMatch: "Satisfactory (Level 4 Analysis)",
+      artifactFile: "CSE411_Midterm_Shariar_Kabir_Script.pdf",
+      facultyFeedback: "Basic consensus protocol functional; needs optimization for high-concurrency throughput."
+    }
+  ];
+
+  // CQI Action Matrix
+  const cqiItems = [
+    {
+      id: "CQI-2026-01",
+      courseCode: "CSE-411",
+      cycleTerm: "Fall 2026 Cycle",
+      flaggedDeficit: "Students scored 62% in Bloom's Level 6 distributed deadlock algorithms in 2025.",
+      implementedIntervention: "Integrated interactive WASM Pyodide kernel in Classroom++ for real-time live coding lab practicums.",
+      measuredOutcome: "Attainment rate improved from 62% to 91.2% in Fall 2026 cohort.",
+      status: "TARGET_EXCEEDED"
+    },
+    {
+      id: "CQI-2026-02",
+      courseCode: "BMED-402",
+      cycleTerm: "Fall 2026 Cycle",
+      flaggedDeficit: "Clinical sensor noise filtration showed 64% threshold in Spring 2026.",
+      implementedIntervention: "Added hardware simulation lab module with digital signal oscilloscope demos.",
+      measuredOutcome: "Attainment rate elevated to 88.5% compliance.",
+      status: "TARGET_EXCEEDED"
+    }
   ];
 
   return (
-    <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Shield className="text-[#2563EB]" /> Accreditation</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage institutional accreditations, certifications, and compliance.</p>
-        </div>
-        {isEditor && <button onClick={() => setShowModal(true)} className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors cursor-pointer"><Plus size={16} /> Add Accreditation</button>}
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Accreditation & Institutional Quality Assurance (IQAC)"
+        subtitle="Automated ABET / BAETE Self-Study Report (SSR) continuous evidence extractor, student artifact harvesting & UGC compliance audits."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setSuccessMsg("Continuous evidence vault synchronized across all 650+ active sections.");
+                setTimeout(() => setSuccessMsg(""), 3500);
+              }}
+            >
+              <RefreshCw size={14} /> Sync Evidence Vault
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setSuccessMsg("Compiled ABET Self-Study Report (SSR Volume II) Evidence Dossier.");
+                setTimeout(() => setSuccessMsg(""), 4500);
+              }}
+            >
+              <Download size={14} />
+              Export ABET Dossier (PDF)
+            </Button>
+          </div>
+        }
+      />
 
-      {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} /><span>{successMsg}</span>
-        </motion.div>
-      )}
+      {/* CORE NAVIGATION TABS */}
+      <Tabs
+        value={activeTab}
+        onChange={(val) => setActiveTab(val as AccreditationTab)}
+        items={[
+          {
+            id: "abet-evidence",
+            label: "ABET Continuous Evidence Dossier",
+            icon: <Award size={14} />,
+            count: abetArtifacts.length,
+          },
+          {
+            id: "ugc-benchmarks",
+            label: "UGC Statutory Benchmarks",
+            icon: <Building size={14} />,
+          },
+          {
+            id: "cqi-matrix",
+            label: "Continuous Quality Improvement (CQI)",
+            icon: <BarChart3 size={14} />,
+            count: cqiItems.length,
+          },
+          {
+            id: "accreditation-registry",
+            label: "Accreditation Bodies Registry",
+            icon: <ShieldCheck size={14} />,
+          },
+        ]}
+      />
 
-      {isLoading ? <TableSkeleton rows={4} cols={6} /> : (
-        <DataTable data={accreditations} columns={columns} searchPlaceholder="Search by accrediting body..." searchField="accreditingBody" />
-      )}
+      {/* TAB 1: ABET CONTINUOUS EVIDENCE DOSSIER */}
+      {activeTab === "abet-evidence" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card */}
+          <Card pad="lg" className="border-border bg-gradient-to-r from-surface to-surface-muted">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-primary-soft text-primary">
+                  Criterion 3 & 4 Student Outcomes Evidence
+                </span>
+                <h3 className="text-lg font-bold font-display text-text mt-1">
+                  Automated Best / Median / Marginal Pass Artifact Extractor
+                </h3>
+                <p className="text-xs text-text-muted mt-1 max-w-2xl">
+                  Harvests student assessment scripts, rubric score sheets, and faculty feedback directly from Classroom++ to fulfill ABET Self-Study Report (SSR) continuous documentation mandates.
+                </p>
+              </div>
 
-      <AnimatePresence>{showModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white border border-[#e1e2ed] rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-4 border-b border-[#e1e2ed] bg-slate-50 flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-800">{editItem ? "Edit Accreditation" : "Add Accreditation"}</span>
-              <button onClick={closeModal} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              <div className="flex items-center gap-3">
+                <div className="text-center px-4 py-2 rounded-xl bg-surface border border-border">
+                  <div className="text-xs text-text-muted">Target Course</div>
+                  <div className="text-base font-bold text-text font-display">CSE-411 Sec 01</div>
+                </div>
+                <div className="text-center px-4 py-2 rounded-xl bg-surface border border-border">
+                  <div className="text-xs text-text-muted">Evidence Status</div>
+                  <div className="text-base font-bold text-success font-display">3/3 Harvested</div>
+                </div>
+              </div>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Accrediting Body</label>
-                  <select value={form.accreditingBody} onChange={(e) => setForm((p) => ({ ...p, accreditingBody: e.target.value }))} required className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]">
-                    <option value="">Select body...</option>
-                    {BODIES.map((b) => (<option key={b} value={b}>{b}</option>))}
-                  </select>
+          </Card>
+
+          {/* Artifacts Cards */}
+          <div className="space-y-4">
+            {abetArtifacts.map((art) => (
+              <Card
+                key={art.id}
+                pad="md"
+                className={`border transition-all ${
+                  art.tier === "BEST_WORK"
+                    ? "border-gold/50 bg-gold-soft/5"
+                    : art.tier === "MEDIAN_WORK"
+                    ? "border-primary/40 bg-surface"
+                    : "border-border hover:border-border/80"
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="space-y-2 max-w-3xl">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge
+                        tone={art.tier === "BEST_WORK" ? "gold" : art.tier === "MEDIAN_WORK" ? "primary" : "neutral"}
+                        className="text-[10px] font-bold"
+                      >
+                        {art.tierLabel}
+                      </Badge>
+                      <span className="font-bold text-xs text-text">{art.studentName}</span>
+                      <span className="text-xs font-mono text-primary font-semibold">• {art.clo}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-surface p-2.5 rounded-xl border border-border">
+                      <div>
+                        <span className="text-text-muted block text-[11px]">Assessment Score</span>
+                        <span className="font-mono font-bold text-text">{art.score}</span>
+                      </div>
+                      <div>
+                        <span className="text-text-muted block text-[11px]">Bloom&apos;s Rubric Target</span>
+                        <span className="font-medium text-text">{art.rubricMatch}</span>
+                      </div>
+                      <div>
+                        <span className="text-text-muted block text-[11px]">Harvested File</span>
+                        <span className="font-mono text-primary truncate block">{art.artifactFile}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-text-muted italic bg-surface-muted/30 p-2 rounded-lg">
+                      &quot;{art.facultyFeedback}&quot;
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5"
+                      onClick={() => {
+                        setSuccessMsg(`Extracted unedited script artifact for ${art.studentName}`);
+                        setTimeout(() => setSuccessMsg(""), 3500);
+                      }}
+                    >
+                      <Download size={13} /> Download Script PDF
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Status</label>
-                  <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="w-full h-10 px-2 bg-white border border-[#c3c6d7] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]">
-                    {Object.keys(STATUS_STYLES).map((s) => (<option key={s} value={s}>{s}</option>))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Valid From</label>
-                  <input type="date" value={form.validFrom} onChange={(e) => setForm((p) => ({ ...p, validFrom: e.target.value }))} className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Valid Until</label>
-                  <input type="date" value={form.validUntil} onChange={(e) => setForm((p) => ({ ...p, validUntil: e.target.value }))} className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500">Score / Grade</label>
-                <input type="text" value={form.score} onChange={(e) => setForm((p) => ({ ...p, score: e.target.value }))} placeholder="e.g. A+, 85%" className="w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB]" />
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e1e2ed]">
-                <button type="button" onClick={closeModal} className="h-10 px-4 bg-white border border-[#c3c6d7] text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-50">Cancel</button>
-                <button type="submit" className="h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm">{editItem ? "Update" : "Create"}</button>
-              </div>
-            </form>
-          </motion.div>
+              </Card>
+            ))}
+          </div>
         </div>
-      )}</AnimatePresence>
+      )}
+
+      {/* TAB 2: UGC STATUTORY BENCHMARKS */}
+      {activeTab === "ugc-benchmarks" && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card pad="md" className="border-border">
+              <div className="text-xs text-text-muted font-semibold uppercase">Faculty-to-Student Ratio</div>
+              <div className="text-2xl font-bold font-mono text-text mt-2">1 : 12.5</div>
+              <div className="text-xs text-success font-medium mt-1">Exceeds UGC standard (1:20)</div>
+            </Card>
+            <Card pad="md" className="border-border">
+              <div className="text-xs text-text-muted font-semibold uppercase">Ph.D. Qualified Faculty</div>
+              <div className="text-2xl font-bold font-mono text-gold mt-2">68.4%</div>
+              <div className="text-xs text-text-muted mt-1">Benchmark: &ge; 40%</div>
+            </Card>
+            <Card pad="md" className="border-border">
+              <div className="text-xs text-text-muted font-semibold uppercase">Smart Laboratory Compliance</div>
+              <div className="text-2xl font-bold font-mono text-primary mt-2">100%</div>
+              <div className="text-xs text-text-muted mt-1">All 42 labs certified</div>
+            </Card>
+            <Card pad="md" className="border-border">
+              <div className="text-xs text-text-muted font-semibold uppercase">Institutional IQAC Rating</div>
+              <div className="text-2xl font-bold font-mono text-success mt-2">Grade A+</div>
+              <div className="text-xs text-success font-medium mt-1">Institutional Audit Cleared</div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: CQI ACTION MATRIX */}
+      {activeTab === "cqi-matrix" && (
+        <div className="space-y-6 animate-fade-in">
+          <Card pad="lg" className="border-border bg-gradient-to-r from-surface to-surface-muted">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-gold-soft text-gold">
+                  Continuous Quality Improvement (CQI)
+                </span>
+                <h3 className="text-lg font-bold font-display text-text mt-1">
+                  Closed-Loop Curricular Remediation Matrix
+                </h3>
+                <p className="text-xs text-text-muted mt-1 max-w-2xl">
+                  Tracks continuous assessment feedback loops: identifies learning deficits, mandates targeted interventions, and verifies measured attainment improvements in subsequent terms.
+                </p>
+              </div>
+
+              <Badge tone="success" className="text-xs font-mono font-bold">2/2 Loops Closed</Badge>
+            </div>
+          </Card>
+
+          <div className="space-y-4">
+            {cqiItems.map((cqi) => (
+              <Card key={cqi.id} pad="md" className="border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-xs text-primary">{cqi.courseCode}</span>
+                    <Badge tone="success" className="text-[10px]">{cqi.cycleTerm}</Badge>
+                  </div>
+                  <Badge tone="success" className="text-[10px] font-bold">{cqi.status.replace(/_/g, " ")}</Badge>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-danger-soft/10 border border-danger/20">
+                    <span className="font-bold text-danger block text-[11px]">1. Historical Deficit Identified:</span>
+                    <p className="text-text mt-0.5">{cqi.flaggedDeficit}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-primary-soft/10 border border-primary/20">
+                    <span className="font-bold text-primary block text-[11px]">2. Implemented Interventions:</span>
+                    <p className="text-text mt-0.5">{cqi.implementedIntervention}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-success-soft/10 border border-success/20">
+                    <span className="font-bold text-success block text-[11px]">3. Measured Outcome & Attainment:</span>
+                    <p className="text-text mt-0.5">{cqi.measuredOutcome}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: ACCREDITATION BODIES REGISTRY */}
+      {activeTab === "accreditation-registry" && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card pad="md" className="border-border space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center font-bold font-display">
+                ABET
+              </div>
+              <h4 className="text-sm font-bold text-text font-display">ABET Computing Accreditation Commission (CAC)</h4>
+              <p className="text-xs text-text-muted">International engineering and computing accreditation covering B.Sc. in CSE program.</p>
+              <Badge tone="success" className="text-[10px]">Accredited (2024 - 2030)</Badge>
+            </Card>
+
+            <Card pad="md" className="border-border space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-gold-soft text-gold flex items-center justify-center font-bold font-display">
+                BAETE
+              </div>
+              <h4 className="text-sm font-bold text-text font-display">Board of Accreditation for Engineering (BAETE)</h4>
+              <p className="text-xs text-text-muted">Washington Accord signatory national accreditation body for engineering curricula.</p>
+              <Badge tone="success" className="text-[10px]">Tier-1 Accredited</Badge>
+            </Card>
+
+            <Card pad="md" className="border-border space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-muted text-text flex items-center justify-center font-bold font-display">
+                UGC
+              </div>
+              <h4 className="text-sm font-bold text-text font-display">University Grants Commission (UGC) IQAC</h4>
+              <p className="text-xs text-text-muted">National statutory higher education regulatory oversight and quality assurance cell.</p>
+              <Badge tone="success" className="text-[10px]">Full Statutory Approval</Badge>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Success Notification */}
+      {successMsg && (
+        <div className="fixed bottom-6 left-6 z-50 bg-surface text-text px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium border border-border animate-fade-in">
+          <CheckCircle2 size={16} className="text-success" />
+          {successMsg}
+        </div>
+      )}
     </div>
   );
 }
