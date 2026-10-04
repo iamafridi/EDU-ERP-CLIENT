@@ -3,30 +3,48 @@
 import React, { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { motion } from "framer-motion";
-import { Settings, User, Building2, Bell, Sun, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import {
+  User,
+  Building2,
+  Bell,
+  Sun,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Lock,
+  Save,
+  KeyRound,
+} from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  Tabs,
+  FormField,
+  Input,
+  Textarea,
+  Checkbox,
+  Button,
+  IconButton,
+  Badge,
+} from "@/components/ui";
 
 type TabKey = "profile" | "institution" | "notifications" | "appearance";
 
-const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "profile", label: "Profile", icon: User },
-  { key: "institution", label: "Institution", icon: Building2 },
-  { key: "notifications", label: "Notifications", icon: Bell },
-  { key: "appearance", label: "Appearance", icon: Sun },
-];
-
 export default function SettingsPage() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  const [activeTab, setActiveTab] = useState<string>("profile");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
+  const [name, setName] = useState(user?.name || "Dr. Administrator");
+  const [email, setEmail] = useState(user?.email || "admin@medicalcollege.edu");
 
-  const [instName, setInstName] = useState("Medical College");
-  const [instCode, setInstCode] = useState("MC-001");
-  const [instAddress, setInstAddress] = useState("123 Medical Campus Drive");
-  const [instPhone, setInstPhone] = useState("+1-555-0123");
-  const [instEmail, setInstEmail] = useState("admin@medicalcollege.edu");
+  const [instName, setInstName] = useState("Dhaka Central Medical College & Hospital");
+  const [instCode, setInstCode] = useState("DCMC-001");
+  const [instAddress, setInstAddress] = useState(
+    "Plot 14, Sector 7, Uttara Model Town, Dhaka 1230, Bangladesh"
+  );
+  const [instPhone, setInstPhone] = useState("+880 2 895 1234");
+  const [instEmail, setInstEmail] = useState("info@dcmc.edu.bd");
 
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif, setSmsNotif] = useState(false);
@@ -43,179 +61,376 @@ export default function SettingsPage() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  const handleProfileSave = () => {
-    showSuccess("Profile updated successfully.");
+  const handleProfileSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    showSuccess("Personal profile updated successfully.");
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!currentPassword || !newPassword || !confirmPassword) return;
-    if (newPassword !== confirmPassword) return;
-    showSuccess("Password changed successfully.");
+    if (newPassword !== confirmPassword) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+    showSuccess("Security password changed successfully.");
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
   };
 
-  const handleInstSave = () => {
-    showSuccess("Institution settings saved.");
+  const handleInstSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    showSuccess("Institutional parameters and contact directory saved.");
   };
 
   const handleNotifSave = () => {
-    showSuccess("Notification preferences saved.");
+    showSuccess("Notification delivery preferences updated.");
   };
 
-  const btnClass = "h-10 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50 cursor-pointer";
-  const inputClass = "w-full h-10 px-3 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all";
-  const labelClass = "text-xs font-semibold text-slate-500";
+  const tabItems = [
+    { id: "profile", label: "Personal Profile", icon: <User size={14} /> },
+    { id: "institution", label: "Campus & Institution", icon: <Building2 size={14} /> },
+    { id: "notifications", label: "Notifications & Alerts", icon: <Bell size={14} /> },
+    { id: "appearance", label: "Design & Appearance", icon: <Sun size={14} /> },
+  ];
 
   return (
-    <div className="space-y-6 font-sans max-w-6xl">
-      <div className="flex items-center gap-3">
-        <Settings className="text-[#2563EB]" size={24} />
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Settings</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage your profile, institution, and preferences.</p>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-4xl">
+      <PageHeader
+        title="System & Account Settings"
+        subtitle="Manage administrator profile, institutional statutory parameters, alerts, and security credentials."
+      />
 
       {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" /> <span>{successMsg}</span>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-lg flex items-center gap-2"
+        >
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>{successMsg}</span>
         </motion.div>
       )}
 
-      <div className="flex gap-2 flex-wrap">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer ${
-                isActive ? "bg-[#2563EB] text-white" : "bg-white border border-[#e1e2ed] text-slate-500 hover:bg-slate-50"
-              }`}>
-              <Icon size={14} /> {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Tabs */}
+      <Tabs items={tabItems} value={activeTab} onChange={(id) => setActiveTab(id)} />
 
-      <div className="bg-white border border-[#e1e2ed] rounded-xl overflow-hidden shadow-sm max-w-2xl">
-        {activeTab === "profile" && (
-          <div className="p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2"><User size={16} className="text-[#2563EB]" /> Profile Information</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Full Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+      {/* Tab Panels */}
+      {activeTab === "profile" && (
+        <div className="space-y-6">
+          <Card>
+            <form onSubmit={handleProfileSave} className="space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                    <User size={16} className="text-primary" /> Profile Credentials
+                  </h2>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Your authenticated system identity and correspondence email
+                  </p>
+                </div>
+                <Badge variant="primary" size="sm">
+                  {user?.role || "super-admin"}
+                </Badge>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
-              </div>
-            </div>
-            <button onClick={handleProfileSave} className={btnClass}>Save Profile</button>
 
-            <hr className="border-[#e1e2ed]" />
-            <h2 className="text-sm font-bold text-slate-800">Change Password</h2>
-            <div className="space-y-4">
-              <div className="relative space-y-1">
-                <label className={labelClass}>Current Password</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Full Legal Name" required>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </FormField>
+                <FormField label="Official Email Address" required>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </FormField>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button type="submit" variant="primary" icon={<Save size={14} />}>
+                  Save Profile
+                </Button>
+              </div>
+            </form>
+          </Card>
+
+          <Card>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="border-b border-border pb-3">
+                <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                  <Lock size={16} className="text-gold" /> Security & Password
+                </h2>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Update your authentication credentials for institutional security
+                </p>
+              </div>
+
+              <FormField label="Current Password" required>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={`${inputClass} pr-10`} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer">
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password..."
+                    className="pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-subtle hover:text-text cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className={labelClass}>New Password</label>
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
-                </div>
-                <div className="space-y-1">
-                  <label className={labelClass}>Confirm Password</label>
-                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
-                </div>
-              </div>
-              <button onClick={handlePasswordChange} disabled={!currentPassword || !newPassword || !confirmPassword} className={btnClass}>Change Password</button>
-            </div>
-          </div>
-        )}
+              </FormField>
 
-        {activeTab === "institution" && (
-          <div className="p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2"><Building2 size={16} className="text-[#2563EB]" /> Institution Settings</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Institution Name</label>
-                <input type="text" value={instName} onChange={(e) => setInstName(e.target.value)} className={inputClass} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="New Password" required>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                    required
+                  />
+                </FormField>
+                <FormField label="Confirm New Password" required>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    required
+                  />
+                </FormField>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Institution Code</label>
-                <input type="text" value={instCode} onChange={(e) => setInstCode(e.target.value)} className={`${inputClass} font-mono`} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelClass}>Address</label>
-              <textarea value={instAddress} onChange={(e) => setInstAddress(e.target.value)}
-                className="w-full h-20 px-3 py-2 bg-white border border-[#c3c6d7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/15 focus:border-[#2563EB] transition-all resize-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={labelClass}>Phone</label>
-                <input type="text" value={instPhone} onChange={(e) => setInstPhone(e.target.value)} className={inputClass} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Email</label>
-                <input type="email" value={instEmail} onChange={(e) => setInstEmail(e.target.value)} className={inputClass} />
-              </div>
-            </div>
-            <button onClick={handleInstSave} className={btnClass}>Save Settings</button>
-          </div>
-        )}
 
-        {activeTab === "notifications" && (
-          <div className="p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2"><Bell size={16} className="text-[#2563EB]" /> Notification Preferences</h2>
-            {[
-              { label: "Email Notifications", value: emailNotif, set: setEmailNotif },
-              { label: "SMS Alerts", value: smsNotif, set: setSmsNotif },
-              { label: "Push Notifications", value: pushNotif, set: setPushNotif },
-              { label: "Weekly Digest", value: weeklyDigest, set: setWeeklyDigest },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between py-2">
-                <span className="text-sm text-slate-700">{item.label}</span>
-                <button onClick={() => item.set(!item.value)}
-                  className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${item.value ? "bg-[#2563EB]" : "bg-slate-200"}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.value ? "translate-x-5" : "translate-x-0.5"}`} />
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!currentPassword || !newPassword || !confirmPassword}
+                  icon={<KeyRound size={14} />}
+                >
+                  Update Password
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "institution" && (
+        <Card>
+          <form onSubmit={handleInstSave} className="space-y-4">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                <Building2 size={16} className="text-primary" /> Campus Statutory Information
+              </h2>
+              <p className="text-xs text-text-muted mt-0.5">
+                Official accreditation identity appearing on transcripts, invoices, and certificates
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Institution Name" required>
+                <Input
+                  value={instName}
+                  onChange={(e) => setInstName(e.target.value)}
+                  required
+                />
+              </FormField>
+              <FormField label="Statutory Registry Code" required>
+                <Input
+                  value={instCode}
+                  onChange={(e) => setInstCode(e.target.value)}
+                  className="font-mono"
+                  required
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Campus Address" required>
+              <Textarea
+                value={instAddress}
+                onChange={(e) => setInstAddress(e.target.value)}
+                rows={2}
+                required
+              />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Official Contact Phone" required>
+                <Input
+                  value={instPhone}
+                  onChange={(e) => setInstPhone(e.target.value)}
+                  required
+                />
+              </FormField>
+              <FormField label="Administrative Registrar Email" required>
+                <Input
+                  type="email"
+                  value={instEmail}
+                  onChange={(e) => setInstEmail(e.target.value)}
+                  required
+                />
+              </FormField>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" variant="primary" icon={<Save size={14} />}>
+                Save Institution Settings
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {activeTab === "notifications" && (
+        <Card>
+          <div className="space-y-5">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                <Bell size={16} className="text-primary" /> Notification Dispatch Channels
+              </h2>
+              <p className="text-xs text-text-muted mt-0.5">
+                Control which channels receive fee receipts, incident reports, and grade publications
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-2 border-b border-border/50">
+                <div>
+                  <p className="text-sm font-semibold text-text">Email Notifications</p>
+                  <p className="text-xs text-text-muted">Receive official academic notices and financial invoices</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEmailNotif(!emailNotif)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    emailNotif ? "bg-primary" : "bg-surface-muted border border-border"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-xs transition-transform ${
+                      emailNotif ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
                 </button>
               </div>
-            ))}
-            <button onClick={handleNotifSave} className={btnClass}>Save Preferences</button>
-          </div>
-        )}
 
-        {activeTab === "appearance" && (
-          <div className="p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <Sun size={16} className="text-[#2563EB]" /> Appearance
-            </h2>
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-[#e1e2ed]">
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Light Mode</p>
-                <p className="text-xs text-slate-400">Light theme is active</p>
+              <div className="flex items-center justify-between py-2 border-b border-border/50">
+                <div>
+                  <p className="text-sm font-semibold text-text">SMS Gateway Alerts</p>
+                  <p className="text-xs text-text-muted">Urgent campus emergency alerts and hostel gate security OTPs</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSmsNotif(!smsNotif)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    smsNotif ? "bg-primary" : "bg-surface-muted border border-border"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-xs transition-transform ${
+                      smsNotif ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
               </div>
-              <div className="w-14 h-7 rounded-full bg-slate-200 relative">
-                <span className="absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow flex items-center justify-center">
-                  <Sun size={10} className="text-amber-500" />
-                </span>
+
+              <div className="flex items-center justify-between py-2 border-b border-border/50">
+                <div>
+                  <p className="text-sm font-semibold text-text">In-App Push Notifications</p>
+                  <p className="text-xs text-text-muted">Real-time alerts in the top portal notification center</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPushNotif(!pushNotif)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    pushNotif ? "bg-primary" : "bg-surface-muted border border-border"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-xs transition-transform ${
+                      pushNotif ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm font-semibold text-text">Weekly Governance Digest</p>
+                  <p className="text-xs text-text-muted">Summary digest of student admissions, hostel census, and fee collections</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWeeklyDigest(!weeklyDigest)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    weeklyDigest ? "bg-primary" : "bg-surface-muted border border-border"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-xs transition-transform ${
+                      weeklyDigest ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
               </div>
             </div>
-            <p className="text-xs text-slate-400">This application uses a fixed light theme.</p>
+
+            <div className="flex justify-end pt-3 border-t border-border">
+              <Button variant="primary" onClick={handleNotifSave} icon={<Save size={14} />}>
+                Save Preferences
+              </Button>
+            </div>
           </div>
-        )}
-      </div>
+        </Card>
+      )}
+
+      {activeTab === "appearance" && (
+        <Card>
+          <div className="space-y-4">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                <Sun size={16} className="text-gold" /> System Theme & Typography
+              </h2>
+              <p className="text-xs text-text-muted mt-0.5">
+                Current visual theme token contract and accessible color palette
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-surface-muted/40 rounded-xl border border-border">
+              <div>
+                <p className="text-sm font-semibold text-text">Standard Academic Theme</p>
+                <p className="text-xs text-text-muted">
+                  High-contrast accessible theme with deep navy brand accents and warm gold highlights.
+                </p>
+              </div>
+              <Badge variant="gold" size="md">
+                Active Theme
+              </Badge>
+            </div>
+
+            <div className="p-4 rounded-xl border border-border space-y-2">
+              <p className="text-xs font-semibold text-text">Currency & Localization</p>
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <span>Default Financial Currency:</span>
+                <span className="font-mono font-bold text-text">Bangladeshi Taka (৳ BDT)</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
