@@ -4866,11 +4866,11 @@ const baseApi = {
       return [
         {
           id: "COMP-MED-01",
-          name: "Apex Medical College & Hospital",
-          legalName: "Apex Health Sciences & Hospital Ltd.",
-          code: "MED-01",
+          name: "Hostel Pro Residential Campus",
+          legalName: "Hostel Pro Enterprise Campus Housing Ltd.",
+          code: "HST-01",
           currency: "USD",
-          companyType: "medical_college",
+          companyType: "hostel_campus",
           enabledModules: ["academics", "clinical", "hospital", "accounting", "hr", "lms", "opd", "ipd"],
         },
         {

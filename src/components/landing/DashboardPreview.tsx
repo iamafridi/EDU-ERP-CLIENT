@@ -165,7 +165,7 @@ export default function DashboardPreview({
           <div className="w-2.5 h-2.5 rounded-full bg-[#C39A5A]/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-[#5E9B7D]/80" />
           <div className="hidden sm:flex items-center gap-1.5 ml-3 px-3 py-1 rounded-md bg-white/[0.04] border border-white/10 text-[11px] text-white/50 font-mono">
-            <span>https://app.hostelpro-erp.io/campus/command</span>
+            <span>https://edu-erp-client.vercel.app/dashboard</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-semibold text-[#5E9B7D] font-ui">

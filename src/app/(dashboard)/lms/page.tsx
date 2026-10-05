@@ -1128,7 +1128,7 @@ simulate_pv_loop(contractility=1.2, afterload=75)`
 
                 <div className="flex items-center justify-between text-[11px] text-text-on-navy-muted pt-2 border-t border-surface-navy-secondary">
                   <div className="flex items-center gap-3">
-                    <span>Medical College ERP • Clinical Lecture Companion</span>
+                    <span>Hostel Pro ERP • Academic Lecture Companion</span>
                     <span className="text-emerald-400">● 48kHz Stereo AAC</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1575,7 +1575,7 @@ simulate_pv_loop(contractility=1.2, afterload=75)`
                 variant="gold"
                 size="sm"
                 leftIcon={<Share2 size={14} />}
-                onClick={() => alert("Verified Medical College ERP Credential exported to LinkedIn Profile!")}
+                onClick={() => alert("Verified Hostel Pro ERP Credential exported to LinkedIn Profile!")}
               >
                 Share Verifiable Badge
               </Button>

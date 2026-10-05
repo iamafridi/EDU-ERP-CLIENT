@@ -15,8 +15,8 @@ export default function HomePage() {
       {/* ─── Hero Section with Browser Dashboard Preview ─── */}
       <HeroSection />
 
-      {/* ─── Trust Strip with Muted Institutional Labels ─── */}
-      <TrustStrip />
+      {/* ─── Trust Strip with Muted Institutional Labels (Commented Out) ─── */}
+      {/* <TrustStrip /> */}
 
       {/* ─── Interactive Product Tour Tabs ─── */}
       <ProductTour />

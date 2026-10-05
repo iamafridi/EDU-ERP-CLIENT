@@ -20,8 +20,8 @@ const BOOT_STAGES = [
 ];
 
 export function LoadingScreen({
-  title = "MEDCAMPUS OS",
-  subtitle = "Unified Medical College & University ERP",
+  title = "HOSTEL-PRO ERP",
+  subtitle = "Advanced Campus, Living & Enterprise Operations System",
   variant = "full",
   showProgress = true,
 }: LoadingScreenProps) {

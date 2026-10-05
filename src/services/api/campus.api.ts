@@ -149,7 +149,7 @@ export const campusApi = {
       workDate: '2026-10-04',
       workerName: 'Mohammad Rafiqul Islam',
       skillGrade: 'SKILLED',
-      costObjectName: 'Medical College Phase-2 Wing C Academic Complex',
+      costObjectName: 'Hostel Pro Residential Complex Phase-2 Wing C',
       dayFraction: 1.0,
       regularHours: 8.0,
       overtimeHours: 2.0,

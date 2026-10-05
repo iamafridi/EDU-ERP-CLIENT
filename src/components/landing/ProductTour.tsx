@@ -280,7 +280,7 @@ export default function ProductTour() {
                       </div>
                       <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.05] border border-white/10 text-xs font-mono text-white/50 truncate max-w-xs">
                         <Lock size={11} className="text-emerald-400 shrink-0" />
-                        <span className="truncate">https://erp.college.edu{current.route}</span>
+                        <span className="truncate">https://edu-erp-client.vercel.app{current.route}</span>
                       </div>
                       <span className="text-[10px] font-mono uppercase tracking-wider text-[#D4AF37] font-semibold">
                         PRODUCTION GRADE

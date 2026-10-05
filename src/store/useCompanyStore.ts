@@ -14,13 +14,13 @@ export interface CompanyEntity {
 
 export const DEFAULT_COMPANIES: CompanyEntity[] = [
   {
-    id: "COMP-MED-01",
-    name: "Apex Medical College & Hospital",
-    legalName: "Apex Health Sciences & Hospital Ltd.",
-    code: "MED-01",
+    id: "COMP-HST-01",
+    name: "Hostel Pro Residential Campus",
+    legalName: "Hostel Pro Enterprise Campus Housing Ltd.",
+    code: "HST-01",
     currency: "USD",
-    companyType: "medical_college",
-    enabledModules: ["academics", "clinical", "hospital", "accounting", "hr", "lms", "opd", "ipd"],
+    companyType: "hostel_campus",
+    enabledModules: ["rooms", "mess", "security", "accounting", "hr", "maintenance", "advising", "wages"],
   },
   {
     id: "COMP-ENG-02",

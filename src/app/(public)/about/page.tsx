@@ -415,7 +415,7 @@ export default function AboutPage() {
                 </div>
                 <div className="flex-1 max-w-md mx-auto hidden sm:flex items-center justify-center gap-2 px-4 py-1 rounded-lg bg-white/[0.05] border border-white/10 text-xs font-mono text-white/50">
                   <Lock size={12} className="text-emerald-400" />
-                  <span>https://erp.medicalcollege.edu{activeItem.route}</span>
+                  <span>https://edu-erp-client.vercel.app{activeItem.route}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/50 font-ui font-semibold">
                   <span>Live Production Capture</span>

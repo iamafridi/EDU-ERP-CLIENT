@@ -165,7 +165,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!isMounted || !isAuthenticated) {
     return (
       <LoadingScreen
-        title="MEDCAMPUS OS"
+        title="HOSTEL-PRO ERP"
         subtitle="Verifying cryptographic tokens & institutional clearance..."
         variant="full"
         showProgress={true}

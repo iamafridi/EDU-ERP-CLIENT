@@ -26,9 +26,13 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Hostel Pro-ERP — Campus Operating System",
+  title: "HOSTEL-PRO ERP — Campus & Living Operations System",
   description:
-    "Institutional campus operating system for universities and residential colleges. Academics, student life, dormitory blocks, fleet logistics & double-entry finance — unified in one premium platform.",
+    "Enterprise campus operating system for universities and residential colleges. Academics, student life, dormitory blocks, fleet logistics & double-entry finance — unified in one platform.",
+  icons: {
+    icon: "/icon",
+    apple: "/apple-icon",
+  },
 };
 
 export default function RootLayout({

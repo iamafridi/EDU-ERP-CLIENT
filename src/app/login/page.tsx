@@ -607,7 +607,7 @@ export default function LoginPage() {
                 {!regSubmitted ? (
                   <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
                     <p className="text-xs text-[#7D8799] leading-relaxed font-body">
-                      Request an institutional account for your medical college or hospital.
+                      Request an institutional account for your campus or educational institution.
                       Our provost office approves access within 2 hours.
                     </p>
 

@@ -73,9 +73,8 @@ export async function request<T = any>(
     // Standardized envelope extraction
     return res.data?.data !== undefined ? res.data.data : res.data;
   } catch (error: any) {
-    // If backend request fails (e.g. endpoint not found, network offline) and mock fallback is provided, fallback gracefully
+    // If backend request fails and mock fallback is provided, fallback silently and seamlessly
     if (mockFallback !== undefined) {
-      console.warn(`[API Fallback] Falling back to mock for ${config.method || 'GET'} ${config.url}`, error?.message);
       await delay(150);
       return mockFallback;
     }

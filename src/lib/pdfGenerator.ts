@@ -38,14 +38,14 @@ function drawHeaderBanner(
   doc.setTextColor(COLORS.slate900[0], COLORS.slate900[1], COLORS.slate900[2]);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("CENTRAL MEDICAL COLLEGE & TEACHING HOSPITAL", 32, 24);
+  doc.text("HOSTEL-PRO UNIVERSITY & INSTITUTIONAL SYSTEM", 32, 24);
 
   // Subtitle
   doc.setTextColor(COLORS.slate500[0], COLORS.slate500[1], COLORS.slate500[2]);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(
-    "Affiliated to Directorate of Medical Education | NABH & NMC Accredited",
+    "Accredited Enterprise Campus & Institutional Management Platform",
     32,
     29
   );
@@ -658,13 +658,13 @@ export function generateOfficialCertificatePDF(data: OfficialCertificatePDFData)
   doc.setFont("helvetica", "normal");
 
   const lines = [
-    `This is to officially certify that ${data.studentName.toUpperCase()} (Student ID: ${data.studentId}) is a bona fide graduate/student of the Central Medical College & Teaching Hospital, affiliated with the Directorate of Medical Education and accredited by the National Medical Commission (NMC).`,
+    `This is to officially certify that ${data.studentName.toUpperCase()} (Student ID: ${data.studentId}) is a bona fide graduate/student of the Hostel-Pro Institutional Campus & University System, affiliated with accredited higher education boards.` ,
     "",
-    `Program / Cohort: Bachelor of Medicine and Bachelor of Surgery (MBBS), Batch: ${data.batch || "2021-2026"}.`,
+    `Program / Cohort: ${data.batch ? `Batch ${data.batch}` : "Undergraduate / Professional Cohort"}.`,
     "",
-    `During the entire tenure of medical training and clinical rotations at this teaching hospital, the candidate maintained an exemplary academic record, completed all requisite clinical clerkships with distinction, and demonstrated high professional ethics and moral character.`,
+    `During the entire tenure of study and campus residence, the candidate maintained an exemplary academic record, completed all requisite degree requirements with distinction, and demonstrated high professional ethics and moral character.`,
     "",
-    `Purpose of Issuance: ${data.purpose || "Official Post-Graduate Higher Medical Training & Licensing Verification"}.`,
+    `Purpose of Issuance: ${data.purpose || "Official Degree Verification & Professional Licensing"}.`,
     "",
     `This certificate remains valid until ${data.validUntil || "Permanent Record"} and carries cryptographic integrity backing. The authenticity of this document can be independently verified on the institutional verification registry using the hash string below or via standard QR scanning.`,
   ];

@@ -186,8 +186,8 @@ export default function AdminConsolePage() {
               Executive Administration Mission Control
             </h1>
             <p className="text-sm text-text-on-navy/70 font-ui leading-relaxed">
-              Consolidated governance for Dhaka Medical College ERP & Hostel Pro. Oversee double-entry ledgers,
-              campus access security, clinical rotation registers, and real-time student telemetry.
+              Consolidated governance for Hostel Pro Enterprise ERP. Oversee double-entry ledgers,
+              campus access security, academic registers, and real-time student telemetry.
             </p>
           </div>
 

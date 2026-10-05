@@ -74,10 +74,10 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.45 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white leading-[1.10] tracking-tight font-display"
+              className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white leading-[1.18] tracking-tight font-display"
             >
               Run your campus with{" "}
-              <span className="italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#2DD4BF] drop-shadow-sm">
+              <span className="inline-block italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#2DD4BF] drop-shadow-sm pb-1.5 pr-2">
                 absolute clarity
               </span>
               .
@@ -99,24 +99,24 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.45 }}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-2"
+              className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3.5 pt-2"
             >
               <button
                 type="button"
                 onClick={() => setDemoModalOpen(true)}
-                className="h-12 px-7 bg-gradient-to-r from-[#B98B4B] via-[#C99E5C] to-[#A67A3A] hover:brightness-110 text-[#070D14] font-extrabold rounded-xl text-sm transition-all duration-200 shadow-xl shadow-[#B98B4B]/20 hover:shadow-[#B98B4B]/35 font-ui flex items-center justify-center gap-2.5 cursor-pointer border border-[#E5C384]/40"
+                className="h-12 px-6 bg-gradient-to-r from-[#B98B4B] via-[#C99E5C] to-[#A67A3A] hover:brightness-110 text-[#070D14] font-extrabold rounded-xl text-sm transition-all duration-200 shadow-xl shadow-[#B98B4B]/20 hover:shadow-[#B98B4B]/35 font-ui flex items-center justify-center gap-2.5 cursor-pointer border border-[#E5C384]/40 whitespace-nowrap shrink-0"
               >
-                <Sparkles size={16} className="text-[#070D14]" />
-                <span>Launch Interactive Demo (5 Roles)</span>
-                <ArrowRight size={16} />
+                <Sparkles size={16} className="text-[#070D14] shrink-0" />
+                <span className="whitespace-nowrap">Launch Interactive Demo (5 Roles)</span>
+                <ArrowRight size={16} className="shrink-0" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setContactModalOpen(true)}
-                className="h-12 px-6 bg-white/[0.06] border border-white/15 hover:border-white/30 text-white hover:bg-white/[0.12] font-bold rounded-xl text-sm transition-all duration-200 font-ui flex items-center justify-center gap-2.5 cursor-pointer backdrop-blur-md"
+                className="h-12 px-6 bg-white/[0.06] border border-white/15 hover:border-white/30 text-white hover:bg-white/[0.12] font-bold rounded-xl text-sm transition-all duration-200 font-ui flex items-center justify-center gap-2.5 cursor-pointer backdrop-blur-md whitespace-nowrap shrink-0"
               >
-                <span>Schedule Briefing</span>
+                <span className="whitespace-nowrap">Schedule Briefing</span>
               </button>
             </motion.div>
 

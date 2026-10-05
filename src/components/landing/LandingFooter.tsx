@@ -197,9 +197,9 @@ export default function LandingFooter() {
 
       {/* ─── GIANT DESIGN MONKS STYLE FOOTER TEXT BANNER ─── */}
       <div className="w-full overflow-hidden select-none border-t border-white/[0.06] pt-6 sm:pt-10 pb-4">
-        <div className="max-w-[100vw] overflow-hidden whitespace-nowrap text-center">
-          <span className="inline-block text-[14vw] sm:text-[13vw] font-black tracking-tighter uppercase leading-none text-transparent bg-clip-text bg-gradient-to-b from-white/30 via-white/10 to-white/0 font-ui hover:from-white/40 hover:via-[#8C7BE8]/20 transition-all duration-300">
-            HOSTEL PRO_ERP
+        <div className="w-full px-4 sm:px-6 flex justify-center items-center text-center">
+          <span className="inline-block text-[7.5vw] sm:text-[8vw] md:text-[8.5vw] font-black tracking-tight uppercase leading-none text-transparent bg-clip-text bg-gradient-to-b from-white/30 via-white/10 to-white/0 font-ui hover:from-white/40 hover:via-[#8C7BE8]/20 transition-all duration-300">
+            HOSTEL PRO ERP
           </span>
         </div>
       </div>
