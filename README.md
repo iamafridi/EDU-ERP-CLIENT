@@ -86,53 +86,7 @@
 ```
 
 ---
-
-## 📸 Visual Showcase & Screen Gallery
-
-### 1. Public Portal & Institutional Showcase
-The public gateway delivers institutional transparency, live capacity telemetry, amenity directories, and interactive applicant inquiry workflows.
-
-<div align="center">
-  <img src="./public/screenshots/landing_hero.png" alt="Landing Hero" width="95%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.5);" />
-</div>
-
-<br/>
-
-### 2. Multi-Facility Operations & Institutional Switchboard
-Role-tailored telemetry cockpit visualizing bed occupancy rates, curfew compliance curves, biometric mess turnstile counts, and urgent incident alerts.
-
-<div align="center">
-  <img src="./public/screenshots/dashboard_analytics.png" alt="Dashboard Analytics" width="95%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.5);" />
-</div>
-
-<br/>
-
-### 3. Dimensional Multi-Fund Accounting & Encumbrances
-Enterprise GASB 34/35 compliant general ledger offering real-time budget availability computation, journal vouchers, subledger drilldowns, and student AR accounts.
-
-<div align="center">
-  <img src="./public/screenshots/accounting_ledger.png" alt="Accounting Ledger" width="95%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.5);" />
-</div>
-
-<br/>
-
-### 4. Student Advising & Prerequisite DAG Matrix
-High-throughput course registration engine with atomic seat reservation holds, prerequisite graph traversal, and academic standing probation triggers.
-
-<div align="center">
-  <img src="./public/screenshots/advising_matrix.png" alt="Advising Matrix" width="95%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.5);" />
-</div>
-
-<br/>
-
-### 5. Campus Operations, Asset Logbooks & EHS Drum Manifests
-Unified operational tracking covering dormitory maintenance job tickets, raw kitchen rations, daily worker muster rolls, and EPA hazardous waste tracking.
-
-<div align="center">
-  <img src="./public/screenshots/clinical_logbook.png" alt="Operations Logbook" width="95%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.5);" />
-</div>
-
----
+ 
 
 ## 🔬 Deep Dive: Domain Modules
 
